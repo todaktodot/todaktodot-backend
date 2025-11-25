@@ -1,3 +1,31 @@
 spring:
   application:
     name: TDTD
+
+  # 기본 프로파일 설정 (로컬 개발 환경)
+  profiles:
+    active: local
+
+  # JPA 공통 설정
+  jpa:
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQLDialect
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+# 공통 로깅 설정
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+  level:
+    com.todaktodot.TDTD: info
+
+# 에러 응답 설정 (개발 환경)
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-exception: false
+    include-stacktrace: never

@@ -35,3 +35,13 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Application Properties ###
+src/main/resources/application-local.yaml
+src/main/resources/application-dev.yaml
+src/main/resources/application-prod.yaml
+src/main/resources/application-*.yaml
+
+# 로그 파일
+logs/
+*.log
