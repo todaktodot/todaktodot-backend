@@ -1,6 +1,8 @@
 package com.todaktodot.TDTD.couplelink.controller;
 
+import com.todaktodot.TDTD.couplelink.dto.request.ConnectLinkCodeRequestDTO;
 import com.todaktodot.TDTD.couplelink.dto.request.IssueLinkCodeRequestDTO;
+import com.todaktodot.TDTD.couplelink.dto.response.ConnectLinkCodeResponseDTO;
 import com.todaktodot.TDTD.couplelink.dto.response.IssueLinkCodeResponseDTO;
 import com.todaktodot.TDTD.couplelink.service.CoupleLinkAuthService;
 import jakarta.validation.Valid;
@@ -20,6 +22,14 @@ public class CoupleLinkAuthController {
             @Valid @RequestBody IssueLinkCodeRequestDTO requestDTO) {
 
         IssueLinkCodeResponseDTO response = coupleLinkAuthService.issueLinkCode(requestDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/connect")
+    public ResponseEntity<ConnectLinkCodeResponseDTO> connectLinkCode(
+            @Valid @RequestBody ConnectLinkCodeRequestDTO requestDTO) {
+
+        ConnectLinkCodeResponseDTO response = coupleLinkAuthService.connectLinkCode(requestDTO);
         return ResponseEntity.ok(response);
     }
 }
