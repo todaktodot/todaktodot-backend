@@ -1,8 +1,8 @@
-package com.todaktodot.TDTD.couplelink.controller;
+package com.todaktodot.TDTD.domain.couplelink.controller;
 
-import com.todaktodot.TDTD.couplelink.dto.request.IssueLinkCodeRequestDTO;
-import com.todaktodot.TDTD.couplelink.dto.response.IssueLinkCodeResponseDTO;
-import com.todaktodot.TDTD.couplelink.service.CoupleLinkAuthService;
+import com.todaktodot.TDTD.domain.couplelink.dto.request.IssueLinkCodeRequestDTO;
+import com.todaktodot.TDTD.domain.couplelink.dto.response.IssueLinkCodeResponseDTO;
+import com.todaktodot.TDTD.domain.couplelink.service.CoupleLinkAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

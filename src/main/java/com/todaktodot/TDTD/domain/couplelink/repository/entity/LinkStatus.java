@@ -1,4 +1,4 @@
-package com.todaktodot.TDTD.couplelink.repository.entity;
+package com.todaktodot.TDTD.domain.couplelink.repository.entity;
 
 public enum LinkStatus {
     ISSUED,   // 발급됨

@@ -1,4 +1,4 @@
-package com.todaktodot.TDTD.couplelink.dto.request;
+package com.todaktodot.TDTD.domain.couplelink.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;

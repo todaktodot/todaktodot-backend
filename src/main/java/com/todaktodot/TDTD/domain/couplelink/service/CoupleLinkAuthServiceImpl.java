@@ -1,10 +1,10 @@
-package com.todaktodot.TDTD.couplelink.service;
+package com.todaktodot.TDTD.domain.couplelink.service;
 
-import com.todaktodot.TDTD.couplelink.dto.request.IssueLinkCodeRequestDTO;
-import com.todaktodot.TDTD.couplelink.dto.response.IssueLinkCodeResponseDTO;
-import com.todaktodot.TDTD.couplelink.repository.CoupleLinkAuthRepository;
-import com.todaktodot.TDTD.couplelink.repository.entity.CoupleLinkAuthEntity;
-import com.todaktodot.TDTD.couplelink.repository.entity.LinkStatus;
+import com.todaktodot.TDTD.domain.couplelink.dto.request.IssueLinkCodeRequestDTO;
+import com.todaktodot.TDTD.domain.couplelink.dto.response.IssueLinkCodeResponseDTO;
+import com.todaktodot.TDTD.domain.couplelink.repository.CoupleLinkAuthRepository;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.CoupleLinkAuthEntity;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
