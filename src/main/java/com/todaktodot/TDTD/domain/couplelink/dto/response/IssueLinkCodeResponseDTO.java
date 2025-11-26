@@ -1,4 +1,4 @@
-package com.todaktodot.TDTD.couplelink.dto.response;
+package com.todaktodot.TDTD.domain.couplelink.dto.response;
 
 import lombok.Builder;
 import lombok.Getter;

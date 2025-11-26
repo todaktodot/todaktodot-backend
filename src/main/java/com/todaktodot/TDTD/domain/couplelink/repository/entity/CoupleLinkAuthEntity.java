@@ -1,4 +1,4 @@
-package com.todaktodot.TDTD.couplelink.repository.entity;
+package com.todaktodot.TDTD.domain.couplelink.repository.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

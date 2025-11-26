@@ -1,7 +1,8 @@
 package com.todaktodot.TDTD.couplelink.repository;
 
-import com.todaktodot.TDTD.couplelink.repository.entity.CoupleLinkAuthEntity;
-import com.todaktodot.TDTD.couplelink.repository.entity.LinkStatus;
+import com.todaktodot.TDTD.domain.couplelink.repository.CoupleLinkAuthRepository;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.CoupleLinkAuthEntity;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

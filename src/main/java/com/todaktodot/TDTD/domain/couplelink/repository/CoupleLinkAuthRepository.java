@@ -1,7 +1,7 @@
-package com.todaktodot.TDTD.couplelink.repository;
+package com.todaktodot.TDTD.domain.couplelink.repository;
 
-import com.todaktodot.TDTD.couplelink.repository.entity.CoupleLinkAuthEntity;
-import com.todaktodot.TDTD.couplelink.repository.entity.LinkStatus;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.CoupleLinkAuthEntity;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
