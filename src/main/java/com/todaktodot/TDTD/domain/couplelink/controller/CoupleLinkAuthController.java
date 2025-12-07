@@ -5,6 +5,8 @@ import com.todaktodot.TDTD.domain.couplelink.dto.response.IssueLinkCodeResponseD
 import com.todaktodot.TDTD.domain.couplelink.service.CoupleLinkAuthService;
 import com.todaktodot.TDTD.domain.couplelink.dto.request.ConnectLinkCodeRequestDTO;
 import com.todaktodot.TDTD.domain.couplelink.dto.response.ConnectLinkCodeResponseDTO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,8 @@ public class CoupleLinkAuthController {
 
     private final CoupleLinkAuthService coupleLinkAuthService;
 
+    @Operation(description = "커플 연결 코드 발급")
+    @ApiResponse(responseCode = "200", description = "발급 성공")
     @PostMapping("/issue")
     public ResponseEntity<IssueLinkCodeResponseDTO> issueLinkCode(
             @Valid @RequestBody IssueLinkCodeRequestDTO requestDTO) {
@@ -25,6 +29,8 @@ public class CoupleLinkAuthController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(description = "커플 연결 코드로 커플 연결")
+    @ApiResponse(responseCode = "200", description = "연결 성공")
     @PostMapping("/connect")
     public ResponseEntity<ConnectLinkCodeResponseDTO> connectLinkCode(
             @Valid @RequestBody ConnectLinkCodeRequestDTO requestDTO) {
