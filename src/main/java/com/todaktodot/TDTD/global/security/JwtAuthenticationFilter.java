@@ -33,7 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // 토큰 정보로 UserPrincipal 생성
             Long userId = Long.parseLong(claims.getSubject());
-            String role = claims.get("role", String.class);
+            String role = claims.get("roles", String.class);
 
             UserPrincipal userPrincipal = new UserPrincipal(userId, Collections.singleton(new SimpleGrantedAuthority(role)));
 
