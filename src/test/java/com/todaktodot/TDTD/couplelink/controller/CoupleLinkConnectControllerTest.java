@@ -1,9 +1,10 @@
 package com.todaktodot.TDTD.couplelink.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.todaktodot.TDTD.couplelink.dto.request.ConnectLinkCodeRequestDTO;
-import com.todaktodot.TDTD.couplelink.dto.response.ConnectLinkCodeResponseDTO;
-import com.todaktodot.TDTD.couplelink.service.CoupleLinkAuthService;
+import com.todaktodot.TDTD.domain.couplelink.controller.CoupleLinkAuthController;
+import com.todaktodot.TDTD.domain.couplelink.dto.request.ConnectLinkCodeRequestDTO;
+import com.todaktodot.TDTD.domain.couplelink.dto.response.ConnectLinkCodeResponseDTO;
+import com.todaktodot.TDTD.domain.couplelink.service.CoupleLinkAuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

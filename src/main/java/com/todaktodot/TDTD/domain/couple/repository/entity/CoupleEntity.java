@@ -1,4 +1,4 @@
-package com.todaktodot.TDTD.couple.repository.entity;
+package com.todaktodot.TDTD.domain.couple.repository.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

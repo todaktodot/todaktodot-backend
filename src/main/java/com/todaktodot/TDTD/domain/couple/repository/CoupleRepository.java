@@ -1,6 +1,6 @@
-package com.todaktodot.TDTD.couple.repository;
+package com.todaktodot.TDTD.domain.couple.repository;
 
-import com.todaktodot.TDTD.couple.repository.entity.CoupleEntity;
+import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

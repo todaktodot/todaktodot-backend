@@ -1,6 +1,7 @@
 package com.todaktodot.TDTD.couple.repository;
 
-import com.todaktodot.TDTD.couple.repository.entity.CoupleEntity;
+import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
+import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

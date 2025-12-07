@@ -1,12 +1,13 @@
 package com.todaktodot.TDTD.couplelink.service;
 
-import com.todaktodot.TDTD.couple.repository.CoupleRepository;
-import com.todaktodot.TDTD.couple.repository.entity.CoupleEntity;
-import com.todaktodot.TDTD.couplelink.dto.request.ConnectLinkCodeRequestDTO;
-import com.todaktodot.TDTD.couplelink.dto.response.ConnectLinkCodeResponseDTO;
-import com.todaktodot.TDTD.couplelink.repository.CoupleLinkAuthRepository;
-import com.todaktodot.TDTD.couplelink.repository.entity.CoupleLinkAuthEntity;
-import com.todaktodot.TDTD.couplelink.repository.entity.LinkStatus;
+import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
+import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
+import com.todaktodot.TDTD.domain.couplelink.dto.request.ConnectLinkCodeRequestDTO;
+import com.todaktodot.TDTD.domain.couplelink.dto.response.ConnectLinkCodeResponseDTO;
+import com.todaktodot.TDTD.domain.couplelink.repository.CoupleLinkAuthRepository;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.CoupleLinkAuthEntity;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkStatus;
+import com.todaktodot.TDTD.domain.couplelink.service.CoupleLinkAuthServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

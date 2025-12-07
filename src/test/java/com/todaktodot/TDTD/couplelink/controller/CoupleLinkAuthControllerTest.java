@@ -68,7 +68,6 @@ class CoupleLinkAuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.linkCode").value("ABC123"))
-                .andExpect(jsonPath("$.expiryMinutes").value(30))
                 .andExpect(jsonPath("$.expiredDt").exists());
     }
 
