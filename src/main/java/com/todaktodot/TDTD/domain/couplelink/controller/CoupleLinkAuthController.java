@@ -3,6 +3,8 @@ package com.todaktodot.TDTD.domain.couplelink.controller;
 import com.todaktodot.TDTD.domain.couplelink.dto.request.IssueLinkCodeRequestDTO;
 import com.todaktodot.TDTD.domain.couplelink.dto.response.IssueLinkCodeResponseDTO;
 import com.todaktodot.TDTD.domain.couplelink.service.CoupleLinkAuthService;
+import com.todaktodot.TDTD.domain.couplelink.dto.request.ConnectLinkCodeRequestDTO;
+import com.todaktodot.TDTD.domain.couplelink.dto.response.ConnectLinkCodeResponseDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,14 @@ public class CoupleLinkAuthController {
             @Valid @RequestBody IssueLinkCodeRequestDTO requestDTO) {
 
         IssueLinkCodeResponseDTO response = coupleLinkAuthService.issueLinkCode(requestDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/connect")
+    public ResponseEntity<ConnectLinkCodeResponseDTO> connectLinkCode(
+            @Valid @RequestBody ConnectLinkCodeRequestDTO requestDTO) {
+
+        ConnectLinkCodeResponseDTO response = coupleLinkAuthService.connectLinkCode(requestDTO);
         return ResponseEntity.ok(response);
     }
 }
