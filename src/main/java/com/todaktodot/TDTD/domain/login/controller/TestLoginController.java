@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/login")
-@Profile("local")
+//@Profile("local")
 @Tag(name = "TestLoginController", description = "테스트용 로그인 API (local 환경 전용)")
 public class TestLoginController {
 
