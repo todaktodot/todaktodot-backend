@@ -27,15 +27,36 @@ public class TestLoginController {
 
     @Operation(description = "테스트 로그인 - 테스트 유저로 JWT 토큰 발급 (local 환경 전용)")
     @ApiResponse(responseCode = "200", description = "테스트 로그인 성공")
-    @PostMapping("/test")
-    public ResponseEntity<LoginTokenResponseDTO> testLogin() {
+    @PostMapping("/test1")
+    public ResponseEntity<LoginTokenResponseDTO> testLogin1() {
         // 테스트 유저 조회 또는 생성
         User testUser = userRepository.findByProviderIdAndProvider("test123", "test")
                 .orElseGet(() -> userRepository.save(User.builder()
-                        .email("test@todaktodak.com")
-                        .name("테스트유저")
+                        .email("test1@todaktodak.com")
+                        .name("김투닥")
                         .provider("test")
                         .providerId("test123")
+                        .role(Role.USER)
+                        .build()));
+
+        // JWT 토큰 발급
+        String accessToken = jwtTokenProvider.createAccessToken(testUser.getId(), testUser.getEmail(), testUser.getRole());
+        String refreshToken = jwtTokenProvider.createRefreshToken(testUser.getId());
+
+        return ResponseEntity.ok(new LoginTokenResponseDTO(accessToken, refreshToken));
+    }
+
+    @Operation(description = "테스트 로그인 - 테스트 유저로 JWT 토큰 발급 (local 환경 전용)")
+    @ApiResponse(responseCode = "200", description = "테스트 로그인 성공")
+    @PostMapping("/test2")
+    public ResponseEntity<LoginTokenResponseDTO> testLogin2() {
+        // 테스트 유저 조회 또는 생성
+        User testUser = userRepository.findByProviderIdAndProvider("test456", "test")
+                .orElseGet(() -> userRepository.save(User.builder()
+                        .email("test2@todaktodak.com")
+                        .name("이투닷")
+                        .provider("test")
+                        .providerId("test456")
                         .role(Role.USER)
                         .build()));
 

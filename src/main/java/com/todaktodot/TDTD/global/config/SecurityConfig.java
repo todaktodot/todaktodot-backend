@@ -39,7 +39,7 @@ public class SecurityConfig {
                 )
                 // 5. 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/login/test").permitAll()
+                        .requestMatchers("/login", "/login/test*").permitAll()
                         .anyRequest().authenticated()
                 )
                 // 6. JWT 필터 등록
