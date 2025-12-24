@@ -6,6 +6,7 @@ import com.todaktodot.TDTD.domain.profile.dto.response.SetNicknameResponseDTO;
 import com.todaktodot.TDTD.domain.profile.service.ProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/profile")
+@Tag(name = "회원 정보", description = "회원 정보 관리 API")
 public class ProfileController {
 
     private final ProfileService profileService;
