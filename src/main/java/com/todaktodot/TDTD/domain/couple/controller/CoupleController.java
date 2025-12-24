@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/couple")
@@ -47,5 +49,16 @@ public class CoupleController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "커플 해지", description = "커플 관계를 해지합니다")
+    @ApiResponse(responseCode = "200", description = "해지 성공")
+    @PostMapping("/disconnect")
+    public ResponseEntity<Map<String, String>> disconnectCouple(
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        coupleService.disconnectCouple(userPrincipal.getId());
+
+        return ResponseEntity.ok(Map.of("message", "커플 해지가 완료되었습니다"));
     }
 }

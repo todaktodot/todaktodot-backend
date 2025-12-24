@@ -51,4 +51,22 @@ public class CoupleServiceImpl implements CoupleService {
 
         return CoupleInfoResponseDTO.from(couple);
     }
+
+    @Override
+    @Transactional
+    public void disconnectCouple(Long userId) {
+        // 1. 사용자가 속한 커플 조회
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 관계가 존재하지 않습니다"));
+
+        // 2. DEL_YN = 'Y' 처리
+        couple.disconnect(userId);
+        coupleRepository.save(couple);
+
+        log.info("========================================");
+        log.info("커플 해지 완료");
+        log.info("커플 ID: {}", couple.getCoupleId());
+        log.info("해지 요청자: {}", userId);
+        log.info("========================================");
+    }
 }

@@ -63,4 +63,9 @@ public class CoupleEntity {
         this.relationshipStage = relationshipStage;
         this.updrId = updrId;
     }
+
+    public void disconnect(Long updrId) {
+        this.delYn = "Y";
+        this.updrId = updrId;
+    }
 }

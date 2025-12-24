@@ -8,4 +8,6 @@ public interface CoupleService {
     CoupleInfoResponseDTO updateCoupleInfo(Long userId, UpdateCoupleInfoRequestDTO requestDTO);
 
     CoupleInfoResponseDTO getCoupleInfo(Long userId);
+
+    void disconnectCouple(Long userId);
 }
