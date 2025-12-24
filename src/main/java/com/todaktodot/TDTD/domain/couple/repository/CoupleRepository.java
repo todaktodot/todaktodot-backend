@@ -14,11 +14,11 @@ public interface CoupleRepository extends JpaRepository<CoupleEntity, Long> {
      * DEL_YN = 'N'인 경우만 조회
      */
     @Query("SELECT c FROM CoupleEntity c WHERE (c.userId1 = :userId OR c.userId2 = :userId) AND c.delYn = 'N'")
-    Optional<CoupleEntity> findByUserId(@Param("userId") String userId);
+    Optional<CoupleEntity> findByUserId(@Param("userId") Long userId);
 
     /**
      * 특정 사용자가 이미 커플 관계인지 확인
      */
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM CoupleEntity c WHERE (c.userId1 = :userId OR c.userId2 = :userId) AND c.delYn = 'N'")
-    boolean existsByUserId(@Param("userId") String userId);
+    boolean existsByUserId(@Param("userId") Long userId);
 }

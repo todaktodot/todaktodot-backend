@@ -5,6 +5,7 @@ import com.todaktodot.TDTD.domain.couplelink.controller.CoupleLinkAuthController
 import com.todaktodot.TDTD.domain.couplelink.dto.request.ConnectLinkCodeRequestDTO;
 import com.todaktodot.TDTD.domain.couplelink.dto.response.ConnectLinkCodeResponseDTO;
 import com.todaktodot.TDTD.domain.couplelink.service.CoupleLinkAuthService;
+import com.todaktodot.TDTD.domain.login.respository.entity.UserPrincipal;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,18 +14,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
+import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -43,36 +45,38 @@ class CoupleLinkConnectControllerTest {
     @MockitoBean
     private CoupleLinkAuthService coupleLinkAuthService;
 
+    private UserPrincipal createTestUserPrincipal(Long userId) {
+        return new UserPrincipal(userId, Collections.emptyList());
+    }
+
     @Test
-    @WithMockUser
     @DisplayName("POST /api/couple-link/connect - 커플 연결 성공")
     void connectLinkCode_Success() throws Exception {
         // Given
-        ConnectLinkCodeRequestDTO requestDTO = new ConnectLinkCodeRequestDTO();
-        requestDTO.setUserId("userB");
-        requestDTO.setLinkCode("ABC123");
+        ConnectLinkCodeRequestDTO requestDTO = new ConnectLinkCodeRequestDTO("ABC123");
 
         ConnectLinkCodeResponseDTO responseDTO = ConnectLinkCodeResponseDTO.builder()
                 .coupleId(1L)
-                .userId1("userA")
-                .userId2("userB")
+                .userId1(1L)
+                .userId2(2L)
                 .connectedDt(LocalDateTime.now())
                 .build();
 
-        when(coupleLinkAuthService.connectLinkCode(any(ConnectLinkCodeRequestDTO.class)))
+        when(coupleLinkAuthService.connectLinkCode(anyLong(), any(ConnectLinkCodeRequestDTO.class)))
                 .thenReturn(responseDTO);
 
         // When & Then
         mockMvc.perform(post("/api/couple-link/connect")
                         .with(csrf())
+                        .with(user(createTestUserPrincipal(2L)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDTO)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.coupleId").value(1))
-                .andExpect(jsonPath("$.userId1").value("userA"))
-                .andExpect(jsonPath("$.userId2").value("userB"))
+                .andExpect(jsonPath("$.userId1").value(1))
+                .andExpect(jsonPath("$.userId2").value(2))
                 .andExpect(jsonPath("$.connectedDt").exists());
     }
 
@@ -80,9 +84,7 @@ class CoupleLinkConnectControllerTest {
     @DisplayName("POST /api/couple-link/connect - 인증 없이 요청 시 401")
     void connectLinkCode_Unauthorized_WithoutAuth() throws Exception {
         // Given
-        ConnectLinkCodeRequestDTO requestDTO = new ConnectLinkCodeRequestDTO();
-        requestDTO.setUserId("userB");
-        requestDTO.setLinkCode("ABC123");
+        ConnectLinkCodeRequestDTO requestDTO = new ConnectLinkCodeRequestDTO("ABC123");
 
         // When & Then
         mockMvc.perform(post("/api/couple-link/connect")
@@ -94,21 +96,18 @@ class CoupleLinkConnectControllerTest {
     }
 
     @ParameterizedTest
-    @WithMockUser
     @ValueSource(strings = {
-            "{}",                                           // 둘 다 없음
-            "{\"userId\": \"\"}",                           // userId 빈 문자열
-            "{\"userId\": \"user1\"}",                      // linkCode 없음
-            "{\"linkCode\": \"ABC123\"}",                   // userId 없음
-            "{\"userId\": \"user1\", \"linkCode\": \"\"}",  // linkCode 빈 문자열
-            "{\"userId\": \"user1\", \"linkCode\": \"AB1\"}", // linkCode 형식 오류 (3자리)
-            "{\"userId\": \"user1\", \"linkCode\": \"abc123\"}" // linkCode 형식 오류 (소문자)
+            "{}",                                // linkCode 없음
+            "{\"linkCode\": \"\"}",              // linkCode 빈 문자열
+            "{\"linkCode\": \"AB1\"}",           // linkCode 형식 오류 (3자리)
+            "{\"linkCode\": \"abc123\"}"         // linkCode 형식 오류 (소문자)
     })
     @DisplayName("POST /api/couple-link/connect - Validation 실패")
     void connectLinkCode_ValidationFailed(String requestJson) throws Exception {
         // When & Then
         mockMvc.perform(post("/api/couple-link/connect")
                         .with(csrf())
+                        .with(user(createTestUserPrincipal(2L)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andDo(print())

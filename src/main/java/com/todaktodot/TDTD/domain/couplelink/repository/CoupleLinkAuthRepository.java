@@ -17,7 +17,7 @@ public interface CoupleLinkAuthRepository extends JpaRepository<CoupleLinkAuthEn
 
     // 사용자가 발급한 활성 코드 조회
     Optional<CoupleLinkAuthEntity> findByIssuedUserIdAndStatusAndDelYn(
-            String issuedUserId, LinkStatus status, String delYn
+            Long issuedUserId, LinkStatus status, String delYn
     );
 
     // 만료된 코드 조회 (배치 처리용)

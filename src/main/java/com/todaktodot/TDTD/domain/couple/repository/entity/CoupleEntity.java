@@ -23,11 +23,11 @@ public class CoupleEntity {
     @Column(name = "COUPLE_ID")
     private Long coupleId;
 
-    @Column(name = "USER_ID_1", nullable = false, length = 50)
-    private String userId1;  // 코드 발급자
+    @Column(name = "USER_ID_1", nullable = false, columnDefinition = "BIGINT")
+    private Long userId1;  // 코드 발급자
 
-    @Column(name = "USER_ID_2", nullable = false, length = 50)
-    private String userId2;  // 코드 입력자
+    @Column(name = "USER_ID_2", nullable = false, columnDefinition = "BIGINT")
+    private Long userId2;  // 코드 입력자
 
     @Column(name = "CONNECTED_DT", nullable = false)
     private LocalDateTime connectedDt;  // 커플 연결 일자
@@ -36,15 +36,15 @@ public class CoupleEntity {
     @CreationTimestamp
     private LocalDateTime regDt;
 
-    @Column(name = "REGR_ID", nullable = false, length = 50)
-    private String regrId;
+    @Column(name = "REGR_ID", nullable = false, columnDefinition = "BIGINT")
+    private Long regrId;
 
     @Column(name = "UPD_DT", nullable = false)
     @UpdateTimestamp
     private LocalDateTime updDt;
 
-    @Column(name = "UPDR_ID", nullable = false, length = 50)
-    private String updrId;
+    @Column(name = "UPDR_ID", nullable = false, columnDefinition = "BIGINT")
+    private Long updrId;
 
     @Column(name = "DEL_YN", nullable = false, length = 1)
     @Builder.Default

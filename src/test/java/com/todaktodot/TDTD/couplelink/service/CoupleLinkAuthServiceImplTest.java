@@ -1,6 +1,6 @@
 package com.todaktodot.TDTD.couplelink.service;
 
-import com.todaktodot.TDTD.domain.couplelink.dto.request.IssueLinkCodeRequestDTO;
+import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couplelink.dto.response.IssueLinkCodeResponseDTO;
 import com.todaktodot.TDTD.domain.couplelink.repository.CoupleLinkAuthRepository;
 import com.todaktodot.TDTD.domain.couplelink.repository.entity.CoupleLinkAuthEntity;
@@ -30,6 +30,9 @@ class CoupleLinkAuthServiceImplTest {
     @Mock
     private CoupleLinkAuthRepository coupleLinkAuthRepository;
 
+    @Mock
+    private CoupleRepository coupleRepository;
+
     @InjectMocks
     private CoupleLinkAuthServiceImpl coupleLinkAuthService;
 
@@ -37,7 +40,7 @@ class CoupleLinkAuthServiceImplTest {
     @DisplayName("코드 발급 성공 - 6자리 영문+숫자 코드 생성")
     void issueLinkCode_Success() {
         // Given
-        IssueLinkCodeRequestDTO request = new IssueLinkCodeRequestDTO();
+        Long userId = 1L;
 
         // 중복 체크 시 항상 코드가 없다고 가정
         when(coupleLinkAuthRepository.findByLinkCode(anyString()))
@@ -47,7 +50,7 @@ class CoupleLinkAuthServiceImplTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        IssueLinkCodeResponseDTO response = coupleLinkAuthService.issueLinkCode(request);
+        IssueLinkCodeResponseDTO response = coupleLinkAuthService.issueLinkCode(userId);
 
         // 생성된 응답 로그 출력
         log.info("========================================");
@@ -70,15 +73,15 @@ class CoupleLinkAuthServiceImplTest {
     @DisplayName("중복 코드 발생 시 재생성")
     void issueLinkCode_DuplicateCodeRetry() {
         // Given
-        IssueLinkCodeRequestDTO request = new IssueLinkCodeRequestDTO();
+        Long userId = 1L;
 
         CoupleLinkAuthEntity existingEntity = CoupleLinkAuthEntity.builder()
                 .linkCode("ABC123")
-                .issuedUserId("user1")
+                .issuedUserId(1L)
                 .status(LinkStatus.ISSUED)
                 .expiredDt(LocalDateTime.now().plusMinutes(30))
-                .regrId("user1")
-                .updrId("user1")
+                .regrId(1L)
+                .updrId(1L)
                 .build();
 
         // 첫 번째 호출: 중복 존재, 두 번째 호출: 중복 없음
@@ -90,7 +93,7 @@ class CoupleLinkAuthServiceImplTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        IssueLinkCodeResponseDTO response = coupleLinkAuthService.issueLinkCode(request);
+        IssueLinkCodeResponseDTO response = coupleLinkAuthService.issueLinkCode(userId);
 
         // 중복 체크 후 생성된 응답 로그 출력
         log.info("========================================");
@@ -106,5 +109,4 @@ class CoupleLinkAuthServiceImplTest {
         // findByLinkCode가 최소 2번 호출되었는지 확인 (중복 체크 + 재시도)
         verify(coupleLinkAuthRepository, atLeast(2)).findByLinkCode(anyString());
     }
-
 }

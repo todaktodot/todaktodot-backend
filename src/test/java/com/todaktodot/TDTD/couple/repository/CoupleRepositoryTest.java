@@ -32,18 +32,18 @@ class CoupleRepositoryTest {
     void findByUserId_Success_WithUserId1() {
         // Given
         CoupleEntity couple = CoupleEntity.builder()
-                .userId1("userA")
-                .userId2("userB")
+                .userId1(1L)
+                .userId2(2L)
                 .connectedDt(LocalDateTime.now())
-                .regrId("userA")
-                .updrId("userA")
+                .regrId(1L)
+                .updrId(1L)
                 .delYn("N")
                 .build();
         entityManager.persist(couple);
         entityManager.flush();
 
         // When
-        Optional<CoupleEntity> result = coupleRepository.findByUserId("userA");
+        Optional<CoupleEntity> result = coupleRepository.findByUserId(1L);
 
         // Then
         log.info("========================================");
@@ -53,8 +53,8 @@ class CoupleRepositoryTest {
         log.info("========================================");
 
         assertThat(result).isPresent();
-        assertThat(result.get().getUserId1()).isEqualTo("userA");
-        assertThat(result.get().getUserId2()).isEqualTo("userB");
+        assertThat(result.get().getUserId1()).isEqualTo(1L);
+        assertThat(result.get().getUserId2()).isEqualTo(2L);
     }
 
     @Test
@@ -62,18 +62,18 @@ class CoupleRepositoryTest {
     void findByUserId_Success_WithUserId2() {
         // Given
         CoupleEntity couple = CoupleEntity.builder()
-                .userId1("userA")
-                .userId2("userB")
+                .userId1(1L)
+                .userId2(2L)
                 .connectedDt(LocalDateTime.now())
-                .regrId("userA")
-                .updrId("userA")
+                .regrId(1L)
+                .updrId(1L)
                 .delYn("N")
                 .build();
         entityManager.persist(couple);
         entityManager.flush();
 
         // When
-        Optional<CoupleEntity> result = coupleRepository.findByUserId("userB");
+        Optional<CoupleEntity> result = coupleRepository.findByUserId(2L);
 
         // Then
         log.info("========================================");
@@ -83,8 +83,8 @@ class CoupleRepositoryTest {
         log.info("========================================");
 
         assertThat(result).isPresent();
-        assertThat(result.get().getUserId1()).isEqualTo("userA");
-        assertThat(result.get().getUserId2()).isEqualTo("userB");
+        assertThat(result.get().getUserId1()).isEqualTo(1L);
+        assertThat(result.get().getUserId2()).isEqualTo(2L);
     }
 
     @Test
@@ -92,18 +92,18 @@ class CoupleRepositoryTest {
     void findByUserId_Empty_WhenUserNotInCouple() {
         // Given
         CoupleEntity couple = CoupleEntity.builder()
-                .userId1("userA")
-                .userId2("userB")
+                .userId1(1L)
+                .userId2(2L)
                 .connectedDt(LocalDateTime.now())
-                .regrId("userA")
-                .updrId("userA")
+                .regrId(1L)
+                .updrId(1L)
                 .delYn("N")
                 .build();
         entityManager.persist(couple);
         entityManager.flush();
 
         // When
-        Optional<CoupleEntity> result = coupleRepository.findByUserId("userC");
+        Optional<CoupleEntity> result = coupleRepository.findByUserId(3L);
 
         // Then
         log.info("조회 결과: {}", result.isEmpty() ? "없음" : "있음");
@@ -115,18 +115,18 @@ class CoupleRepositoryTest {
     void findByUserId_Empty_WhenDeleted() {
         // Given
         CoupleEntity deletedCouple = CoupleEntity.builder()
-                .userId1("userA")
-                .userId2("userB")
+                .userId1(1L)
+                .userId2(2L)
                 .connectedDt(LocalDateTime.now())
-                .regrId("userA")
-                .updrId("userA")
+                .regrId(1L)
+                .updrId(1L)
                 .delYn("Y")  // 삭제됨
                 .build();
         entityManager.persist(deletedCouple);
         entityManager.flush();
 
         // When
-        Optional<CoupleEntity> result = coupleRepository.findByUserId("userA");
+        Optional<CoupleEntity> result = coupleRepository.findByUserId(1L);
 
         // Then
         log.info("삭제된 커플 조회 결과: {}", result.isEmpty() ? "없음 (정상)" : "있음 (오류)");
@@ -138,21 +138,21 @@ class CoupleRepositoryTest {
     void existsByUserId_True_WithUserId1() {
         // Given
         CoupleEntity couple = CoupleEntity.builder()
-                .userId1("userA")
-                .userId2("userB")
+                .userId1(1L)
+                .userId2(2L)
                 .connectedDt(LocalDateTime.now())
-                .regrId("userA")
-                .updrId("userA")
+                .regrId(1L)
+                .updrId(1L)
                 .delYn("N")
                 .build();
         entityManager.persist(couple);
         entityManager.flush();
 
         // When
-        boolean exists = coupleRepository.existsByUserId("userA");
+        boolean exists = coupleRepository.existsByUserId(1L);
 
         // Then
-        log.info("userA 커플 관계 존재 여부: {}", exists);
+        log.info("userId=1 커플 관계 존재 여부: {}", exists);
         assertThat(exists).isTrue();
     }
 
@@ -161,21 +161,21 @@ class CoupleRepositoryTest {
     void existsByUserId_True_WithUserId2() {
         // Given
         CoupleEntity couple = CoupleEntity.builder()
-                .userId1("userA")
-                .userId2("userB")
+                .userId1(1L)
+                .userId2(2L)
                 .connectedDt(LocalDateTime.now())
-                .regrId("userA")
-                .updrId("userA")
+                .regrId(1L)
+                .updrId(1L)
                 .delYn("N")
                 .build();
         entityManager.persist(couple);
         entityManager.flush();
 
         // When
-        boolean exists = coupleRepository.existsByUserId("userB");
+        boolean exists = coupleRepository.existsByUserId(2L);
 
         // Then
-        log.info("userB 커플 관계 존재 여부: {}", exists);
+        log.info("userId=2 커플 관계 존재 여부: {}", exists);
         assertThat(exists).isTrue();
     }
 
@@ -184,21 +184,21 @@ class CoupleRepositoryTest {
     void existsByUserId_False_WhenUserNotInCouple() {
         // Given
         CoupleEntity couple = CoupleEntity.builder()
-                .userId1("userA")
-                .userId2("userB")
+                .userId1(1L)
+                .userId2(2L)
                 .connectedDt(LocalDateTime.now())
-                .regrId("userA")
-                .updrId("userA")
+                .regrId(1L)
+                .updrId(1L)
                 .delYn("N")
                 .build();
         entityManager.persist(couple);
         entityManager.flush();
 
         // When
-        boolean exists = coupleRepository.existsByUserId("userC");
+        boolean exists = coupleRepository.existsByUserId(3L);
 
         // Then
-        log.info("userC 커플 관계 존재 여부: {}", exists);
+        log.info("userId=3 커플 관계 존재 여부: {}", exists);
         assertThat(exists).isFalse();
     }
 
@@ -207,18 +207,18 @@ class CoupleRepositoryTest {
     void existsByUserId_False_WhenDeleted() {
         // Given
         CoupleEntity deletedCouple = CoupleEntity.builder()
-                .userId1("userA")
-                .userId2("userB")
+                .userId1(1L)
+                .userId2(2L)
                 .connectedDt(LocalDateTime.now())
-                .regrId("userA")
-                .updrId("userA")
+                .regrId(1L)
+                .updrId(1L)
                 .delYn("Y")  // 삭제됨
                 .build();
         entityManager.persist(deletedCouple);
         entityManager.flush();
 
         // When
-        boolean exists = coupleRepository.existsByUserId("userA");
+        boolean exists = coupleRepository.existsByUserId(1L);
 
         // Then
         log.info("삭제된 커플의 사용자 존재 여부: {}", exists);
@@ -230,30 +230,30 @@ class CoupleRepositoryTest {
     void uniqueConstraint_OneUserOneCoupleOnly() {
         // Given
         CoupleEntity couple1 = CoupleEntity.builder()
-                .userId1("userA")
-                .userId2("userB")
+                .userId1(1L)
+                .userId2(2L)
                 .connectedDt(LocalDateTime.now())
-                .regrId("userA")
-                .updrId("userA")
+                .regrId(1L)
+                .updrId(1L)
                 .delYn("N")
                 .build();
         entityManager.persist(couple1);
         entityManager.flush();
 
         // When
-        boolean userAExists = coupleRepository.existsByUserId("userA");
-        boolean userBExists = coupleRepository.existsByUserId("userB");
-        boolean userCExists = coupleRepository.existsByUserId("userC");
+        boolean user1Exists = coupleRepository.existsByUserId(1L);
+        boolean user2Exists = coupleRepository.existsByUserId(2L);
+        boolean user3Exists = coupleRepository.existsByUserId(3L);
 
         // Then
         log.info("========================================");
-        log.info("userA 커플 관계: {}", userAExists ? "존재" : "없음");
-        log.info("userB 커플 관계: {}", userBExists ? "존재" : "없음");
-        log.info("userC 커플 관계: {}", userCExists ? "존재" : "없음");
+        log.info("userId=1 커플 관계: {}", user1Exists ? "존재" : "없음");
+        log.info("userId=2 커플 관계: {}", user2Exists ? "존재" : "없음");
+        log.info("userId=3 커플 관계: {}", user3Exists ? "존재" : "없음");
         log.info("========================================");
 
-        assertThat(userAExists).isTrue();
-        assertThat(userBExists).isTrue();
-        assertThat(userCExists).isFalse();
+        assertThat(user1Exists).isTrue();
+        assertThat(user2Exists).isTrue();
+        assertThat(user3Exists).isFalse();
     }
 }

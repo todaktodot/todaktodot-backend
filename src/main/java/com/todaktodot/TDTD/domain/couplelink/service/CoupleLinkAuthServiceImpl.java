@@ -1,14 +1,13 @@
 package com.todaktodot.TDTD.domain.couplelink.service;
 
-import com.todaktodot.TDTD.domain.couplelink.dto.request.IssueLinkCodeRequestDTO;
+import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
+import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
+import com.todaktodot.TDTD.domain.couplelink.dto.request.ConnectLinkCodeRequestDTO;
+import com.todaktodot.TDTD.domain.couplelink.dto.response.ConnectLinkCodeResponseDTO;
 import com.todaktodot.TDTD.domain.couplelink.dto.response.IssueLinkCodeResponseDTO;
 import com.todaktodot.TDTD.domain.couplelink.repository.CoupleLinkAuthRepository;
 import com.todaktodot.TDTD.domain.couplelink.repository.entity.CoupleLinkAuthEntity;
 import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkStatus;
-import com.todaktodot.TDTD.domain.couplelink.dto.request.ConnectLinkCodeRequestDTO;
-import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
-import com.todaktodot.TDTD.domain.couplelink.dto.response.ConnectLinkCodeResponseDTO;
-import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,7 +31,7 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
 
     @Override
     @Transactional
-    public IssueLinkCodeResponseDTO issueLinkCode(IssueLinkCodeRequestDTO requestDTO) {
+    public IssueLinkCodeResponseDTO issueLinkCode(Long userId) {
         // TODO
         // 동일한 사용자가 기존에 생성한 만료되지 않은 코드가 있는지 검사
         // -> 있을 시, 기존 코드로 응답
@@ -47,11 +46,11 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
         // 3. Entity 생성 및 저장
         CoupleLinkAuthEntity entity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
-                .issuedUserId(requestDTO.getUserId())
+                .issuedUserId(userId)
                 .status(LinkStatus.ISSUED)
                 .expiredDt(expiredDt)
-                .regrId(requestDTO.getUserId())
-                .updrId(requestDTO.getUserId())
+                .regrId(userId)
+                .updrId(userId)
                 .build();
 
         log.info("========================================");
@@ -103,15 +102,14 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
 
     @Override
     @Transactional
-    public ConnectLinkCodeResponseDTO connectLinkCode(ConnectLinkCodeRequestDTO requestDTO) {
-        String inputUserId = requestDTO.getUserId();
+    public ConnectLinkCodeResponseDTO connectLinkCode(Long userId, ConnectLinkCodeRequestDTO requestDTO) {
         String linkCode = requestDTO.getLinkCode();
 
         // 1. 코드가 존재하는지 확인
         CoupleLinkAuthEntity linkAuthEntity = coupleLinkAuthRepository.findByLinkCode(linkCode)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 링크 코드입니다"));
 
-        String issuedUserId = linkAuthEntity.getIssuedUserId();
+        Long issuedUserId = linkAuthEntity.getIssuedUserId();
 
         // 2. 코드가 만료되지 않았는지 확인
         if (linkAuthEntity.isExpired()) {
@@ -126,8 +124,8 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
         }
 
         // 4. 자기 자신의 코드를 입력한 경우
-        if (issuedUserId.equals(inputUserId)) {
-            log.warn("자기 자신의 코드 입력 시도: {}", inputUserId);
+        if (issuedUserId.equals(userId)) {
+            log.warn("자기 자신의 코드 입력 시도: {}", userId);
             throw new IllegalArgumentException("자신의 링크 코드는 사용할 수 없습니다");
         }
 
@@ -138,8 +136,8 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
         }
 
         // 6. 코드 입력자가 이미 커플 관계인지 확인
-        if (coupleRepository.existsByUserId(inputUserId)) {
-            log.warn("이미 커플 관계인 사용자가 코드 입력 시도: {}", inputUserId);
+        if (coupleRepository.existsByUserId(userId)) {
+            log.warn("이미 커플 관계인 사용자가 코드 입력 시도: {}", userId);
             throw new IllegalStateException("이미 커플 관계입니다");
         }
 
@@ -148,31 +146,31 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
 
         CoupleEntity coupleEntity = CoupleEntity.builder()
                 .userId1(issuedUserId)  // 코드 발급자
-                .userId2(inputUserId)   // 코드 입력자
+                .userId2(userId)        // 코드 입력자
                 .connectedDt(connectedDt)
-                .regrId(inputUserId)
-                .updrId(inputUserId)
+                .regrId(userId)
+                .updrId(userId)
                 .delYn("N")
                 .build();
 
         CoupleEntity savedCouple = coupleRepository.save(coupleEntity);
 
         // 링크 코드 상태를 LINKED로 변경
-        linkAuthEntity.linkCouple(inputUserId, inputUserId);
+        linkAuthEntity.linkCouple(userId, userId);
         coupleLinkAuthRepository.save(linkAuthEntity);
 
         log.info("========================================");
         log.info("커플 연결 성공!");
         log.info("커플 ID: {}", savedCouple.getCoupleId());
         log.info("사용자 1 (발급자): {}", issuedUserId);
-        log.info("사용자 2 (입력자): {}", inputUserId);
+        log.info("사용자 2 (입력자): {}", userId);
         log.info("연결 일시: {}", connectedDt);
         log.info("========================================");
 
         return ConnectLinkCodeResponseDTO.of(
                 savedCouple.getCoupleId(),
                 issuedUserId,
-                inputUserId,
+                userId,
                 connectedDt
         );
     }

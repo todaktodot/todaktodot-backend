@@ -27,7 +27,7 @@ class CoupleLinkAuthRepositoryTest {
     @DisplayName("코드로 엔티티 조회 - 존재하는 경우")
     void findByLinkCode_Exists() {
         // Given
-        CoupleLinkAuthEntity entity = createEntity("ABC123", "user1", LinkStatus.ISSUED);
+        CoupleLinkAuthEntity entity = createEntity("ABC123", 1L, LinkStatus.ISSUED);
         repository.save(entity);
 
         // When
@@ -36,7 +36,7 @@ class CoupleLinkAuthRepositoryTest {
         // Then
         assertThat(result).isPresent();
         assertThat(result.get().getLinkCode()).isEqualTo("ABC123");
-        assertThat(result.get().getIssuedUserId()).isEqualTo("user1");
+        assertThat(result.get().getIssuedUserId()).isEqualTo(1L);
     }
 
     @Test
@@ -53,17 +53,17 @@ class CoupleLinkAuthRepositoryTest {
     @DisplayName("사용자 ID와 상태로 조회 - ISSUED 상태")
     void findByIssuedUserIdAndStatusAndDelYn_Issued() {
         // Given
-        CoupleLinkAuthEntity entity = createEntity("XYZ789", "user2", LinkStatus.ISSUED);
+        CoupleLinkAuthEntity entity = createEntity("XYZ789", 2L, LinkStatus.ISSUED);
         repository.save(entity);
 
         // When
         Optional<CoupleLinkAuthEntity> result = repository.findByIssuedUserIdAndStatusAndDelYn(
-                "user2", LinkStatus.ISSUED, "N"
+                2L, LinkStatus.ISSUED, "N"
         );
 
         // Then
         assertThat(result).isPresent();
-        assertThat(result.get().getIssuedUserId()).isEqualTo("user2");
+        assertThat(result.get().getIssuedUserId()).isEqualTo(2L);
         assertThat(result.get().getStatus()).isEqualTo(LinkStatus.ISSUED);
     }
 
@@ -75,15 +75,15 @@ class CoupleLinkAuthRepositoryTest {
 
         // 이미 만료된 코드
         CoupleLinkAuthEntity expiredEntity1 = createEntityWithExpiry(
-                "EXP001", "user3", LinkStatus.ISSUED, now.minusMinutes(10)
+                "EXP001", 3L, LinkStatus.ISSUED, now.minusMinutes(10)
         );
         CoupleLinkAuthEntity expiredEntity2 = createEntityWithExpiry(
-                "EXP002", "user4", LinkStatus.ISSUED, now.minusMinutes(5)
+                "EXP002", 4L, LinkStatus.ISSUED, now.minusMinutes(5)
         );
 
         // 아직 만료되지 않은 코드
         CoupleLinkAuthEntity validEntity = createEntityWithExpiry(
-                "VAL001", "user5", LinkStatus.ISSUED, now.plusMinutes(10)
+                "VAL001", 5L, LinkStatus.ISSUED, now.plusMinutes(10)
         );
 
         repository.saveAll(List.of(expiredEntity1, expiredEntity2, validEntity));
@@ -104,9 +104,9 @@ class CoupleLinkAuthRepositoryTest {
     @DisplayName("여러 상태의 코드 저장 및 조회")
     void saveAndFindMultipleStatus() {
         // Given
-        CoupleLinkAuthEntity issuedEntity = createEntity("CODE01", "user6", LinkStatus.ISSUED);
-        CoupleLinkAuthEntity expiredEntity = createEntity("CODE02", "user7", LinkStatus.EXPIRED);
-        CoupleLinkAuthEntity linkedEntity = createEntity("CODE03", "user8", LinkStatus.LINKED);
+        CoupleLinkAuthEntity issuedEntity = createEntity("CODE01", 6L, LinkStatus.ISSUED);
+        CoupleLinkAuthEntity expiredEntity = createEntity("CODE02", 7L, LinkStatus.EXPIRED);
+        CoupleLinkAuthEntity linkedEntity = createEntity("CODE03", 8L, LinkStatus.LINKED);
 
         repository.saveAll(List.of(issuedEntity, expiredEntity, linkedEntity));
 
@@ -130,8 +130,8 @@ class CoupleLinkAuthRepositoryTest {
     @DisplayName("DEL_YN이 Y인 경우 조회되지 않음")
     void findByDelYn_ExcludesDeletedRecords() {
         // Given
-        CoupleLinkAuthEntity activeEntity = createEntity("ACTIVE1", "user9", LinkStatus.ISSUED);
-        CoupleLinkAuthEntity deletedEntity = createEntity("DELETE1", "user10", LinkStatus.ISSUED);
+        CoupleLinkAuthEntity activeEntity = createEntity("ACTIVE1", 9L, LinkStatus.ISSUED);
+        CoupleLinkAuthEntity deletedEntity = createEntity("DELETE1", 10L, LinkStatus.ISSUED);
 
         repository.save(activeEntity);
 
@@ -140,7 +140,7 @@ class CoupleLinkAuthRepositoryTest {
 
         // When
         Optional<CoupleLinkAuthEntity> result = repository.findByIssuedUserIdAndStatusAndDelYn(
-                "user9", LinkStatus.ISSUED, "N"
+                9L, LinkStatus.ISSUED, "N"
         );
 
         // Then
@@ -149,7 +149,7 @@ class CoupleLinkAuthRepositoryTest {
     }
 
     // 헬퍼 메서드
-    private CoupleLinkAuthEntity createEntity(String linkCode, String userId, LinkStatus status) {
+    private CoupleLinkAuthEntity createEntity(String linkCode, Long userId, LinkStatus status) {
         return CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
                 .issuedUserId(userId)
@@ -160,7 +160,7 @@ class CoupleLinkAuthRepositoryTest {
                 .build();
     }
 
-    private CoupleLinkAuthEntity createEntityWithExpiry(String linkCode, String userId,
+    private CoupleLinkAuthEntity createEntityWithExpiry(String linkCode, Long userId,
                                                         LinkStatus status, LocalDateTime expiredDt) {
         return CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)

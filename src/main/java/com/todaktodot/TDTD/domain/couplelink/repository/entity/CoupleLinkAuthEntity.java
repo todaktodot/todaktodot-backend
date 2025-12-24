@@ -24,11 +24,11 @@ public class CoupleLinkAuthEntity {
     @Column(name = "LINK_CODE", length = 50)
     private String linkCode;
 
-    @Column(name = "ISSUED_USER_ID", length = 50)
-    private String issuedUserId;
+    @Column(name = "ISSUED_USER_ID", columnDefinition = "BIGINT")
+    private Long issuedUserId;
 
-    @Column(name = "LINKED_USER_ID", length = 50)
-    private String linkedUserId;
+    @Column(name = "LINKED_USER_ID", columnDefinition = "BIGINT")
+    private Long linkedUserId;
 
     @Column(name = "STATUS", length = 20)
     @Enumerated(EnumType.STRING)
@@ -37,11 +37,11 @@ public class CoupleLinkAuthEntity {
     @Column(name = "EXPIRED_DT")
     private LocalDateTime expiredDt;
 
-    @Column(name = "REGR_ID", length = 50, nullable = false)
-    private String regrId;
+    @Column(name = "REGR_ID", nullable = false, columnDefinition = "BIGINT")
+    private Long regrId;
 
-    @Column(name = "UPDR_ID", length = 50, nullable = false)
-    private String updrId;
+    @Column(name = "UPDR_ID", nullable = false, columnDefinition = "BIGINT")
+    private Long updrId;
 
     @CreationTimestamp
     @Column(name = "REG_DT", nullable = false, updatable = false)
@@ -55,9 +55,9 @@ public class CoupleLinkAuthEntity {
     private String delYn = "N";
 
     @Builder
-    public CoupleLinkAuthEntity(String linkCode, String issuedUserId,
+    public CoupleLinkAuthEntity(String linkCode, Long issuedUserId,
                                 LinkStatus status, LocalDateTime expiredDt,
-                                String regrId, String updrId) {
+                                Long regrId, Long updrId) {
         this.linkCode = linkCode;
         this.issuedUserId = issuedUserId;
         this.status = status;
@@ -67,12 +67,12 @@ public class CoupleLinkAuthEntity {
         this.delYn = "N";
     }
 
-    public void updateStatusToExpired(String updrId) {
+    public void updateStatusToExpired(Long updrId) {
         this.status = LinkStatus.EXPIRED;
         this.updrId = updrId;
     }
 
-    public void linkCouple(String linkedUserId, String updrId) {
+    public void linkCouple(Long linkedUserId, Long updrId) {
         this.linkedUserId = linkedUserId;
         this.status = LinkStatus.LINKED;
         this.updrId = updrId;

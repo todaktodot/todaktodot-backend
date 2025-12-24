@@ -42,13 +42,11 @@ class CoupleLinkConnectServiceTest {
     @DisplayName("커플 연결 성공 - 모든 검증 통과")
     void connectLinkCode_Success() {
         // Given
-        String issuedUserId = "userA";
-        String inputUserId = "userB";
+        Long issuedUserId = 1L;
+        Long inputUserId = 2L;
         String linkCode = "ABC123";
 
-        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO();
-        request.setUserId(inputUserId);
-        request.setLinkCode(linkCode);
+        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO(linkCode);
 
         CoupleLinkAuthEntity linkAuthEntity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
@@ -64,6 +62,8 @@ class CoupleLinkConnectServiceTest {
                 .userId1(issuedUserId)
                 .userId2(inputUserId)
                 .connectedDt(LocalDateTime.now())
+                .regrId(inputUserId)
+                .updrId(inputUserId)
                 .build();
 
         when(coupleLinkAuthRepository.findByLinkCode(linkCode))
@@ -76,7 +76,7 @@ class CoupleLinkConnectServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        ConnectLinkCodeResponseDTO response = coupleLinkAuthService.connectLinkCode(request);
+        ConnectLinkCodeResponseDTO response = coupleLinkAuthService.connectLinkCode(inputUserId, request);
 
         // Then
         log.info("========================================");
@@ -102,15 +102,15 @@ class CoupleLinkConnectServiceTest {
     @DisplayName("커플 연결 실패 - 존재하지 않는 코드")
     void connectLinkCode_Fail_CodeNotFound() {
         // Given
-        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO();
-        request.setUserId("userB");
-        request.setLinkCode("NOTEXIST");
+        Long inputUserId = 2L;
+        String linkCode = "NOTEXIST";
+        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO(linkCode);
 
-        when(coupleLinkAuthRepository.findByLinkCode("NOTEXIST"))
+        when(coupleLinkAuthRepository.findByLinkCode(linkCode))
                 .thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(request))
+        assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(inputUserId, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("존재하지 않는 링크 코드입니다");
 
@@ -121,25 +121,24 @@ class CoupleLinkConnectServiceTest {
     @DisplayName("커플 연결 실패 - 만료된 코드")
     void connectLinkCode_Fail_ExpiredCode() {
         // Given
+        Long inputUserId = 2L;
         String linkCode = "EXPIRED1";
-        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO();
-        request.setUserId("userB");
-        request.setLinkCode(linkCode);
+        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO(linkCode);
 
         CoupleLinkAuthEntity expiredEntity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
-                .issuedUserId("userA")
+                .issuedUserId(1L)
                 .status(LinkStatus.ISSUED)
                 .expiredDt(LocalDateTime.now().minusMinutes(10))  // 10분 전 만료
-                .regrId("userA")
-                .updrId("userA")
+                .regrId(1L)
+                .updrId(1L)
                 .build();
 
         when(coupleLinkAuthRepository.findByLinkCode(linkCode))
                 .thenReturn(Optional.of(expiredEntity));
 
         // When & Then
-        assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(request))
+        assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(inputUserId, request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("만료된 링크 코드입니다");
 
@@ -150,28 +149,27 @@ class CoupleLinkConnectServiceTest {
     @DisplayName("커플 연결 실패 - 이미 사용된 코드 (LINKED 상태)")
     void connectLinkCode_Fail_AlreadyUsedCode() {
         // Given
+        Long inputUserId = 2L;
         String linkCode = "USED123";
-        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO();
-        request.setUserId("userB");
-        request.setLinkCode(linkCode);
+        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO(linkCode);
 
         CoupleLinkAuthEntity linkedEntity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
-                .issuedUserId("userA")
+                .issuedUserId(1L)
                 .status(LinkStatus.ISSUED)
                 .expiredDt(LocalDateTime.now().plusMinutes(30))
-                .regrId("userA")
-                .updrId("userA")
+                .regrId(1L)
+                .updrId(1L)
                 .build();
 
         // 이미 사용된 상태로 변경
-        linkedEntity.linkCouple("userC", "userA");
+        linkedEntity.linkCouple(3L, 1L);
 
         when(coupleLinkAuthRepository.findByLinkCode(linkCode))
                 .thenReturn(Optional.of(linkedEntity));
 
         // When & Then
-        assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(request))
+        assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(inputUserId, request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("이미 사용된 링크 코드입니다");
 
@@ -182,12 +180,9 @@ class CoupleLinkConnectServiceTest {
     @DisplayName("커플 연결 실패 - 자기 자신의 코드 입력")
     void connectLinkCode_Fail_SelfCode() {
         // Given
-        String userId = "userA";
+        Long userId = 1L;
         String linkCode = "SELF123";
-
-        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO();
-        request.setUserId(userId);
-        request.setLinkCode(linkCode);
+        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO(linkCode);
 
         CoupleLinkAuthEntity linkAuthEntity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
@@ -202,7 +197,7 @@ class CoupleLinkConnectServiceTest {
                 .thenReturn(Optional.of(linkAuthEntity));
 
         // When & Then
-        assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(request))
+        assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(userId, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("자신의 링크 코드는 사용할 수 없습니다");
 
@@ -213,13 +208,10 @@ class CoupleLinkConnectServiceTest {
     @DisplayName("커플 연결 실패 - 발급자가 이미 커플 관계")
     void connectLinkCode_Fail_IssuerAlreadyCoupled() {
         // Given
-        String issuedUserId = "userA";
-        String inputUserId = "userB";
+        Long issuedUserId = 1L;
+        Long inputUserId = 2L;
         String linkCode = "ABC123";
-
-        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO();
-        request.setUserId(inputUserId);
-        request.setLinkCode(linkCode);
+        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO(linkCode);
 
         CoupleLinkAuthEntity linkAuthEntity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
@@ -236,7 +228,7 @@ class CoupleLinkConnectServiceTest {
                 .thenReturn(true);  // 발급자가 이미 커플
 
         // When & Then
-        assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(request))
+        assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(inputUserId, request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("코드 발급자가 이미 커플 관계입니다");
 
@@ -247,13 +239,10 @@ class CoupleLinkConnectServiceTest {
     @DisplayName("커플 연결 실패 - 입력자가 이미 커플 관계")
     void connectLinkCode_Fail_InputUserAlreadyCoupled() {
         // Given
-        String issuedUserId = "userA";
-        String inputUserId = "userB";
+        Long issuedUserId = 1L;
+        Long inputUserId = 2L;
         String linkCode = "ABC123";
-
-        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO();
-        request.setUserId(inputUserId);
-        request.setLinkCode(linkCode);
+        ConnectLinkCodeRequestDTO request = new ConnectLinkCodeRequestDTO(linkCode);
 
         CoupleLinkAuthEntity linkAuthEntity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
@@ -271,7 +260,7 @@ class CoupleLinkConnectServiceTest {
                 .thenReturn(true);  // 입력자가 이미 커플
 
         // When & Then
-        assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(request))
+        assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(inputUserId, request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("이미 커플 관계입니다");
 
