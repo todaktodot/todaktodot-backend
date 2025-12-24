@@ -4,7 +4,7 @@ import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couplelink.dto.response.IssueLinkCodeResponseDTO;
 import com.todaktodot.TDTD.domain.couplelink.repository.CoupleLinkAuthRepository;
 import com.todaktodot.TDTD.domain.couplelink.repository.entity.CoupleLinkAuthEntity;
-import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkStatus;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkCodeStatus;
 import com.todaktodot.TDTD.domain.couplelink.service.CoupleLinkAuthServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -78,7 +78,7 @@ class CoupleLinkAuthServiceImplTest {
         CoupleLinkAuthEntity existingEntity = CoupleLinkAuthEntity.builder()
                 .linkCode("ABC123")
                 .issuedUserId(1L)
-                .status(LinkStatus.ISSUED)
+                .status(LinkCodeStatus.ISSUED)
                 .expiredDt(LocalDateTime.now().plusMinutes(30))
                 .regrId(1L)
                 .updrId(1L)

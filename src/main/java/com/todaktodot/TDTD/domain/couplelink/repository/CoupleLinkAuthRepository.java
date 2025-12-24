@@ -1,7 +1,7 @@
 package com.todaktodot.TDTD.domain.couplelink.repository;
 
 import com.todaktodot.TDTD.domain.couplelink.repository.entity.CoupleLinkAuthEntity;
-import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkStatus;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkCodeStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,11 +17,11 @@ public interface CoupleLinkAuthRepository extends JpaRepository<CoupleLinkAuthEn
 
     // 사용자가 발급한 활성 코드 조회
     Optional<CoupleLinkAuthEntity> findByIssuedUserIdAndStatusAndDelYn(
-            Long issuedUserId, LinkStatus status, String delYn
+            Long issuedUserId, LinkCodeStatus status, String delYn
     );
 
     // 만료된 코드 조회 (배치 처리용)
     List<CoupleLinkAuthEntity> findByStatusAndExpiredDtBeforeAndDelYn(
-            LinkStatus status, LocalDateTime now, String delYn
+            LinkCodeStatus status, LocalDateTime now, String delYn
     );
 }

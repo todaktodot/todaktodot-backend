@@ -6,7 +6,7 @@ import com.todaktodot.TDTD.domain.couplelink.dto.request.ConnectLinkCodeRequestD
 import com.todaktodot.TDTD.domain.couplelink.dto.response.ConnectLinkCodeResponseDTO;
 import com.todaktodot.TDTD.domain.couplelink.repository.CoupleLinkAuthRepository;
 import com.todaktodot.TDTD.domain.couplelink.repository.entity.CoupleLinkAuthEntity;
-import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkStatus;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkCodeStatus;
 import com.todaktodot.TDTD.domain.couplelink.service.CoupleLinkAuthServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -51,7 +51,7 @@ class CoupleLinkConnectServiceTest {
         CoupleLinkAuthEntity linkAuthEntity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
                 .issuedUserId(issuedUserId)
-                .status(LinkStatus.ISSUED)
+                .status(LinkCodeStatus.ISSUED)
                 .expiredDt(LocalDateTime.now().plusMinutes(30))
                 .regrId(issuedUserId)
                 .updrId(issuedUserId)
@@ -128,7 +128,7 @@ class CoupleLinkConnectServiceTest {
         CoupleLinkAuthEntity expiredEntity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
                 .issuedUserId(1L)
-                .status(LinkStatus.ISSUED)
+                .status(LinkCodeStatus.ISSUED)
                 .expiredDt(LocalDateTime.now().minusMinutes(10))  // 10분 전 만료
                 .regrId(1L)
                 .updrId(1L)
@@ -156,7 +156,7 @@ class CoupleLinkConnectServiceTest {
         CoupleLinkAuthEntity linkedEntity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
                 .issuedUserId(1L)
-                .status(LinkStatus.ISSUED)
+                .status(LinkCodeStatus.ISSUED)
                 .expiredDt(LocalDateTime.now().plusMinutes(30))
                 .regrId(1L)
                 .updrId(1L)
@@ -187,7 +187,7 @@ class CoupleLinkConnectServiceTest {
         CoupleLinkAuthEntity linkAuthEntity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
                 .issuedUserId(userId)  // 발급자와 입력자가 같음
-                .status(LinkStatus.ISSUED)
+                .status(LinkCodeStatus.ISSUED)
                 .expiredDt(LocalDateTime.now().plusMinutes(30))
                 .regrId(userId)
                 .updrId(userId)
@@ -216,7 +216,7 @@ class CoupleLinkConnectServiceTest {
         CoupleLinkAuthEntity linkAuthEntity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
                 .issuedUserId(issuedUserId)
-                .status(LinkStatus.ISSUED)
+                .status(LinkCodeStatus.ISSUED)
                 .expiredDt(LocalDateTime.now().plusMinutes(30))
                 .regrId(issuedUserId)
                 .updrId(issuedUserId)
@@ -247,7 +247,7 @@ class CoupleLinkConnectServiceTest {
         CoupleLinkAuthEntity linkAuthEntity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
                 .issuedUserId(issuedUserId)
-                .status(LinkStatus.ISSUED)
+                .status(LinkCodeStatus.ISSUED)
                 .expiredDt(LocalDateTime.now().plusMinutes(30))
                 .regrId(issuedUserId)
                 .updrId(issuedUserId)

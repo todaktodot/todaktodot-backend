@@ -2,7 +2,7 @@ package com.todaktodot.TDTD.couplelink.repository;
 
 import com.todaktodot.TDTD.domain.couplelink.repository.CoupleLinkAuthRepository;
 import com.todaktodot.TDTD.domain.couplelink.repository.entity.CoupleLinkAuthEntity;
-import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkStatus;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkCodeStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +27,7 @@ class CoupleLinkAuthRepositoryTest {
     @DisplayName("코드로 엔티티 조회 - 존재하는 경우")
     void findByLinkCode_Exists() {
         // Given
-        CoupleLinkAuthEntity entity = createEntity("ABC123", 1L, LinkStatus.ISSUED);
+        CoupleLinkAuthEntity entity = createEntity("ABC123", 1L, LinkCodeStatus.ISSUED);
         repository.save(entity);
 
         // When
@@ -53,18 +53,18 @@ class CoupleLinkAuthRepositoryTest {
     @DisplayName("사용자 ID와 상태로 조회 - ISSUED 상태")
     void findByIssuedUserIdAndStatusAndDelYn_Issued() {
         // Given
-        CoupleLinkAuthEntity entity = createEntity("XYZ789", 2L, LinkStatus.ISSUED);
+        CoupleLinkAuthEntity entity = createEntity("XYZ789", 2L, LinkCodeStatus.ISSUED);
         repository.save(entity);
 
         // When
         Optional<CoupleLinkAuthEntity> result = repository.findByIssuedUserIdAndStatusAndDelYn(
-                2L, LinkStatus.ISSUED, "N"
+                2L, LinkCodeStatus.ISSUED, "N"
         );
 
         // Then
         assertThat(result).isPresent();
         assertThat(result.get().getIssuedUserId()).isEqualTo(2L);
-        assertThat(result.get().getStatus()).isEqualTo(LinkStatus.ISSUED);
+        assertThat(result.get().getStatus()).isEqualTo(LinkCodeStatus.ISSUED);
     }
 
     @Test
@@ -75,22 +75,22 @@ class CoupleLinkAuthRepositoryTest {
 
         // 이미 만료된 코드
         CoupleLinkAuthEntity expiredEntity1 = createEntityWithExpiry(
-                "EXP001", 3L, LinkStatus.ISSUED, now.minusMinutes(10)
+                "EXP001", 3L, LinkCodeStatus.ISSUED, now.minusMinutes(10)
         );
         CoupleLinkAuthEntity expiredEntity2 = createEntityWithExpiry(
-                "EXP002", 4L, LinkStatus.ISSUED, now.minusMinutes(5)
+                "EXP002", 4L, LinkCodeStatus.ISSUED, now.minusMinutes(5)
         );
 
         // 아직 만료되지 않은 코드
         CoupleLinkAuthEntity validEntity = createEntityWithExpiry(
-                "VAL001", 5L, LinkStatus.ISSUED, now.plusMinutes(10)
+                "VAL001", 5L, LinkCodeStatus.ISSUED, now.plusMinutes(10)
         );
 
         repository.saveAll(List.of(expiredEntity1, expiredEntity2, validEntity));
 
         // When
         List<CoupleLinkAuthEntity> expiredList = repository.findByStatusAndExpiredDtBeforeAndDelYn(
-                LinkStatus.ISSUED, now, "N"
+                LinkCodeStatus.ISSUED, now, "N"
         );
 
         // Then
@@ -104,9 +104,9 @@ class CoupleLinkAuthRepositoryTest {
     @DisplayName("여러 상태의 코드 저장 및 조회")
     void saveAndFindMultipleStatus() {
         // Given
-        CoupleLinkAuthEntity issuedEntity = createEntity("CODE01", 6L, LinkStatus.ISSUED);
-        CoupleLinkAuthEntity expiredEntity = createEntity("CODE02", 7L, LinkStatus.EXPIRED);
-        CoupleLinkAuthEntity linkedEntity = createEntity("CODE03", 8L, LinkStatus.LINKED);
+        CoupleLinkAuthEntity issuedEntity = createEntity("CODE01", 6L, LinkCodeStatus.ISSUED);
+        CoupleLinkAuthEntity expiredEntity = createEntity("CODE02", 7L, LinkCodeStatus.EXPIRED);
+        CoupleLinkAuthEntity linkedEntity = createEntity("CODE03", 8L, LinkCodeStatus.LINKED);
 
         repository.saveAll(List.of(issuedEntity, expiredEntity, linkedEntity));
 
@@ -117,21 +117,21 @@ class CoupleLinkAuthRepositoryTest {
 
         // Then
         assertThat(issued).isPresent();
-        assertThat(issued.get().getStatus()).isEqualTo(LinkStatus.ISSUED);
+        assertThat(issued.get().getStatus()).isEqualTo(LinkCodeStatus.ISSUED);
 
         assertThat(expired).isPresent();
-        assertThat(expired.get().getStatus()).isEqualTo(LinkStatus.EXPIRED);
+        assertThat(expired.get().getStatus()).isEqualTo(LinkCodeStatus.EXPIRED);
 
         assertThat(linked).isPresent();
-        assertThat(linked.get().getStatus()).isEqualTo(LinkStatus.LINKED);
+        assertThat(linked.get().getStatus()).isEqualTo(LinkCodeStatus.LINKED);
     }
 
     @Test
     @DisplayName("DEL_YN이 Y인 경우 조회되지 않음")
     void findByDelYn_ExcludesDeletedRecords() {
         // Given
-        CoupleLinkAuthEntity activeEntity = createEntity("ACTIVE1", 9L, LinkStatus.ISSUED);
-        CoupleLinkAuthEntity deletedEntity = createEntity("DELETE1", 10L, LinkStatus.ISSUED);
+        CoupleLinkAuthEntity activeEntity = createEntity("ACTIVE1", 9L, LinkCodeStatus.ISSUED);
+        CoupleLinkAuthEntity deletedEntity = createEntity("DELETE1", 10L, LinkCodeStatus.ISSUED);
 
         repository.save(activeEntity);
 
@@ -140,7 +140,7 @@ class CoupleLinkAuthRepositoryTest {
 
         // When
         Optional<CoupleLinkAuthEntity> result = repository.findByIssuedUserIdAndStatusAndDelYn(
-                9L, LinkStatus.ISSUED, "N"
+                9L, LinkCodeStatus.ISSUED, "N"
         );
 
         // Then
@@ -149,7 +149,7 @@ class CoupleLinkAuthRepositoryTest {
     }
 
     // 헬퍼 메서드
-    private CoupleLinkAuthEntity createEntity(String linkCode, Long userId, LinkStatus status) {
+    private CoupleLinkAuthEntity createEntity(String linkCode, Long userId, LinkCodeStatus status) {
         return CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
                 .issuedUserId(userId)
@@ -161,7 +161,7 @@ class CoupleLinkAuthRepositoryTest {
     }
 
     private CoupleLinkAuthEntity createEntityWithExpiry(String linkCode, Long userId,
-                                                        LinkStatus status, LocalDateTime expiredDt) {
+                                                        LinkCodeStatus status, LocalDateTime expiredDt) {
         return CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
                 .issuedUserId(userId)

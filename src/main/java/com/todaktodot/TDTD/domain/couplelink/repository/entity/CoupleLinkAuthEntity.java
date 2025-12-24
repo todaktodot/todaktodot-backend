@@ -32,7 +32,7 @@ public class CoupleLinkAuthEntity {
 
     @Column(name = "STATUS", length = 20)
     @Enumerated(EnumType.STRING)
-    private LinkStatus status;
+    private LinkCodeStatus status;
 
     @Column(name = "EXPIRED_DT")
     private LocalDateTime expiredDt;
@@ -56,7 +56,7 @@ public class CoupleLinkAuthEntity {
 
     @Builder
     public CoupleLinkAuthEntity(String linkCode, Long issuedUserId,
-                                LinkStatus status, LocalDateTime expiredDt,
+                                LinkCodeStatus status, LocalDateTime expiredDt,
                                 Long regrId, Long updrId) {
         this.linkCode = linkCode;
         this.issuedUserId = issuedUserId;
@@ -68,13 +68,13 @@ public class CoupleLinkAuthEntity {
     }
 
     public void updateStatusToExpired(Long updrId) {
-        this.status = LinkStatus.EXPIRED;
+        this.status = LinkCodeStatus.EXPIRED;
         this.updrId = updrId;
     }
 
     public void linkCouple(Long linkedUserId, Long updrId) {
         this.linkedUserId = linkedUserId;
-        this.status = LinkStatus.LINKED;
+        this.status = LinkCodeStatus.LINKED;
         this.updrId = updrId;
     }
 
@@ -83,6 +83,6 @@ public class CoupleLinkAuthEntity {
     }
 
     public boolean isIssued() {
-        return this.status == LinkStatus.ISSUED;
+        return this.status == LinkCodeStatus.ISSUED;
     }
 }

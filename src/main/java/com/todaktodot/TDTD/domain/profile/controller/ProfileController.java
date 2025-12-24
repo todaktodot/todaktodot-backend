@@ -19,7 +19,7 @@ public class ProfileController {
 
     private final ProfileService profileService;
 
-    @Operation(description = "닉네임 설정")
+    @Operation(summary = "닉네임 설정", description = "로그인한 회원의 닉네임을 설정합니다")
     @ApiResponse(responseCode = "200", description = "닉네임 설정 성공")
     @PatchMapping("/nickname")
     public ResponseEntity<SetNicknameResponseDTO> setNickname(

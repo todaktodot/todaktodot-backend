@@ -19,13 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/login")
 //@Profile("local")
-@Tag(name = "TestLoginController", description = "테스트용 로그인 API (local 환경 전용)")
+@Tag(name = "테스트용 로그인", description = "테스트용 로그인 API (local, dev 환경 전용)")
 public class TestLoginController {
 
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
-    @Operation(description = "테스트 로그인 - 테스트 유저로 JWT 토큰 발급 (local 환경 전용)")
+    @Operation(summary = "테스트 로그인 - 김투닥", description = "local, dev 전용, 테스트 용도 회원 데이터(김투닥)로 토큰 발급합니다.")
     @ApiResponse(responseCode = "200", description = "테스트 로그인 성공")
     @PostMapping("/test1")
     public ResponseEntity<LoginTokenResponseDTO> testLogin1() {
@@ -46,7 +46,7 @@ public class TestLoginController {
         return ResponseEntity.ok(new LoginTokenResponseDTO(accessToken, refreshToken));
     }
 
-    @Operation(description = "테스트 로그인 - 테스트 유저로 JWT 토큰 발급 (local 환경 전용)")
+    @Operation(summary = "테스트 로그인 - 이투닷", description = "local, dev 전용, 테스트 용도 회원 데이터(이투닷)로 토큰 발급합니다.")
     @ApiResponse(responseCode = "200", description = "테스트 로그인 성공")
     @PostMapping("/test2")
     public ResponseEntity<LoginTokenResponseDTO> testLogin2() {

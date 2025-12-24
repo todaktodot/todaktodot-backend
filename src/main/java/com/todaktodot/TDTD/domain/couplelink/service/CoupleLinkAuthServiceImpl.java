@@ -7,7 +7,7 @@ import com.todaktodot.TDTD.domain.couplelink.dto.response.ConnectLinkCodeRespons
 import com.todaktodot.TDTD.domain.couplelink.dto.response.IssueLinkCodeResponseDTO;
 import com.todaktodot.TDTD.domain.couplelink.repository.CoupleLinkAuthRepository;
 import com.todaktodot.TDTD.domain.couplelink.repository.entity.CoupleLinkAuthEntity;
-import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkStatus;
+import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkCodeStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,7 +41,7 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
 
         // 2. 기존에 발급받은 유효한 코드가 있는지 확인
         Optional<CoupleLinkAuthEntity> existingCode = coupleLinkAuthRepository
-                .findByIssuedUserIdAndStatusAndDelYn(userId, LinkStatus.ISSUED, "N");
+                .findByIssuedUserIdAndStatusAndDelYn(userId, LinkCodeStatus.ISSUED, "N");
 
         if (existingCode.isPresent()) {
             CoupleLinkAuthEntity existing = existingCode.get();
@@ -65,7 +65,7 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
         CoupleLinkAuthEntity entity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
                 .issuedUserId(userId)
-                .status(LinkStatus.ISSUED)
+                .status(LinkCodeStatus.ISSUED)
                 .expiredDt(expiredDt)
                 .regrId(userId)
                 .updrId(userId)
