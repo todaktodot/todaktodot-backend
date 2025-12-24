@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -32,6 +33,13 @@ public class CoupleEntity {
     @Column(name = "CONNECTED_DT", nullable = false)
     private LocalDateTime connectedDt;  // 커플 연결 일자
 
+    @Column(name = "FIRST_MET_DT")
+    private LocalDate firstMetDt;  // 우리가 만난 날
+
+    @Column(name = "RELATIONSHIP_STAGE", length = 30)
+    @Enumerated(EnumType.STRING)
+    private RelationshipStage relationshipStage;  // 관계 단계
+
     @Column(name = "REG_DT", nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime regDt;
@@ -49,4 +57,10 @@ public class CoupleEntity {
     @Column(name = "DEL_YN", nullable = false, length = 1)
     @Builder.Default
     private String delYn = "N";
+
+    public void updateCoupleInfo(LocalDate firstMetDt, RelationshipStage relationshipStage, Long updrId) {
+        this.firstMetDt = firstMetDt;
+        this.relationshipStage = relationshipStage;
+        this.updrId = updrId;
+    }
 }
