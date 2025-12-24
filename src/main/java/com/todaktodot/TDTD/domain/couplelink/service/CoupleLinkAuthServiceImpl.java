@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,18 +33,35 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
     @Override
     @Transactional
     public IssueLinkCodeResponseDTO issueLinkCode(Long userId) {
-        // TODO
-        // 동일한 사용자가 기존에 생성한 만료되지 않은 코드가 있는지 검사
-        // -> 있을 시, 기존 코드로 응답
-        // -> 없을 시, 새로 생성(아래)
+        // 1. 이미 커플인 사용자인지 확인
+        if (coupleRepository.existsByUserId(userId)) {
+            log.warn("이미 커플인 사용자가 코드 발급 시도: {}", userId);
+            throw new IllegalStateException("이미 커플인 유저입니다");
+        }
 
-        // 1. 고유한 코드 생성
+        // 2. 기존에 발급받은 유효한 코드가 있는지 확인
+        Optional<CoupleLinkAuthEntity> existingCode = coupleLinkAuthRepository
+                .findByIssuedUserIdAndStatusAndDelYn(userId, LinkStatus.ISSUED, "N");
+
+        if (existingCode.isPresent()) {
+            CoupleLinkAuthEntity existing = existingCode.get();
+
+            // 만료되지 않은 코드면 기존 코드 반환
+            if (!existing.isExpired()) {
+                log.info("기존 유효한 코드 반환: {} (만료시간: {})", existing.getLinkCode(), existing.getExpiredDt());
+                return IssueLinkCodeResponseDTO.of(existing.getLinkCode(), existing.getExpiredDt());
+            }
+
+            // 만료된 코드는 상태를 EXPIRED로 변경
+            existing.updateStatusToExpired(userId);
+            coupleLinkAuthRepository.save(existing);
+            log.info("기존 만료 코드 상태 업데이트: {}", existing.getLinkCode());
+        }
+
+        // 3. 새 코드 생성
         String linkCode = generateUniqueLinkCode();
-
-        // 2. 만료 시간 계산
         LocalDateTime expiredDt = LocalDateTime.now().plusMinutes(EXPIRY_MINUTES);
 
-        // 3. Entity 생성 및 저장
         CoupleLinkAuthEntity entity = CoupleLinkAuthEntity.builder()
                 .linkCode(linkCode)
                 .issuedUserId(userId)
@@ -54,13 +72,12 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
                 .build();
 
         log.info("========================================");
-        log.info("생성된 링크 코드: {}", entity.getLinkCode());
+        log.info("새 링크 코드 생성: {}", entity.getLinkCode());
         log.info("만료 시간: {}", entity.getExpiredDt());
         log.info("========================================");
 
         coupleLinkAuthRepository.save(entity);
 
-        // 4. 응답 생성
         return IssueLinkCodeResponseDTO.of(linkCode, expiredDt);
     }
 
