@@ -10,8 +10,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "DAILY_CARD_QUESTION")
@@ -61,7 +61,8 @@ public class DailyCardQuestionEntity {
     private DailyCardEntity dailyCard;
 
     @OneToMany(mappedBy = "question")
-    private List<DailyCardOptionEntity> options = new ArrayList<>();
+    @OrderBy("optionNo ASC")
+    private Set<DailyCardOptionEntity> options = new HashSet<>();
 
     @Builder
     public DailyCardQuestionEntity(Long cardId, Integer questionNo, QuestionType questionType,

@@ -9,8 +9,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "DAILY_CARD")
@@ -59,7 +59,8 @@ public class DailyCardEntity {
     private String delYn = "N";
 
     @OneToMany(mappedBy = "dailyCard")
-    private List<DailyCardQuestionEntity> questions = new ArrayList<>();
+    @OrderBy("questionNo ASC")
+    private Set<DailyCardQuestionEntity> questions = new HashSet<>();
 
     @Builder
     public DailyCardEntity(CardMode mode, CardSubject subject, CardType type,

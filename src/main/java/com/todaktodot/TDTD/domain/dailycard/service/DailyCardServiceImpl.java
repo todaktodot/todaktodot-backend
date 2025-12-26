@@ -97,6 +97,15 @@ public class DailyCardServiceImpl implements DailyCardService {
         return GenerateDailyCardResponseDTO.of(savedCard, aiResponse);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public GenerateDailyCardResponseDTO getDailyCard(Long cardId) {
+        DailyCardEntity dailyCard = dailyCardRepository.findByIdWithQuestionsAndOptions(cardId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카드입니다: " + cardId));
+
+        return GenerateDailyCardResponseDTO.from(dailyCard);
+    }
+
     private AiGeneratedCardDTO callAiForCardGeneration(CardMode mode, CardSubject subject, CardType type) {
         String prompt = buildPrompt(mode, subject, type);
 

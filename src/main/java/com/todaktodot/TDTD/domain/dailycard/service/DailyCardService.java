@@ -12,4 +12,12 @@ public interface DailyCardService {
      * @return 생성된 데일리카드 정보
      */
     GenerateDailyCardResponseDTO generateDailyCard(GenerateDailyCardRequestDTO requestDTO);
+
+    /**
+     * 데일리카드 단건 조회
+     *
+     * @param cardId 카드 ID
+     * @return 데일리카드 정보 (질문, 옵션 포함)
+     */
+    GenerateDailyCardResponseDTO getDailyCard(Long cardId);
 }

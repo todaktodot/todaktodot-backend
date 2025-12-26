@@ -28,4 +28,14 @@ public class DailyCardController {
         GenerateDailyCardResponseDTO response = dailyCardService.generateDailyCard(requestDTO);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "데일리카드 단건 조회", description = "카드 ID로 데일리카드 상세 정보를 조회합니다 (질문, 옵션 포함)")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/{cardId}")
+    public ResponseEntity<GenerateDailyCardResponseDTO> getDailyCard(
+            @PathVariable Long cardId) {
+
+        GenerateDailyCardResponseDTO response = dailyCardService.getDailyCard(cardId);
+        return ResponseEntity.ok(response);
+    }
 }
