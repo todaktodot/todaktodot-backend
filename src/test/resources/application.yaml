@@ -1,0 +1,22 @@
+# 기본 테스트 환경 설정
+spring:
+  profiles:
+    active: test
+
+  ai:
+    openai:
+      api-key: test-dummy-key-for-bean-creation
+
+# JWT 더미 설정 (테스트용, base64 인코딩, HS512용 512비트 이상 필요)
+jwt:
+  secret-key: dGVzdFNlY3JldEtleUZvckp3dFRva2VuR2VuZXJhdGlvbk11c3RCZUF0TGVhc3Q1MTJCaXRzRm9ySFM1MTJBbGdvcml0aG0xMjM0NTY3ODkw
+
+# OAuth 더미 설정 (테스트용)
+oauth:
+  apple:
+    url:
+      auth: https://appleid.apple.com
+    client-id: test-client-id
+    login-key: test-login-key
+    team-id: test-team-id
+    key-path: test-key-path
