@@ -157,29 +157,42 @@ public class DailyCardServiceImpl implements DailyCardService {
                 ? "특정 상황을 제시하고, 그 상황에서 어떻게 행동할지 묻는 상황극"
                 : "A vs B 중 하나를 선택하는 밸런스게임";
 
+        // 랜덤 시드로 다양성 확보
+        int randomSeed = (int) (Math.random() * 1000);
+        String situationCategory = getRandomSituationCategory(subject);
+
         return String.format("""
-            당신은 커플 대화 질문을 만드는 콘텐츠 기획자입니다.
+            당신은 커플 대화 질문을 만드는 창의적인 콘텐츠 기획자입니다.
             아래 조건에 맞는 데일리카드 질문을 만들어주세요.
+
+            [랜덤 시드: %d - 이 숫자를 참고하여 매번 완전히 새로운 상황을 만들어주세요]
 
             [조건]
             - 질문 모드: %s (%s)
-            - 질문 주제 : %s (%s)
+            - 질문 주제: %s (%s)
             - 질문 유형: %s (%s)
             - 객관식 선택지 개수: %d개
+            - 상황 카테고리: %s
 
             [모드별 특성]
             - 디저트(DESSERT): 가벼운 취향/선호 질문. "좋아한다/싫어한다" 수준의 가벼운 대화
             - 커피(COFFEE): 경험/방식에 대한 질문. "보통은 이렇게 한다"는 패턴 공유
             - 위스키(WHISKEY): 가치관/철학에 대한 질문. "나는 반드시 이렇게 한다"는 원칙 공유
 
-            [주제별 특성]
-            - 연애관(LOVE): 감정 표현, 소통 방식, 관계 기준, 갈등 해결 스타일에 대한 질문
-            - 경제관(ECONOMY): 소비, 저축, 투자 습관 등 금전 관련 질문
-            - 생활관(LIFESTYLE): 일상 루틴, 생활습관, 가사 분담, 결혼/자녀 등에 대한 질문
+            [주제별 상황 카테고리 - 반드시 지정된 카테고리로 상황 구성]
+            - 연애관(LOVE): 기념일/이벤트, 질투/불안, 연락 빈도, 친구/가족 소개, 미래 계획, 싸움 후 화해, 서프라이즈, 고민 상담, 스킨십, 취미 공유
+            - 경제관(ECONOMY): 외식비, 공과금/생활비, 선물 예산, 저축/투자, 경조사비, 구독 서비스, 취미 지출, 여행 경비, 이사/인테리어, 용돈/개인지출
+            - 생활관(LIFESTYLE): 집안일 분담, 반려동물, 식사/요리, 수면 습관, 주말 계획, 운동/건강, 청소/정리, TV/넷플릭스, 친구 만남, 귀가 시간
 
             [유형별 특성]
-            - 상황극(ROLEPLAY): 특정 상황을 제시하고 "이런 상황에서 나는 어떻게 할까?"를 묻는 형식. 선택지는 구체적인 행동/반응으로 구성. 선택지 5개.
-            - 밸런스게임(BALANCE): "A vs B" 형식의 양자택일 질문. cardTitle에 "A vs B" 형식으로 두 가지 선택지를 명시하고, 선택지는 정확히 2개만.
+            - 상황극(ROLEPLAY): 구체적인 장소, 시간, 상황을 묘사하여 현실감 있게. "~했습니다", "~인 상황입니다" 형식으로 생생하게 묘사. 선택지는 구체적인 행동/반응으로 구성.
+            - 밸런스게임(BALANCE): 명확하게 대비되는 두 가지 선택지. 둘 다 장단점이 있어서 고민되는 상황으로.
+
+            [중요: 피해야 할 흔한 패턴]
+            - "쇼핑 중 비싼 옷 발견" 류의 상황 금지
+            - "감정 표현 방식" 같은 추상적 질문 금지
+            - "기분이 안 좋은 상대방" 류의 상황 금지
+            - 구체적인 금액(10만원, 15만원 등)을 반복하지 말 것
 
             [출력 형식 - 반드시 아래 JSON 형식으로만 응답]
             ```json
@@ -245,11 +258,31 @@ public class DailyCardServiceImpl implements DailyCardService {
             - 담백하고 현실적인 톤으로 작성
             - JSON 외에 다른 텍스트를 포함하지 말 것
             """,
+                randomSeed,
                 mode.getDisplayName(), mode.getDescription(),
                 subject.getDisplayName(), subject.getDescription(),
                 type.getDisplayName(), typeDescription,
                 optionCount,
+                situationCategory,
                 optionCount
         );
+    }
+
+    private String getRandomSituationCategory(CardSubject subject) {
+        String[] categories = switch (subject) {
+            case LOVE -> new String[]{
+                "기념일/이벤트", "질투/불안", "연락 빈도", "친구/가족 소개", "미래 계획",
+                "싸움 후 화해", "서프라이즈", "고민 상담", "스킨십", "취미 공유"
+            };
+            case ECONOMY -> new String[]{
+                "외식비", "공과금/생활비", "선물 예산", "저축/투자", "경조사비",
+                "구독 서비스", "취미 지출", "여행 경비", "이사/인테리어", "용돈/개인지출"
+            };
+            case LIFESTYLE -> new String[]{
+                "집안일 분담", "반려동물", "식사/요리", "수면 습관", "주말 계획",
+                "운동/건강", "청소/정리", "TV/넷플릭스", "친구 만남", "귀가 시간"
+            };
+        };
+        return categories[(int) (Math.random() * categories.length)];
     }
 }
