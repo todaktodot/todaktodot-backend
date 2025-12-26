@@ -3,12 +3,23 @@ package com.todaktodot.TDTD.domain.dailycard.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.todaktodot.TDTD.domain.dailycard.dto.ai.AiGeneratedCardDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.GenerateDailyCardRequestDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
+import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
+import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
+import com.todaktodot.TDTD.domain.dailycard.repository.CoupleDailyCardRepository;
+import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardUserAnswerRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardOptionRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardQuestionRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.*;
+
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -24,9 +35,12 @@ public class DailyCardServiceImpl implements DailyCardService {
     private final DailyCardRepository dailyCardRepository;
     private final DailyCardQuestionRepository dailyCardQuestionRepository;
     private final DailyCardOptionRepository dailyCardOptionRepository;
+    private final DailyCardUserAnswerRepository dailyCardUserAnswerRepository;
+    private final CoupleDailyCardRepository coupleDailyCardRepository;
+    private final CoupleRepository coupleRepository;
     private final ObjectMapper objectMapper;
 
-    private static final String SYSTEM_USER = "SYSTEM";
+    private static final Long SYSTEM_USER = 0L;
 
     @Override
     @Transactional
@@ -104,6 +118,100 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카드입니다: " + cardId));
 
         return GenerateDailyCardResponseDTO.from(dailyCard);
+    }
+
+    @Override
+    @Transactional
+    public SubmitAnswerResponseDTO submitAnswer(Long userId, SubmitAnswerRequestDTO requestDTO) {
+        Long coupleCardId = requestDTO.getCoupleCardId();
+        Long cardId = requestDTO.getCardId();
+
+        // 카드 존재 여부 확인
+        if (!dailyCardRepository.existsById(cardId)) {
+            throw new IllegalArgumentException("존재하지 않는 카드입니다: " + cardId);
+        }
+
+        // 사용자의 커플 정보 조회
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        // 해당 커플에게 할당된 카드인지 확인
+        CoupleDailyCardEntity coupleCard = coupleDailyCardRepository.findById(coupleCardId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 커플 카드입니다: " + coupleCardId));
+
+        if (!coupleCard.getCoupleId().equals(couple.getCoupleId())) {
+            throw new IllegalStateException("해당 카드에 대한 접근 권한이 없습니다.");
+        }
+
+        // 이미 답변했는지 확인
+        if (dailyCardUserAnswerRepository.existsByCoupleCardIdAndUserIdAndDelYn(coupleCardId, userId, "N")) {
+            throw new IllegalStateException("이미 답변 작성이 완료된 카드입니다.");
+        }
+
+        log.info("데일리카드 답변 제출 시작: coupleCardId={}, cardId={}, userId={}", coupleCardId, cardId, userId);
+
+        List<SubmitAnswerResponseDTO.SavedAnswer> savedAnswers = new ArrayList<>();
+
+        for (SubmitAnswerRequestDTO.AnswerItem answerItem : requestDTO.getAnswers()) {
+            Integer questionNo = answerItem.getQuestionNo();
+
+            DailyCardUserAnswerEntity answer = DailyCardUserAnswerEntity.builder()
+                    .coupleCardId(coupleCardId)
+                    .cardId(cardId)
+                    .questionNo(questionNo)
+                    .userId(userId)
+                    .answerContent(answerItem.getAnswerContent())
+                    .regrId(userId)
+                    .updrId(userId)
+                    .build();
+
+            DailyCardUserAnswerEntity savedAnswer = dailyCardUserAnswerRepository.save(answer);
+
+            savedAnswers.add(SubmitAnswerResponseDTO.SavedAnswer.builder()
+                    .answerId(savedAnswer.getAnswerId())
+                    .questionNo(questionNo)
+                    .answerContent(answerItem.getAnswerContent())
+                    .build());
+        }
+
+        log.info("데일리카드 답변 저장 완료: coupleCardId={}, userId={}, 저장된 답변 수={}", coupleCardId, userId, savedAnswers.size());
+
+        return SubmitAnswerResponseDTO.of(coupleCardId, cardId, userId, savedAnswers);
+    }
+
+    @Override
+    @Transactional
+    public AssignCardResponseDTO assignCardToCouple(Long userId, AssignCardRequestDTO requestDTO) {
+        Long coupleId = requestDTO.getCoupleId();
+        Long cardId = requestDTO.getCardId();
+
+        // 카드 존재 여부 확인
+        if (!dailyCardRepository.existsById(cardId)) {
+            throw new IllegalArgumentException("존재하지 않는 카드입니다: " + cardId);
+        }
+
+        // 해당 커플에게 같은 날짜에 이미 카드가 할당되어 있는지 확인
+        if (coupleDailyCardRepository.existsByCoupleIdAndIssuedDateAndDelYn(
+                coupleId, requestDTO.getIssuedDate(), "N")) {
+            throw new IllegalStateException("해당 날짜에 이미 카드가 할당되어 있습니다.");
+        }
+
+        log.info("커플에게 데일리카드 할당 시작: coupleId={}, cardId={}, issuedDate={}",
+                coupleId, cardId, requestDTO.getIssuedDate());
+
+        CoupleDailyCardEntity coupleCard = CoupleDailyCardEntity.builder()
+                .coupleId(coupleId)
+                .cardId(cardId)
+                .issuedDate(requestDTO.getIssuedDate())
+                .regrId(userId)
+                .updrId(userId)
+                .build();
+
+        CoupleDailyCardEntity savedCard = coupleDailyCardRepository.save(coupleCard);
+
+        log.info("커플에게 데일리카드 할당 완료: coupleCardId={}", savedCard.getCoupleCardId());
+
+        return AssignCardResponseDTO.from(savedCard);
     }
 
     private AiGeneratedCardDTO callAiForCardGeneration(CardMode mode, CardSubject subject, CardType type) {
