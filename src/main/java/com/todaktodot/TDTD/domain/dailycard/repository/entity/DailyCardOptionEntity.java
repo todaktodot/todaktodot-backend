@@ -37,15 +37,15 @@ public class DailyCardOptionEntity {
     @Column(name = "REG_DT", nullable = false, updatable = false)
     private LocalDateTime regDt;
 
-    @Column(name = "REGR_ID", nullable = false, length = 50)
-    private String regrId;
+    @Column(name = "REGR_ID", nullable = false)
+    private Long regrId;
 
     @UpdateTimestamp
     @Column(name = "UPD_DT", nullable = false)
     private LocalDateTime updDt;
 
-    @Column(name = "UPDR_ID", nullable = false, length = 50)
-    private String updrId;
+    @Column(name = "UPDR_ID", nullable = false)
+    private Long updrId;
 
     @Column(name = "DEL_YN", length = 1, columnDefinition = "CHAR(1) DEFAULT 'N'")
     private String delYn = "N";
@@ -60,7 +60,7 @@ public class DailyCardOptionEntity {
 
     @Builder
     public DailyCardOptionEntity(Long cardId, Integer questionNo, Integer optionNo,
-                                 String optionCnts, String regrId, String updrId) {
+                                 String optionCnts, Long regrId, Long updrId) {
         this.cardId = cardId;
         this.questionNo = questionNo;
         this.optionNo = optionNo;

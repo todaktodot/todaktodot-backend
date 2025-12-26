@@ -1,13 +1,13 @@
 -- 커플 관계 테이블
 CREATE TABLE COUPLE (
     COUPLE_ID       BIGINT          NOT NULL AUTO_INCREMENT COMMENT '커플 ID (PK)',
-    USER_ID_1       VARCHAR(50)     NOT NULL COMMENT '사용자 1 (코드 발급자)',
-    USER_ID_2       VARCHAR(50)     NOT NULL COMMENT '사용자 2 (코드 입력자)',
+    USER_ID_1       BIGINT          NOT NULL COMMENT '사용자 1 (코드 발급자)',
+    USER_ID_2       BIGINT          NOT NULL COMMENT '사용자 2 (코드 입력자)',
     CONNECTED_DT    DATETIME        NOT NULL COMMENT '커플 연결 일자',
     REG_DT          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
-    REGR_ID         VARCHAR(50)     NOT NULL COMMENT '등록자 ID',
+    REGR_ID         BIGINT          NOT NULL COMMENT '등록자 ID',
     UPD_DT          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-    UPDR_ID         VARCHAR(50)     NOT NULL COMMENT '수정자 ID',
+    UPDR_ID         BIGINT          NOT NULL COMMENT '수정자 ID',
     DEL_YN          CHAR(1)         NOT NULL DEFAULT 'N' COMMENT '삭제 여부 (Y/N)',
     PRIMARY KEY (COUPLE_ID),
     UNIQUE KEY UK_USER_ID_1 (USER_ID_1, DEL_YN),
