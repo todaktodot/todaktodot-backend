@@ -40,6 +40,7 @@ public class SecurityConfig {
                 // 5. 권한 설정
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login", "/login/test*").permitAll()
+                        .requestMatchers("/api/admin/**").permitAll()  // TODO: 운영 시 관리자 권한 체크 필요
                         .anyRequest().authenticated()
                 )
                 // 6. JWT 필터 등록
