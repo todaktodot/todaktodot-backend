@@ -2,31 +2,61 @@ package com.todaktodot.TDTD.domain.login.respository.entity;
 
 import com.todaktodot.TDTD.global.security.Role;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "users")
+@Builder
+@AllArgsConstructor
+@Table(name = "USERS")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "USER_EMAIL")
     private String email;
+    @Column(name = "USER_NAME")
     private String name;
 
-    @Column(length = 20)
+    @Column(name = "NICK_NAME", length = 20)
     private String nickname;
 
+    @Column(name = "USER_ROLE")
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Column(name = "PROVIDER")
     private String provider; // google, kakao, apple
+
+    @Column(name = "PROVIDER_ID")
     private String providerId;
+
+    @Column(name = "ALARM_YN")
+    private String alarmYN;
+
+    @Column(name = "REG_DT", nullable = false, updatable = false)
+    @CreationTimestamp
+    private LocalDateTime regDt;
+
+    @Column(name = "REGR_ID", nullable = false, columnDefinition = "BIGINT")
+    private Long regrId;
+
+    @Column(name = "UPD_DT", nullable = false)
+    @UpdateTimestamp
+    private LocalDateTime updDt;
+
+    @Column(name = "UPDR_ID", nullable = false, columnDefinition = "BIGINT")
+    private Long updrId;
+
+    @Column(name = "DEL_YN", nullable = false, length = 1)
+    @Builder.Default
+    private String delYn = "N";
 
     @Builder
     public User(String email, String name, String nickname, Role role, String provider, String providerId) {
@@ -40,5 +70,18 @@ public class User {
 
     public void updateNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    /**
+     * 푸시알림 변경
+     */
+    public void updateAlarmYN(String alarmYN, Long userId) {
+        if (alarmYN.equals("Y")) {
+            this.alarmYN = "Y";
+        }
+        else {
+            this.alarmYN = "N";
+        }
+        this.updrId = userId;
     }
 }
