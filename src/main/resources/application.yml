@@ -6,12 +6,6 @@ spring:
   profiles:
     active: local
 
-#  datasource:
-#    driver-class-name: com.mysql.cj.jdbc.Driver
-#    url: jdbc:mysql://localhost:3306/TDTD?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-#    username:
-#    password:
-
   # JPA 공통 설정
   jpa:
     database: mysql
@@ -35,15 +29,3 @@ server:
     include-binding-errors: always
     include-exception: false
     include-stacktrace: never
-
-oauth:
-  apple:
-    url:
-      auth: https://appleid.apple.com/auth/token
-    client-id: tdtd
-    login-key: tdtd
-    team-id: tdtd
-    key-path: tdtd
-
-jwt:
-  secret-key: b5061bc39cd8d5efcc97ee7e6b2569f65fc49ad7eea119964db7e8e7e36ab4452a96396c5fd868e83442491b4787fbc07be19ba3bc55f1c28a01250dbff078f7

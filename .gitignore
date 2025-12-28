@@ -37,10 +37,10 @@ out/
 .vscode/
 
 ### Application Properties ###
-src/main/resources/application-local.yaml
-src/main/resources/application-dev.yaml
-src/main/resources/application-prod.yaml
-src/main/resources/application-*.yaml
+src/main/resources/application-local.yml
+src/main/resources/application-dev.yml
+src/main/resources/application-prod.yml
+src/main/resources/application-*.yml
 
 # 로그 파일
 logs/
