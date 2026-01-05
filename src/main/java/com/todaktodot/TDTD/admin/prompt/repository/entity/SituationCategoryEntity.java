@@ -1,5 +1,6 @@
-package com.todaktodot.TDTD.domain.dailycard.repository.entity;
+package com.todaktodot.TDTD.admin.prompt.repository.entity;
 
+import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardSubject;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -9,34 +10,30 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
-@Table(name = "DAILY_CARD")
+@Table(name = "SITUATION_CATEGORY")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class DailyCardEntity {
+public class SituationCategoryEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "CARD_ID")
-    private Long cardId;
-
-    @Column(name = "MODE", length = 20, nullable = false)
-    @Enumerated(EnumType.STRING)
-    private CardMode mode;
+    @Column(name = "CATEGORY_ID")
+    private Long categoryId;
 
     @Column(name = "SUBJECT", length = 20, nullable = false)
     @Enumerated(EnumType.STRING)
     private CardSubject subject;
 
-    @Column(name = "TYPE", length = 20, nullable = false)
-    @Enumerated(EnumType.STRING)
-    private CardType type;
+    @Column(name = "CATEGORY_NAME", length = 50, nullable = false)
+    private String categoryName;
 
-    @Column(name = "CARD_TITLE", length = 500, nullable = false)
-    private String cardTitle;
+    @Column(name = "CATEGORY_DESC", length = 200)
+    private String categoryDesc;
+
+    @Column(name = "SORT_ORDER", nullable = false)
+    private Integer sortOrder = 0;
 
     @Column(name = "USE_YN", length = 1, columnDefinition = "CHAR(1) DEFAULT 'Y'")
     private String useYn = "Y";
@@ -58,35 +55,32 @@ public class DailyCardEntity {
     @Column(name = "DEL_YN", length = 1, columnDefinition = "CHAR(1) DEFAULT 'N'")
     private String delYn = "N";
 
-    @OneToMany(mappedBy = "dailyCard")
-    @OrderBy("questionNo ASC")
-    private Set<DailyCardQuestionEntity> questions = new HashSet<>();
-
     @Builder
-    public DailyCardEntity(CardMode mode, CardSubject subject, CardType type,
-                           String cardTitle, Long regrId, Long updrId) {
-        this.mode = mode;
+    public SituationCategoryEntity(CardSubject subject, String categoryName, String categoryDesc,
+                                   Integer sortOrder, Long regrId, Long updrId) {
         this.subject = subject;
-        this.type = type;
-        this.cardTitle = cardTitle;
+        this.categoryName = categoryName;
+        this.categoryDesc = categoryDesc;
+        this.sortOrder = sortOrder != null ? sortOrder : 0;
         this.useYn = "Y";
         this.regrId = regrId;
         this.updrId = updrId;
         this.delYn = "N";
     }
 
-    public void addQuestion(DailyCardQuestionEntity question) {
-        this.questions.add(question);
-        question.setDailyCard(this);
+    public void update(String categoryName, String categoryDesc, Integer sortOrder, Long updrId) {
+        this.categoryName = categoryName;
+        this.categoryDesc = categoryDesc;
+        this.sortOrder = sortOrder;
+        this.updrId = updrId;
     }
 
-    public void update(CardMode mode, CardSubject subject, CardType type,
-                       String cardTitle, String useYn, Long updrId) {
-        this.mode = mode;
-        this.subject = subject;
-        this.type = type;
-        this.cardTitle = cardTitle;
+    public void updateUseYn(String useYn, Long updrId) {
         this.useYn = useYn;
         this.updrId = updrId;
+    }
+
+    public boolean isActive() {
+        return "Y".equals(useYn);
     }
 }

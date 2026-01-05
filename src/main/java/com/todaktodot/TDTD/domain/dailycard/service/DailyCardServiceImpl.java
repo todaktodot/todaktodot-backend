@@ -17,6 +17,10 @@ import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardOptionRepository
 import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardQuestionRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.*;
+import com.todaktodot.TDTD.admin.prompt.repository.AiPromptRepository;
+import com.todaktodot.TDTD.admin.prompt.repository.SituationCategoryRepository;
+import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
+import com.todaktodot.TDTD.admin.prompt.repository.entity.SituationCategoryEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +42,8 @@ public class DailyCardServiceImpl implements DailyCardService {
     private final DailyCardUserAnswerRepository dailyCardUserAnswerRepository;
     private final CoupleDailyCardRepository coupleDailyCardRepository;
     private final CoupleRepository coupleRepository;
+    private final AiPromptRepository aiPromptRepository;
+    private final SituationCategoryRepository situationCategoryRepository;
     private final ObjectMapper objectMapper;
 
     private static final Long SYSTEM_USER = 0L;
@@ -48,14 +54,21 @@ public class DailyCardServiceImpl implements DailyCardService {
         CardMode mode = requestDTO.getMode();
         CardSubject subject = requestDTO.getSubject();
         CardType type = requestDTO.getType();
+        Long promptId = requestDTO.getPromptId();
+        String situationCategory = requestDTO.getSituationCategory();
+
+        // 프롬프트 ID 필수 검증
+        if (promptId == null) {
+            throw new IllegalArgumentException("프롬프트를 선택해주세요.");
+        }
 
         log.info("========================================");
         log.info("데일리카드 AI 생성 시작");
-        log.info("모드: {}, 주제: {}, 유형: {}", mode, subject, type);
+        log.info("모드: {}, 주제: {}, 유형: {}, 프롬프트ID: {}", mode, subject, type, promptId);
         log.info("========================================");
 
         // 1. AI 호출하여 콘텐츠 생성
-        AiGeneratedCardDTO aiResponse = callAiForCardGeneration(mode, subject, type);
+        AiGeneratedCardDTO aiResponse = callAiForCardGeneration(mode, subject, type, promptId, situationCategory);
 
         // 2. DailyCard 엔티티 생성 및 저장
         DailyCardEntity dailyCard = DailyCardEntity.builder()
@@ -214,8 +227,14 @@ public class DailyCardServiceImpl implements DailyCardService {
         return AssignCardResponseDTO.from(savedCard);
     }
 
-    private AiGeneratedCardDTO callAiForCardGeneration(CardMode mode, CardSubject subject, CardType type) {
-        String prompt = buildPrompt(mode, subject, type);
+    private AiGeneratedCardDTO callAiForCardGeneration(CardMode mode, CardSubject subject, CardType type,
+                                                        Long promptId, String situationCategory) {
+        String category = (situationCategory != null && !situationCategory.isBlank())
+                ? situationCategory
+                : getRandomSituationCategory(subject);
+        int randomSeed = (int) (Math.random() * 1000);
+
+        String prompt = buildPrompt(mode, subject, type, category, randomSeed, promptId);
 
         log.info("AI 프롬프트 생성 완료, API 호출 시작...");
 

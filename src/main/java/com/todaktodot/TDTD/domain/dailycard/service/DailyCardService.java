@@ -6,6 +6,9 @@ import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardMode;
+import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardSubject;
+import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardType;
 
 public interface DailyCardService {
 
@@ -42,4 +45,16 @@ public interface DailyCardService {
      * @return 할당된 커플 카드 정보
      */
     AssignCardResponseDTO assignCardToCouple(Long userId, AssignCardRequestDTO requestDTO);
+
+    /**
+     * AI 프롬프트 미리보기
+     * 생성 전에 최종 프롬프트가 어떻게 구성되는지 확인
+     *
+     * @param mode 질문 모드
+     * @param subject 질문 주제
+     * @param type 질문 유형
+     * @param situationCategory 상황 카테고리 (null이면 랜덤 선택)
+     * @return 최종 프롬프트 문자열
+     */
+    String previewPrompt(CardMode mode, CardSubject subject, CardType type, String situationCategory);
 }

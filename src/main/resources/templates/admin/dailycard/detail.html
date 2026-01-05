@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>데일리카드 상세</title>
+</head>
+<body>
+    <h2 layout:fragment="pageTitle">데일리카드 상세</h2>
+
+    <div layout:fragment="content">
+        <!-- 알림 메시지 -->
+        <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+
+        <!-- 상단 액션 버튼 -->
+        <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <a th:href="@{/admin/daily-card}" class="btn btn-secondary">&larr; 목록으로</a>
+            <a th:href="@{/admin/daily-card/{id}/edit(id=${card.cardId})}" class="btn btn-primary">수정</a>
+        </div>
+
+        <!-- 카드 기본 정보 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>기본 정보</h3>
+                <span class="badge"
+                      th:classappend="${card.active} ? 'badge-active' : 'badge-inactive'"
+                      th:text="${card.active} ? '활성' : '비활성'">활성</span>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>카드 ID</label>
+                        <div th:text="${card.cardId}">1</div>
+                    </div>
+                    <div class="form-group">
+                        <label>모드</label>
+                        <div>
+                            <span class="badge"
+                                  th:classappend="'badge-' + ${card.mode.name().toLowerCase()}"
+                                  th:text="${card.modeDisplayName}">디저트</span>
+                            <small th:text="${card.mode.description}" style="color: #7f8c8d; margin-left: 8px;"></small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>주제</label>
+                        <div>
+                            <span class="badge"
+                                  th:classappend="'badge-' + ${card.subject.name().toLowerCase()}"
+                                  th:text="${card.subjectDisplayName}">연애관</span>
+                            <small th:text="${card.subject.description}" style="color: #7f8c8d; margin-left: 8px;"></small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>유형</label>
+                        <div>
+                            <span class="badge"
+                                  th:classappend="'badge-' + ${card.type.name().toLowerCase()}"
+                                  th:text="${card.typeDisplayName}">상황극</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>카드 제목 (상황 설명)</label>
+                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border-left: 4px solid #3498db;">
+                        <p th:text="${card.cardTitle}" style="white-space: pre-wrap; margin: 0;">카드 제목</p>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>등록일시</label>
+                        <div th:text="${#temporals.format(card.regDt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01 00:00:00</div>
+                    </div>
+                    <div class="form-group">
+                        <label>수정일시</label>
+                        <div th:text="${#temporals.format(card.updDt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01 00:00:00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 질문 목록 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>질문 목록 (<span th:text="${#lists.size(card.questions)}">0</span>개)</h3>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(card.questions)}" class="empty-state">
+                    <div class="icon">❓</div>
+                    <h3>등록된 질문이 없습니다</h3>
+                </div>
+
+                <div th:unless="${#lists.isEmpty(card.questions)}">
+                    <div th:each="question, iterStat : ${card.questions}" class="question-item">
+                        <div class="question-header">
+                            <div>
+                                <strong>질문 [[${iterStat.count}]]</strong>
+                                <span class="badge" style="margin-left: 8px;"
+                                      th:classappend="${question.questionType.name() == 'MULTIPLE_CHOICE'} ? 'badge-roleplay' : 'badge-balance'"
+                                      th:text="${question.questionTypeDisplayName}">객관식</span>
+                                <span th:if="${question.required}" class="badge badge-active" style="margin-left: 4px;">필수</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <p th:text="${question.questionCnts}" style="font-size: 1rem; margin: 0;">질문 내용</p>
+                        </div>
+
+                        <!-- 선택지 (객관식인 경우) -->
+                        <div th:if="${!#lists.isEmpty(question.options)}">
+                            <ul class="option-list">
+                                <li th:each="option : ${question.options}" class="option-item">
+                                    <span class="option-number" th:text="${option.optionNo}">1</span>
+                                    <span th:text="${option.optionCnts}">선택지 내용</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 하단 액션 버튼 -->
+        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: space-between;">
+            <a th:href="@{/admin/daily-card}" class="btn btn-secondary">&larr; 목록으로</a>
+            <div style="display: flex; gap: 10px;">
+                <form th:action="@{/admin/daily-card/{id}/toggle-status(id=${card.cardId})}" method="post">
+                    <button type="submit" class="btn"
+                            th:classappend="${card.active} ? 'btn-secondary' : 'btn-success'"
+                            th:text="${card.active} ? '비활성화' : '활성화'">비활성화</button>
+                </form>
+                <a th:href="@{/admin/daily-card/{id}/edit(id=${card.cardId})}" class="btn btn-primary">수정</a>
+                <form th:id="'deleteForm-' + ${card.cardId}"
+                      th:action="@{/admin/daily-card/{id}/delete(id=${card.cardId})}"
+                      method="post" style="display:inline;">
+                    <button type="button" class="btn btn-danger"
+                            th:data-card-id="${card.cardId}"
+                            th:data-card-title="${card.cardTitle}"
+                            onclick="confirmDeleteFromData(this)">삭제</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

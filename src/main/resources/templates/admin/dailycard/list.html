@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>데일리카드 관리</title>
+</head>
+<body>
+    <h2 layout:fragment="pageTitle">데일리카드 관리</h2>
+
+    <div layout:fragment="content">
+        <!-- 알림 메시지 -->
+        <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+
+        <!-- 통계 카드 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="value" th:text="${totalCount}">0</div>
+                <div class="label">전체 카드</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" th:text="${activeCount}">0</div>
+                <div class="label">활성 카드</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" th:text="${inactiveCount}">0</div>
+                <div class="label">비활성 카드</div>
+            </div>
+        </div>
+
+        <!-- 필터 섹션 -->
+        <div class="filter-section">
+            <form th:action="@{/admin/daily-card}" method="get" class="filter-row">
+                <div class="filter-group">
+                    <label>모드</label>
+                    <select name="mode">
+                        <option value="">전체</option>
+                        <option th:each="mode : ${modes}"
+                                th:value="${mode}"
+                                th:text="${mode.displayName}"
+                                th:selected="${searchDTO.mode == mode}"></option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>주제</label>
+                    <select name="subject">
+                        <option value="">전체</option>
+                        <option th:each="subject : ${subjects}"
+                                th:value="${subject}"
+                                th:text="${subject.displayName}"
+                                th:selected="${searchDTO.subject == subject}"></option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>유형</label>
+                    <select name="type">
+                        <option value="">전체</option>
+                        <option th:each="type : ${types}"
+                                th:value="${type}"
+                                th:text="${type.displayName}"
+                                th:selected="${searchDTO.type == type}"></option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>상태</label>
+                    <select name="useYn">
+                        <option value="">전체</option>
+                        <option value="Y" th:selected="${searchDTO.useYn == 'Y'}">활성</option>
+                        <option value="N" th:selected="${searchDTO.useYn == 'N'}">비활성</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>검색</label>
+                    <input type="text" name="keyword" th:value="${searchDTO.keyword}" placeholder="제목 검색...">
+                </div>
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn btn-primary">검색</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 카드 목록 테이블 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>카드 목록 (<span th:text="${cards.totalElements}">0</span>개)</h3>
+            </div>
+            <div class="card-body">
+                <div th:if="${cards.empty}" class="empty-state">
+                    <div class="icon">📭</div>
+                    <h3>등록된 카드가 없습니다</h3>
+                    <p>새로운 데일리카드를 생성해보세요.</p>
+                </div>
+
+                <div th:unless="${cards.empty}" class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>모드</th>
+                                <th>주제</th>
+                                <th>유형</th>
+                                <th>제목</th>
+                                <th>질문수</th>
+                                <th>상태</th>
+                                <th>등록일</th>
+                                <th>등록자</th>
+                                <th>수정일</th>
+                                <th>수정자</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="card : ${cards}">
+                                <td th:text="${card.cardId}">1</td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="'badge-' + ${card.mode.name().toLowerCase()}"
+                                          th:text="${card.modeDisplayName}">디저트</span>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="'badge-' + ${card.subject.name().toLowerCase()}"
+                                          th:text="${card.subjectDisplayName}">연애관</span>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="'badge-' + ${card.type.name().toLowerCase()}"
+                                          th:text="${card.typeDisplayName}">상황극</span>
+                                </td>
+                                <td class="truncate" th:text="${card.cardTitle}">카드 제목</td>
+                                <td th:text="${card.questionCount}">2</td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${card.active} ? 'badge-active' : 'badge-inactive'"
+                                          th:text="${card.active} ? '활성' : '비활성'">활성</span>
+                                </td>
+                                <td th:text="${card.regDt != null} ? ${#temporals.format(card.regDt, 'yyyy-MM-dd HH:mm')} : '-'">2024-01-01</td>
+                                <td th:text="${card.regrNm} ?: '-'">관리자</td>
+                                <td th:text="${card.updDt != null} ? ${#temporals.format(card.updDt, 'yyyy-MM-dd HH:mm')} : '-'">2024-01-01</td>
+                                <td th:text="${card.updrNm} ?: '-'">관리자</td>
+                                <td>
+                                    <div class="actions">
+                                        <a th:href="@{/admin/daily-card/{id}(id=${card.cardId})}"
+                                           class="btn btn-sm btn-primary">상세</a>
+                                        <form th:id="'toggleForm-' + ${card.cardId}"
+                                              th:action="@{/admin/daily-card/{id}/toggle-status(id=${card.cardId})}"
+                                              method="post" style="display:inline;">
+                                            <button type="submit" class="btn btn-sm"
+                                                    th:classappend="${card.active} ? 'btn-secondary' : 'btn-success'"
+                                                    th:text="${card.active} ? '비활성화' : '활성화'">비활성화</button>
+                                        </form>
+                                        <form th:id="'deleteForm-' + ${card.cardId}"
+                                              th:action="@{/admin/daily-card/{id}/delete(id=${card.cardId})}"
+                                              method="post" style="display:inline;">
+                                            <button type="button" class="btn btn-sm btn-danger"
+                                                    th:data-card-id="${card.cardId}"
+                                                    th:data-card-title="${card.cardTitle}"
+                                                    onclick="confirmDeleteFromData(this)">삭제</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 페이지네이션 -->
+                <div th:if="${cards.totalPages > 1}" class="pagination">
+                    <a th:if="${cards.hasPrevious()}"
+                       th:href="@{/admin/daily-card(page=${cards.number - 1}, mode=${searchDTO.mode}, subject=${searchDTO.subject}, type=${searchDTO.type}, useYn=${searchDTO.useYn}, keyword=${searchDTO.keyword})}">
+                        &laquo; 이전
+                    </a>
+
+                    <th:block th:each="i : ${#numbers.sequence(0, cards.totalPages - 1)}">
+                        <span th:if="${i == cards.number}" class="active" th:text="${i + 1}">1</span>
+                        <a th:unless="${i == cards.number}"
+                           th:href="@{/admin/daily-card(page=${i}, mode=${searchDTO.mode}, subject=${searchDTO.subject}, type=${searchDTO.type}, useYn=${searchDTO.useYn}, keyword=${searchDTO.keyword})}"
+                           th:text="${i + 1}">1</a>
+                    </th:block>
+
+                    <a th:if="${cards.hasNext()}"
+                       th:href="@{/admin/daily-card(page=${cards.number + 1}, mode=${searchDTO.mode}, subject=${searchDTO.subject}, type=${searchDTO.type}, useYn=${searchDTO.useYn}, keyword=${searchDTO.keyword})}">
+                        다음 &raquo;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

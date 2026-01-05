@@ -69,4 +69,9 @@ public class DailyCardOptionEntity {
         this.updrId = updrId;
         this.delYn = "N";
     }
+
+    public void update(String optionCnts, Long updrId) {
+        this.optionCnts = optionCnts;
+        this.updrId = updrId;
+    }
 }

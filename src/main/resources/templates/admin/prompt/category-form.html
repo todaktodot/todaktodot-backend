@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>카테고리 생성</title>
+</head>
+<body>
+    <h2 layout:fragment="pageTitle">새 예시 상황 카테고리</h2>
+
+    <div layout:fragment="content">
+        <!-- 상단 액션 버튼 -->
+        <div style="margin-bottom: 20px;">
+            <a th:href="@{/admin/prompt}" class="btn btn-secondary">&larr; 목록으로</a>
+        </div>
+
+        <form th:action="@{/admin/prompt/category/new}" method="post">
+            <div class="card">
+                <div class="card-header">
+                    <h3>카테고리 정보</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="subject">주제 *</label>
+                            <select id="subject" name="subject" required>
+                                <option value="">선택해주세요</option>
+                                <option th:each="subject : ${subjects}"
+                                        th:value="${subject}"
+                                        th:text="${subject.displayName} + ' - ' + ${subject.description}"></option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="sortOrder">정렬 순서</label>
+                            <input type="number" id="sortOrder" name="sortOrder" value="0" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="categoryName">카테고리명 *</label>
+                        <input type="text" id="categoryName" name="categoryName" required
+                               placeholder="예: 기념일/이벤트">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="categoryDesc">설명</label>
+                        <input type="text" id="categoryDesc" name="categoryDesc"
+                               placeholder="카테고리에 대한 설명을 입력해주세요.">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 저장 버튼 -->
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                <a th:href="@{/admin/prompt}" class="btn btn-secondary">취소</a>
+                <button type="submit" class="btn btn-primary">생성</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

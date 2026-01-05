@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>데일리카드 수정</title>
+</head>
+<body>
+    <h2 layout:fragment="pageTitle">데일리카드 수정</h2>
+
+    <div layout:fragment="content">
+        <!-- 상단 액션 버튼 -->
+        <div style="margin-bottom: 20px;">
+            <a th:href="@{/admin/daily-card/{id}(id=${card.cardId})}" class="btn btn-secondary">&larr; 돌아가기</a>
+        </div>
+
+        <form th:action="@{/admin/daily-card/{id}/edit(id=${card.cardId})}" method="post">
+            <!-- 카드 기본 정보 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>기본 정보</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="mode">모드 *</label>
+                            <select id="mode" name="mode" required>
+                                <option th:each="mode : ${modes}"
+                                        th:value="${mode}"
+                                        th:text="${mode.displayName} + ' - ' + ${mode.description}"
+                                        th:selected="${card.mode == mode}"></option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">주제 *</label>
+                            <select id="subject" name="subject" required>
+                                <option th:each="subject : ${subjects}"
+                                        th:value="${subject}"
+                                        th:text="${subject.displayName} + ' - ' + ${subject.description}"
+                                        th:selected="${card.subject == subject}"></option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="type">유형 *</label>
+                            <select id="type" name="type" required>
+                                <option th:each="type : ${types}"
+                                        th:value="${type}"
+                                        th:text="${type.displayName}"
+                                        th:selected="${card.type == type}"></option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="useYn">상태</label>
+                            <select id="useYn" name="useYn">
+                                <option value="Y" th:selected="${card.useYn == 'Y'}">활성</option>
+                                <option value="N" th:selected="${card.useYn == 'N'}">비활성</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cardTitle">카드 제목 (상황 설명) *</label>
+                        <textarea id="cardTitle" name="cardTitle" rows="4" required
+                                  th:text="${card.cardTitle}"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 질문 수정 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>질문 수정</h3>
+                </div>
+                <div class="card-body">
+                    <div th:each="question, qStat : ${card.questions}" class="question-item">
+                        <input type="hidden" th:name="'questions[' + ${qStat.index} + '].questionNo'"
+                               th:value="${question.questionNo}">
+                        <input type="hidden" th:name="'questions[' + ${qStat.index} + '].questionType'"
+                               th:value="${question.questionType}">
+
+                        <div class="question-header">
+                            <div>
+                                <strong>질문 [[${qStat.count}]]</strong>
+                                <span class="badge" style="margin-left: 8px;"
+                                      th:classappend="${question.questionType.name() == 'MULTIPLE_CHOICE'} ? 'badge-roleplay' : 'badge-balance'"
+                                      th:text="${question.questionTypeDisplayName}">객관식</span>
+                            </div>
+                            <div>
+                                <label style="font-weight: normal; font-size: 0.9rem;">
+                                    <input type="checkbox"
+                                           th:name="'questions[' + ${qStat.index} + '].answerReqYn'"
+                                           th:checked="${question.required}"
+                                           value="Y"> 필수 답변
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>질문 내용</label>
+                            <textarea th:name="'questions[' + ${qStat.index} + '].questionCnts'"
+                                      rows="2" required
+                                      th:text="${question.questionCnts}"></textarea>
+                        </div>
+
+                        <!-- 선택지 (객관식인 경우) -->
+                        <div th:if="${!#lists.isEmpty(question.options)}"
+                             th:id="'options-' + ${question.questionNo}">
+                            <label style="font-weight: 500; margin-bottom: 8px; display: block;">선택지</label>
+                            <div th:each="option, oStat : ${question.options}" class="option-item">
+                                <span class="option-number" th:text="${option.optionNo}">1</span>
+                                <input type="hidden"
+                                       th:name="'questions[' + ${qStat.index} + '].options[' + ${oStat.index} + '].optionNo'"
+                                       th:value="${option.optionNo}">
+                                <input type="text"
+                                       th:name="'questions[' + ${qStat.index} + '].options[' + ${oStat.index} + '].optionCnts'"
+                                       th:value="${option.optionCnts}"
+                                       class="option-input"
+                                       style="flex: 1; padding: 8px 12px; border: 1px solid #dce4ec; border-radius: 4px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 저장 버튼 -->
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                <a th:href="@{/admin/daily-card/{id}(id=${card.cardId})}" class="btn btn-secondary">취소</a>
+                <button type="submit" class="btn btn-primary">저장</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
