@@ -278,19 +278,79 @@ public class DailyCardServiceImpl implements DailyCardService {
         return response.trim();
     }
 
-    private String buildPrompt(CardMode mode, CardSubject subject, CardType type) {
+    /**
+     * 프롬프트 미리보기
+     * AI 생성 전 최종 프롬프트를 확인할 수 있도록 제공
+     */
+    @Override
+    public String previewPrompt(CardMode mode, CardSubject subject, CardType type, String situationCategory) {
+        return previewPrompt(mode, subject, type, situationCategory, null);
+    }
+
+    /**
+     * 프롬프트 미리보기 (promptId 포함)
+     */
+    public String previewPrompt(CardMode mode, CardSubject subject, CardType type,
+                                String situationCategory, Long promptId) {
+        String category = (situationCategory != null && !situationCategory.isBlank())
+                ? situationCategory
+                : getRandomSituationCategory(subject);
+        int randomSeed = (int) (Math.random() * 1000);
+
+        return buildPrompt(mode, subject, type, category, randomSeed, promptId);
+    }
+
+    /**
+     * 프롬프트 미리보기 - 영역별 분리
+     * 프론트에서 각 영역을 다른 색상으로 표시할 수 있도록 분리해서 반환
+     */
+    public java.util.Map<String, String> previewPromptSeparated(CardMode mode, CardSubject subject, CardType type,
+                                                                  String situationCategory, Long promptId) {
+        String category = (situationCategory != null && !situationCategory.isBlank())
+                ? situationCategory
+                : getRandomSituationCategory(subject);
+        int randomSeed = (int) (Math.random() * 1000);
+
+        String prefix = buildSystemPrefix(mode, subject, type, category, randomSeed);
+        String admin = getAdminPromptFromDB(promptId);
+        String suffix = buildSystemSuffix(type.getOptionCount());
+
+        return java.util.Map.of(
+                "prefix", prefix,
+                "admin", admin,
+                "suffix", suffix
+        );
+    }
+
+    /**
+     * 3단 분리 구조로 프롬프트 생성
+     * 1. System Prefix: 역할 정의 + 동적 조건 (하드코딩)
+     * 2. Admin Prompt: 스타일 가이드 (DB)
+     * 3. System Suffix: 출력 형식 + 주의사항 (하드코딩)
+     */
+    private String buildPrompt(CardMode mode, CardSubject subject, CardType type,
+                               String situationCategory, int randomSeed, Long promptId) {
+        String prefix = buildSystemPrefix(mode, subject, type, situationCategory, randomSeed);
+        String adminPrompt = getAdminPromptFromDB(promptId);
+        String suffix = buildSystemSuffix(type.getOptionCount());
+
+        return prefix + "\n\n" + adminPrompt + "\n\n" + suffix;
+    }
+
+    /**
+     * System Prefix: 역할 정의 + 동적 조건 (하드코딩 - 서버에서 주입)
+     */
+    private String buildSystemPrefix(CardMode mode, CardSubject subject, CardType type,
+                                     String situationCategory, int randomSeed) {
         int optionCount = type.getOptionCount();
         String typeDescription = type == CardType.ROLEPLAY
                 ? "특정 상황을 제시하고, 그 상황에서 어떻게 행동할지 묻는 상황극"
                 : "A vs B 중 하나를 선택하는 밸런스게임";
 
-        // 랜덤 시드로 다양성 확보
-        int randomSeed = (int) (Math.random() * 1000);
-        String situationCategory = getRandomSituationCategory(subject);
-
         return String.format("""
-            당신은 커플 대화 질문을 만드는 창의적인 콘텐츠 기획자입니다.
-            아래 조건에 맞는 데일리카드 질문을 만들어주세요.
+            너는 커플의 깊이 있는 대화를 돕는 '데일리 질문 큐레이터'이자 '관계 심리 분석가'이다. \
+            가벼운 취향부터 묵직한 가치관까지 3단계(디저트, 커피, 위스키)의 난이도로 질문을 설계하고, \
+            사용자의 답변에 대해 담백하면서도 통찰력 있는 피드백을 제공해.
 
             [랜덤 시드: %d - 이 숫자를 참고하여 매번 완전히 새로운 상황을 만들어주세요]
 
@@ -300,27 +360,36 @@ public class DailyCardServiceImpl implements DailyCardService {
             - 질문 유형: %s (%s)
             - 객관식 선택지 개수: %d개
             - 상황 카테고리: %s
+            """,
+                randomSeed,
+                mode.getDisplayName(), mode.getDescription(),
+                subject.getDisplayName(), subject.getDescription(),
+                type.getDisplayName(), typeDescription,
+                optionCount,
+                situationCategory
+        );
+    }
 
-            [모드별 특성]
-            - 디저트(DESSERT): 가벼운 취향/선호 질문. "좋아한다/싫어한다" 수준의 가벼운 대화
-            - 커피(COFFEE): 경험/방식에 대한 질문. "보통은 이렇게 한다"는 패턴 공유
-            - 위스키(WHISKEY): 가치관/철학에 대한 질문. "나는 반드시 이렇게 한다"는 원칙 공유
+    /**
+     * Admin Prompt: DB에서 가져오는 프롬프트 (어드민이 관리)
+     * promptId는 필수, 해당 프롬프트가 없거나 비활성화된 경우 예외 발생
+     */
+    private String getAdminPromptFromDB(Long promptId) {
+        if (promptId == null) {
+            throw new IllegalArgumentException("프롬프트 ID는 필수입니다.");
+        }
 
-            [주제별 상황 카테고리 - 반드시 지정된 카테고리로 상황 구성]
-            - 연애관(LOVE): 기념일/이벤트, 질투/불안, 연락 빈도, 친구/가족 소개, 미래 계획, 싸움 후 화해, 서프라이즈, 고민 상담, 스킨십, 취미 공유
-            - 경제관(ECONOMY): 외식비, 공과금/생활비, 선물 예산, 저축/투자, 경조사비, 구독 서비스, 취미 지출, 여행 경비, 이사/인테리어, 용돈/개인지출
-            - 생활관(LIFESTYLE): 집안일 분담, 반려동물, 식사/요리, 수면 습관, 주말 계획, 운동/건강, 청소/정리, TV/넷플릭스, 친구 만남, 귀가 시간
+        return aiPromptRepository.findById(promptId)
+                .filter(p -> "Y".equals(p.getUseYn()) && "N".equals(p.getDelYn()))
+                .map(AiPromptEntity::getPromptContent)
+                .orElseThrow(() -> new IllegalArgumentException("유효한 프롬프트가 없습니다. ID: " + promptId));
+    }
 
-            [유형별 특성]
-            - 상황극(ROLEPLAY): 구체적인 장소, 시간, 상황을 묘사하여 현실감 있게. "~했습니다", "~인 상황입니다" 형식으로 생생하게 묘사. 선택지는 구체적인 행동/반응으로 구성.
-            - 밸런스게임(BALANCE): 명확하게 대비되는 두 가지 선택지. 둘 다 장단점이 있어서 고민되는 상황으로.
-
-            [중요: 피해야 할 흔한 패턴]
-            - "쇼핑 중 비싼 옷 발견" 류의 상황 금지
-            - "감정 표현 방식" 같은 추상적 질문 금지
-            - "기분이 안 좋은 상대방" 류의 상황 금지
-            - 구체적인 금액(10만원, 15만원 등)을 반복하지 말 것
-
+    /**
+     * System Suffix: 출력 형식 + 주의사항 (하드코딩)
+     */
+    private String buildSystemSuffix(int optionCount) {
+        return String.format("""
             [출력 형식 - 반드시 아래 JSON 형식으로만 응답]
             ```json
             {
@@ -346,36 +415,6 @@ public class DailyCardServiceImpl implements DailyCardService {
               ]
             }
             ```
-            
-            [출력 예시 - DESSERT, ECONOMY, ROLEPLAY]
-            
-            ```json
-            {
-              "cardTitle": "둘이 처음 가는 고급 레스토랑에서 식사를 마쳤습니다. 계산서가 15만원이 나왔는데, 마침 둘 다 지갑을 꺼내려고 하는 상황이에요!",
-              "questions": [
-                {
-                  "questionNo": 1,
-                  "questionType": "MULTIPLE_CHOICE",
-                  "answerRequired": true,
-                  "content": "객관식 질문 내용",
-                  "options": [
-                    {"optionNo": 1, "content": "내가 먼저 카드를 내밀며 '내가 낼게'라고 한다"},
-                    {"optionNo": 2, "content": "반반 하자'고 제안한다"},
-                    {"optionNo": 3, "content": "상대방이 내려고 하면 '고마워, 다음엔 내가 낼게' 한다"},
-                    {"optionNo": 4, "content": "'가위바위보로 정하자'며 재미있게 풀어간다"},
-                    {"optionNo": 5, "content": "조용히 기다리며 상대방의 반응을 본다"}
-                  ]
-                },
-                {
-                  "questionNo": 2,
-                  "questionType": "SUBJECTIVE",
-                  "answerRequired": false,
-                  "content": "그렇게 생각한 이유는 무엇인가요?(선택)",
-                  "options": []
-                }
-              ]
-            }
-            ```
 
             [주의사항]
             - 첫 번째 질문은 반드시 객관식(MULTIPLE_CHOICE)이며 필수 응답
@@ -384,18 +423,25 @@ public class DailyCardServiceImpl implements DailyCardService {
             - 한국어로 작성
             - 담백하고 현실적인 톤으로 작성
             - JSON 외에 다른 텍스트를 포함하지 말 것
-            """,
-                randomSeed,
-                mode.getDisplayName(), mode.getDescription(),
-                subject.getDisplayName(), subject.getDescription(),
-                type.getDisplayName(), typeDescription,
-                optionCount,
-                situationCategory,
-                optionCount
-        );
+            """, optionCount);
     }
 
+    /**
+     * DB에서 상황 카테고리 가져오기, 없으면 기본값 사용
+     */
     private String getRandomSituationCategory(CardSubject subject) {
+        List<SituationCategoryEntity> categories = situationCategoryRepository.findActiveBySubject(subject);
+
+        if (!categories.isEmpty()) {
+            int randomIndex = (int) (Math.random() * categories.size());
+            return categories.get(randomIndex).getCategoryName();
+        }
+
+        // DB에 카테고리가 없으면 기본값 사용
+        return getDefaultCategory(subject);
+    }
+
+    private String getDefaultCategory(CardSubject subject) {
         String[] categories = switch (subject) {
             case LOVE -> new String[]{
                 "기념일/이벤트", "질투/불안", "연락 빈도", "친구/가족 소개", "미래 계획",
