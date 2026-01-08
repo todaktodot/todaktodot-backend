@@ -26,6 +26,9 @@ repositories {
 }
 
 dependencies {
+	// DevTools - 리소스 변경 시 서버 재시작 없이 반영
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
