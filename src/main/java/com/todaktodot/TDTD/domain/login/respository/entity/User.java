@@ -40,6 +40,9 @@ public class User {
     @Column(name = "ALARM_YN")
     private String alarmYN;
 
+    @Column(name = "JOIN_YN")
+    private String joinYN;
+
     @Column(name = "REG_DT", nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime regDt;
@@ -59,13 +62,14 @@ public class User {
     private String delYn = "N";
 
     @Builder
-    public User(String email, String name, String nickname, Role role, String provider, String providerId) {
+    public User(String email, String name, String nickname, Role role, String provider, String providerId, String joinYN) {
         this.email = email;
         this.name = name;
         this.nickname = nickname;
         this.role = role;
         this.provider = provider;
         this.providerId = providerId;
+        this.joinYN = joinYN;
     }
 
     public void updateNickname(String nickname) {
@@ -81,6 +85,19 @@ public class User {
         }
         else {
             this.alarmYN = "N";
+        }
+        this.updrId = userId;
+    }
+
+    /**
+     * 가입여부 변경
+     */
+    public void updateJoinYN(String joinYN, Long userId) {
+        if (joinYN.equals("Y")) {
+            this.joinYN = "Y";
+        }
+        else {
+            this.joinYN = "N";
         }
         this.updrId = userId;
     }

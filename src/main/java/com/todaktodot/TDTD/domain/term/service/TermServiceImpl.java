@@ -27,17 +27,20 @@ public class TermServiceImpl implements TermService {
 
         if (userId == null || marketingAndAlarmYN == null) return;
 
-        //유저 푸시알림 상태 업데이트
+        //1. 유저 푸시알림 상태 업데이트
         User user = userRepository.findById(termRequestDTO.getUserId()).orElseThrow();
         user.updateAlarmYN(marketingAndAlarmYN, userId);
-        userRepository.save(user);
 
-        //약관 동의 객체 생성
+        //2. 약관 동의 객체 생성 후 저장
         Term term = Term.builder()
                 .marketingAlarmYN(marketingAndAlarmYN)
                 .regrId(userId)
                 .updrId(userId)
                 .build();
         termRepository.save(term);
+
+        //3. 유저 가입처리
+        user.updateJoinYN("Y", userId);
+        userRepository.save(user);
     }
 }
