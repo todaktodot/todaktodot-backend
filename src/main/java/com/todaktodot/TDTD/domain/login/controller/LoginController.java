@@ -1,7 +1,7 @@
 package com.todaktodot.TDTD.domain.login.controller;
 
 import com.todaktodot.TDTD.domain.login.dto.request.LoginRequestDTO;
-import com.todaktodot.TDTD.domain.login.dto.response.LoginTokenResponseDTO;
+import com.todaktodot.TDTD.domain.login.dto.response.LoginResponseDTO;
 import com.todaktodot.TDTD.domain.login.service.LoginService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,8 +30,8 @@ public class LoginController {
     @ApiResponse(responseCode = "200", description = "로그인 성공",
             content = @Content(schema = @Schema(implementation = LoginRequestDTO.class)))
     @PostMapping
-    public ResponseEntity<LoginTokenResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
-        LoginTokenResponseDTO response = loginService.login(loginRequestDTO);
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
+        LoginResponseDTO response = loginService.login(loginRequestDTO);
         return ResponseEntity.ok(response);
     }
 }
