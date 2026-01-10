@@ -32,6 +32,5 @@ public class GoogleClient {
                 .name((String) response.get("name"))
                 .provider("GOOGLE")
                 .build();
-        );
     }
 }
