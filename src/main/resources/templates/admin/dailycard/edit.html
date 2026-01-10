@@ -15,43 +15,52 @@
         </div>
 
         <form th:action="@{/admin/daily-card/{id}/edit(id=${card.cardId})}" method="post">
+            <!-- 수정 불가 필드들 (hidden으로 전송) -->
+            <input type="hidden" name="mode" th:value="${card.mode}">
+            <input type="hidden" name="subject" th:value="${card.subject}">
+            <input type="hidden" name="type" th:value="${card.type}">
+
             <!-- 카드 기본 정보 -->
             <div class="card">
                 <div class="card-header">
                     <h3>기본 정보</h3>
                 </div>
                 <div class="card-body">
+                    <!-- 모드/주제/유형 (수정 불가, 상세 페이지와 동일 형식) -->
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="mode">모드 *</label>
-                            <select id="mode" name="mode" required>
-                                <option th:each="mode : ${modes}"
-                                        th:value="${mode}"
-                                        th:text="${mode.displayName} + ' - ' + ${mode.description}"
-                                        th:selected="${card.mode == mode}"></option>
-                            </select>
+                            <label>카드 ID</label>
+                            <div th:text="${card.cardId}">1</div>
                         </div>
                         <div class="form-group">
-                            <label for="subject">주제 *</label>
-                            <select id="subject" name="subject" required>
-                                <option th:each="subject : ${subjects}"
-                                        th:value="${subject}"
-                                        th:text="${subject.displayName} + ' - ' + ${subject.description}"
-                                        th:selected="${card.subject == subject}"></option>
-                            </select>
+                            <label>모드</label>
+                            <div>
+                                <span class="badge"
+                                      th:classappend="'badge-' + ${card.mode.name().toLowerCase()}"
+                                      th:text="${card.modeDisplayName}">디저트</span>
+                                <small th:text="${card.mode.description}" style="color: #7f8c8d; margin-left: 8px;"></small>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label for="type">유형 *</label>
-                            <select id="type" name="type" required>
-                                <option th:each="type : ${types}"
-                                        th:value="${type}"
-                                        th:text="${type.displayName}"
-                                        th:selected="${card.type == type}"></option>
-                            </select>
+                            <label>주제</label>
+                            <div>
+                                <span class="badge"
+                                      th:classappend="'badge-' + ${card.subject.name().toLowerCase()}"
+                                      th:text="${card.subjectDisplayName}">연애관</span>
+                                <small th:text="${card.subject.description}" style="color: #7f8c8d; margin-left: 8px;"></small>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>유형</label>
+                            <div>
+                                <span class="badge"
+                                      th:classappend="'badge-' + ${card.type.name().toLowerCase()}"
+                                      th:text="${card.typeDisplayName}">상황극</span>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="useYn">상태</label>
-                            <select id="useYn" name="useYn">
+                            <select id="useYn" name="useYn" style="min-width: 120px;">
                                 <option value="Y" th:selected="${card.useYn == 'Y'}">활성</option>
                                 <option value="N" th:selected="${card.useYn == 'N'}">비활성</option>
                             </select>

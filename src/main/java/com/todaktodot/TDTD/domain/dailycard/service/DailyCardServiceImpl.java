@@ -11,12 +11,15 @@ import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardRespon
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
+import com.todaktodot.TDTD.domain.dailycard.repository.AiCardGenerationInfoRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.CoupleDailyCardRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardUserAnswerRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardOptionRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardQuestionRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.*;
+
+import java.math.BigDecimal;
 import com.todaktodot.TDTD.admin.prompt.repository.AiPromptRepository;
 import com.todaktodot.TDTD.admin.prompt.repository.SituationCategoryRepository;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
@@ -27,6 +30,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,9 +48,22 @@ public class DailyCardServiceImpl implements DailyCardService {
     private final CoupleRepository coupleRepository;
     private final AiPromptRepository aiPromptRepository;
     private final SituationCategoryRepository situationCategoryRepository;
+    private final AiCardGenerationInfoRepository aiCardGenerationInfoRepository;
     private final ObjectMapper objectMapper;
 
     private static final Long SYSTEM_USER = 0L;
+
+    /**
+     * AI 생성 결과를 담는 record
+     * 프롬프트, 응답 원문, 파싱된 응답, 실제 사용된 온도 등을 포함
+     */
+    private record AiGenerationResult(
+            String finalPrompt,
+            String rawResponse,
+            AiGeneratedCardDTO parsedResponse,
+            String situationCategory,
+            double actualTemperature
+    ) {}
 
     @Override
     @Transactional
@@ -56,19 +73,34 @@ public class DailyCardServiceImpl implements DailyCardService {
         CardType type = requestDTO.getType();
         Long promptId = requestDTO.getPromptId();
         String situationCategory = requestDTO.getSituationCategory();
+        String aiModel = requestDTO.getAiModel();
+        Double temperature = requestDTO.getTemperature();
 
         // 프롬프트 ID 필수 검증
         if (promptId == null) {
             throw new IllegalArgumentException("프롬프트를 선택해주세요.");
         }
 
+        // AI 모델 기본값 설정
+        if (aiModel == null || aiModel.isBlank()) {
+            aiModel = "gpt-4o-mini";
+        }
+
+        // temperature 기본값 및 범위 검증
+        if (temperature == null) {
+            temperature = 0.8;
+        } else if (temperature < 0.0 || temperature > 2.0) {
+            throw new IllegalArgumentException("온도는 0.0 ~ 2.0 범위여야 합니다.");
+        }
+
         log.info("========================================");
         log.info("데일리카드 AI 생성 시작");
-        log.info("모드: {}, 주제: {}, 유형: {}, 프롬프트ID: {}", mode, subject, type, promptId);
+        log.info("모드: {}, 주제: {}, 유형: {}, 프롬프트ID: {}, AI모델: {}, 온도: {}", mode, subject, type, promptId, aiModel, temperature);
         log.info("========================================");
 
-        // 1. AI 호출하여 콘텐츠 생성
-        AiGeneratedCardDTO aiResponse = callAiForCardGeneration(mode, subject, type, promptId, situationCategory);
+        // 1. AI 호출하여 콘텐츠 생성 (프롬프트, 응답 원문 포함)
+        AiGenerationResult aiResult = callAiForCardGeneration(mode, subject, type, promptId, situationCategory, aiModel, temperature);
+        AiGeneratedCardDTO aiResponse = aiResult.parsedResponse();
 
         // 2. DailyCard 엔티티 생성 및 저장
         DailyCardEntity dailyCard = DailyCardEntity.builder()
@@ -85,7 +117,25 @@ public class DailyCardServiceImpl implements DailyCardService {
 
         log.info("데일리카드 저장 완료: cardId={}", cardId);
 
-        // 3. Question 및 Option 저장 (수동 save만 사용, Cascade 충돌 방지)
+        // 3. AI 생성 정보 저장
+        AiCardGenerationInfoEntity generationInfo = AiCardGenerationInfoEntity.builder()
+                .cardId(cardId)
+                .promptId(promptId)
+                .aiModel(aiModel)
+                .temperature(BigDecimal.valueOf(aiResult.actualTemperature()))
+                .mode(mode)
+                .subject(subject)
+                .type(type)
+                .situationCategory(aiResult.situationCategory())
+                .finalPrompt(aiResult.finalPrompt())
+                .aiResponse(aiResult.rawResponse())
+                .regrId(SYSTEM_USER)
+                .build();
+        aiCardGenerationInfoRepository.save(generationInfo);
+
+        log.info("AI 생성 정보 저장 완료: infoId={}", generationInfo.getInfoId());
+
+        // 4. Question 및 Option 저장 (수동 save만 사용, Cascade 충돌 방지)
         for (AiGeneratedCardDTO.AiQuestionDTO aiQuestion : aiResponse.getQuestions()) {
             DailyCardQuestionEntity question = DailyCardQuestionEntity.builder()
                     .cardId(cardId)
@@ -227,8 +277,8 @@ public class DailyCardServiceImpl implements DailyCardService {
         return AssignCardResponseDTO.from(savedCard);
     }
 
-    private AiGeneratedCardDTO callAiForCardGeneration(CardMode mode, CardSubject subject, CardType type,
-                                                        Long promptId, String situationCategory) {
+    private AiGenerationResult callAiForCardGeneration(CardMode mode, CardSubject subject, CardType type,
+                                                        Long promptId, String situationCategory, String aiModel, Double temperature) {
         String category = (situationCategory != null && !situationCategory.isBlank())
                 ? situationCategory
                 : getRandomSituationCategory(subject);
@@ -236,11 +286,26 @@ public class DailyCardServiceImpl implements DailyCardService {
 
         String prompt = buildPrompt(mode, subject, type, category, randomSeed, promptId);
 
-        log.info("AI 프롬프트 생성 완료, API 호출 시작...");
+        // 추론 모델(o1, o3, gpt-5 시리즈)은 temperature 미지원 - 1로 고정
+        boolean isReasoningModel = isReasoningModel(aiModel);
+        double actualTemperature = temperature;
+        if (isReasoningModel) {
+            actualTemperature = 1.0;
+            log.info("추론 모델 감지: temperature를 1.0으로 고정");
+        }
+
+        log.info("AI 프롬프트 생성 완료, API 호출 시작... (모델: {}, 온도: {})", aiModel, actualTemperature);
 
         ChatClient chatClient = chatClientBuilder.build();
 
+        // 추론 모델은 temperature를 설정하지 않음 (기본값 1 사용)
+        OpenAiChatOptions.Builder optionsBuilder = OpenAiChatOptions.builder().model(aiModel);
+        if (!isReasoningModel) {
+            optionsBuilder.temperature(actualTemperature);
+        }
+
         String response = chatClient.prompt()
+                .options(optionsBuilder.build())
                 .user(prompt)
                 .call()
                 .content();
@@ -252,7 +317,9 @@ public class DailyCardServiceImpl implements DailyCardService {
         try {
             // AI 응답에서 JSON 부분만 추출 (마크다운 코드블록 제거)
             String jsonContent = extractJsonFromResponse(response);
-            return objectMapper.readValue(jsonContent, AiGeneratedCardDTO.class);
+            AiGeneratedCardDTO parsedResponse = objectMapper.readValue(jsonContent, AiGeneratedCardDTO.class);
+
+            return new AiGenerationResult(prompt, response, parsedResponse, category, actualTemperature);
         } catch (JsonProcessingException e) {
             log.error("AI 응답 파싱 실패: {}", e.getMessage());
             throw new RuntimeException("AI 응답을 파싱할 수 없습니다", e);
@@ -457,5 +524,18 @@ public class DailyCardServiceImpl implements DailyCardService {
             };
         };
         return categories[(int) (Math.random() * categories.length)];
+    }
+
+    /**
+     * 추론 모델 여부 확인
+     * 추론 모델(o1, o3, gpt-5 시리즈)은 temperature 등 샘플링 파라미터를 지원하지 않음
+     */
+    private boolean isReasoningModel(String modelId) {
+        if (modelId == null) return false;
+        String lowerModel = modelId.toLowerCase();
+        return lowerModel.startsWith("o1") ||
+               lowerModel.startsWith("o3") ||
+               lowerModel.startsWith("o4") ||
+               lowerModel.startsWith("gpt-5");
     }
 }

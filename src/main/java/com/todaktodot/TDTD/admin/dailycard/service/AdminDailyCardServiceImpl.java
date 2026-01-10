@@ -1,10 +1,12 @@
 package com.todaktodot.TDTD.admin.dailycard.service;
 
+import com.todaktodot.TDTD.admin.dailycard.dto.AiGenerationInfoDTO;
 import com.todaktodot.TDTD.admin.dailycard.dto.CardStatisticsDTO;
 import com.todaktodot.TDTD.admin.dailycard.dto.DailyCardDetailDTO;
 import com.todaktodot.TDTD.admin.dailycard.dto.DailyCardListDTO;
 import com.todaktodot.TDTD.admin.dailycard.dto.DailyCardSearchDTO;
 import com.todaktodot.TDTD.admin.dailycard.dto.DailyCardUpdateDTO;
+import com.todaktodot.TDTD.domain.dailycard.repository.AiCardGenerationInfoRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardOptionRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardQueryRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardQuestionRepository;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class AdminDailyCardServiceImpl implements AdminDailyCardService {
     private final DailyCardQueryRepository dailyCardQueryRepository;
     private final DailyCardQuestionRepository questionRepository;
     private final DailyCardOptionRepository optionRepository;
+    private final AiCardGenerationInfoRepository aiCardGenerationInfoRepository;
 
     private static final Long ADMIN_USER_ID = 0L;
 
@@ -137,5 +141,11 @@ public class AdminDailyCardServiceImpl implements AdminDailyCardService {
     @Override
     public long getInactiveCount() {
         return dailyCardRepository.countByUseYnAndDelYn("N", "N");
+    }
+
+    @Override
+    public Optional<AiGenerationInfoDTO> getAiGenerationInfo(Long cardId) {
+        return aiCardGenerationInfoRepository.findByCardId(cardId)
+                .map(AiGenerationInfoDTO::from);
     }
 }

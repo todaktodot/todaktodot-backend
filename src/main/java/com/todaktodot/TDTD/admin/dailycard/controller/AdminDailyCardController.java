@@ -61,7 +61,11 @@ public class AdminDailyCardController {
     public String detail(@PathVariable Long cardId, Model model) {
         DailyCardDetailDTO card = adminDailyCardService.getDailyCardDetail(cardId);
 
+        // AI 생성 정보 조회 (AI로 생성된 카드인 경우에만 존재)
+        var generationInfo = adminDailyCardService.getAiGenerationInfo(cardId);
+
         model.addAttribute("card", card);
+        model.addAttribute("generationInfo", generationInfo.orElse(null));
         model.addAttribute("modes", CardMode.values());
         model.addAttribute("subjects", CardSubject.values());
         model.addAttribute("types", CardType.values());
@@ -91,6 +95,8 @@ public class AdminDailyCardController {
                          Model model) {
 
         if (bindingResult.hasErrors()) {
+            DailyCardDetailDTO card = adminDailyCardService.getDailyCardDetail(cardId);
+            model.addAttribute("card", card);
             model.addAttribute("modes", CardMode.values());
             model.addAttribute("subjects", CardSubject.values());
             model.addAttribute("types", CardType.values());
@@ -123,6 +129,14 @@ public class AdminDailyCardController {
 
     // ==================== 데일리카드 AI 생성 ====================
 
+    private static final List<Map<String, String>> AI_MODELS = List.of(
+            Map.of("id", "gpt-4o-mini", "name", "GPT-4o Mini", "desc", "빠르고 저렴함 (권장)"),
+            Map.of("id", "gpt-4o", "name", "GPT-4o", "desc", "고품질, 범용 모델"),
+            Map.of("id", "gpt-4.1", "name", "GPT-4.1", "desc", "코딩에 강함, 1M 컨텍스트"),
+            Map.of("id", "gpt-4.1-mini", "name", "GPT-4.1 Mini", "desc", "GPT-4.1의 빠른 버전"),
+            Map.of("id", "gpt-5.2", "name", "GPT-5.2", "desc", "최신 플래그십 (400K 컨텍스트)")
+    );
+
     @GetMapping("/generate")
     public String generateForm(Model model) {
         Map<CardSubject, List<SituationCategoryDTO>> categoriesBySubject =
@@ -143,6 +157,7 @@ public class AdminDailyCardController {
         model.addAttribute("categoriesBySubject", categoriesBySubject);
         model.addAttribute("prompts", prompts);
         model.addAttribute("defaultPromptId", defaultPromptId);
+        model.addAttribute("aiModels", AI_MODELS);
         model.addAttribute("activeMenu", "generate");
 
         return "admin/dailycard/generate";

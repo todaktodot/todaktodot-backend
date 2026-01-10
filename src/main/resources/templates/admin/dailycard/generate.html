@@ -280,6 +280,99 @@
             color: #95a5a6;
             font-size: 0.9rem;
         }
+        /* 섹션 구분 스타일 */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            margin: 30px 0 20px;
+            gap: 16px;
+        }
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e1e8ed, transparent);
+        }
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            white-space: nowrap;
+        }
+        .section-title .icon {
+            font-size: 1.2rem;
+        }
+        /* AI 모델 칩 - 그라데이션 애니메이션 */
+        .ai-model-chip {
+            position: relative;
+            overflow: hidden;
+        }
+        .ai-model-chip.selected {
+            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb, #f5576c, #667eea);
+            background-size: 400% 400%;
+            animation: gradientShift 3s ease infinite;
+            border-color: transparent;
+            color: white;
+        }
+        .ai-model-chip.selected .option-desc {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .ai-model-chip.selected::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 70%
+            );
+            animation: shimmer 2s infinite;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+        /* 필수 선택 안내 */
+        .required-notice {
+            display: none;
+            padding: 12px 16px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            color: #856404;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+        .required-notice.show {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        /* AI 설정 카드 스타일 */
+        .ai-settings-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+            border: 1px solid #e0e7ff;
+        }
+        .ai-settings-card .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .ai-settings-card .card-header h3 {
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -299,19 +392,26 @@
             </div>
         </div>
 
-        <form id="generateForm" th:action="@{/admin/daily-card/generate}" method="post">
+        <form id="generateForm" th:action="@{/admin/daily-card/generate}" method="post" novalidate>
+            <!-- 필수 선택 안내 -->
+            <div id="requiredNotice" class="required-notice">
+                <span>⚠️</span>
+                <span id="requiredMessage">모드, 주제, 유형을 모두 선택해주세요.</span>
+            </div>
+
+            <!-- ==================== 데일리카드 옵션 ==================== -->
             <div class="card">
                 <div class="card-header">
-                    <h3>생성 옵션 설정</h3>
+                    <h3>📋 데일리카드 옵션</h3>
                 </div>
                 <div class="card-body">
                     <!-- 모드 선택 -->
                     <div class="form-group">
-                        <label>모드 (깊이) *</label>
+                        <label>모드 (깊이) <span style="color: #e74c3c;">*</span></label>
                         <div class="option-grid">
                             <th:block th:each="mode : ${modes}">
                                 <label class="option-chip mode-option">
-                                    <input type="radio" name="mode" th:value="${mode}" required>
+                                    <input type="radio" name="mode" th:value="${mode}">
                                     <span class="option-title" th:text="${mode.displayName}">디저트</span>
                                     <span class="option-desc" th:text="${mode.description}">설명</span>
                                 </label>
@@ -321,11 +421,11 @@
 
                     <!-- 주제 선택 -->
                     <div class="form-group">
-                        <label>주제 *</label>
+                        <label>주제 <span style="color: #e74c3c;">*</span></label>
                         <div class="option-grid">
                             <th:block th:each="subject : ${subjects}">
                                 <label class="option-chip subject-option" th:data-subject="${subject}">
-                                    <input type="radio" name="subject" th:value="${subject}" required>
+                                    <input type="radio" name="subject" th:value="${subject}">
                                     <span class="option-title" th:text="${subject.displayName}">연애관</span>
                                     <span class="option-desc" th:text="${subject.description}">설명</span>
                                 </label>
@@ -335,15 +435,111 @@
 
                     <!-- 유형 선택 -->
                     <div class="form-group">
-                        <label>유형 *</label>
+                        <label>유형 <span style="color: #e74c3c;">*</span></label>
                         <div class="option-grid">
                             <th:block th:each="type : ${types}">
                                 <label class="option-chip type-option">
-                                    <input type="radio" name="type" th:value="${type}" required>
+                                    <input type="radio" name="type" th:value="${type}">
                                     <span class="option-title" th:text="${type.displayName}">상황극</span>
                                     <span class="option-desc">선택지 <span th:text="${type.optionCount}">5</span>개</span>
                                 </label>
                             </th:block>
+                        </div>
+                    </div>
+
+                    <!-- 예시 상황 선택 (선택사항) -->
+                    <div class="form-group">
+                        <label>예시 상황 선택 (선택사항)</label>
+                        <p style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 12px;">
+                            주제를 선택하면 해당 주제의 예시 상황이 표시됩니다. 선택하지 않으면 랜덤하게 선택됩니다.
+                        </p>
+
+                        <div th:each="subject : ${subjects}"
+                             th:id="'categories-' + ${subject}"
+                             class="category-section"
+                             style="display: none;">
+                            <div class="category-chips">
+                                <th:block th:with="categories=${categoriesBySubject.get(subject)}">
+                                    <span th:if="${#lists.isEmpty(categories)}" style="color: #95a5a6;">
+                                        등록된 예시 상황이 없습니다. 프롬프트 관리에서 추가해주세요.
+                                    </span>
+                                    <th:block th:unless="${#lists.isEmpty(categories)}">
+                                        <span th:each="category : ${categories}"
+                                              class="category-chip"
+                                              th:classappend="${!category.active} ? 'disabled' : ''"
+                                              th:data-category="${category.categoryName}"
+                                              th:text="${category.categoryName}">기념일/이벤트</span>
+                                    </th:block>
+                                </th:block>
+                            </div>
+                        </div>
+
+                        <input type="hidden" id="situationCategory" name="situationCategory">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== AI 설정 ==================== -->
+            <div class="card ai-settings-card" style="margin-top: 20px;">
+                <div class="card-header">
+                    <h3>🤖 AI 설정</h3>
+                </div>
+                <div class="card-body">
+                    <!-- AI 모델 선택 -->
+                    <div class="form-group">
+                        <label>AI 모델</label>
+                        <div class="option-grid">
+                            <th:block th:each="aiModel, stat : ${aiModels}">
+                                <label class="option-chip ai-model-chip model-option">
+                                    <input type="radio" name="aiModel" th:value="${aiModel.get('id')}"
+                                           th:checked="${stat.first}">
+                                    <span class="option-title" th:text="${aiModel.get('name')}">GPT-4o Mini</span>
+                                    <span class="option-desc" th:text="${aiModel.get('desc')}">빠르고 저렴함</span>
+                                </label>
+                            </th:block>
+                        </div>
+                    </div>
+
+                    <!-- 온도(Temperature) 선택 -->
+                    <div class="form-group" id="temperatureSection">
+                        <label>온도 (Temperature)</label>
+                        <p style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 12px;">
+                            낮을수록 일관적, 높을수록 창의적인 응답을 생성합니다. (0.0 ~ 2.0)
+                        </p>
+                        <p id="tempReasoningNotice" style="display: none; font-size: 0.85rem; color: #e74c3c; margin-bottom: 12px; padding: 8px 12px; background: #fdf2f2; border-radius: 6px;">
+                            ⚠️ 추론 모델(o1, o3, GPT-5 시리즈)은 온도 조절을 지원하지 않습니다. 자동으로 1.0으로 고정됩니다.
+                        </p>
+                        <div class="option-grid">
+                            <label class="option-chip temp-option">
+                                <input type="radio" name="temperature" value="0.3">
+                                <span class="option-title">0.3</span>
+                                <span class="option-desc">매우 일관적</span>
+                            </label>
+                            <label class="option-chip temp-option">
+                                <input type="radio" name="temperature" value="0.5">
+                                <span class="option-title">0.5</span>
+                                <span class="option-desc">일관적</span>
+                            </label>
+                            <label class="option-chip temp-option">
+                                <input type="radio" name="temperature" value="0.7">
+                                <span class="option-title">0.7</span>
+                                <span class="option-desc">균형잡힘</span>
+                            </label>
+                            <label class="option-chip temp-option">
+                                <input type="radio" name="temperature" value="0.8" checked>
+                                <span class="option-title">0.8 ⭐</span>
+                                <span class="option-desc">권장 (기본값)</span>
+                            </label>
+                            <label class="option-chip temp-option">
+                                <input type="radio" name="temperature" value="1.0">
+                                <span class="option-title">1.0</span>
+                                <span class="option-desc">창의적</span>
+                            </label>
+                            <label class="option-chip temp-option">
+                                <input type="radio" name="temperature" value="1.3">
+                                <span class="option-title">1.3</span>
+                                <span class="option-desc">매우 창의적</span>
+                            </label>
                         </div>
                     </div>
 
@@ -381,35 +577,6 @@
                         </div>
                     </div>
 
-                    <!-- 예시 상황 선택 (선택사항) -->
-                    <div class="form-group">
-                        <label>예시 상황 선택 (선택사항)</label>
-                        <p style="font-size: 0.85rem; color: #7f8c8d; margin-bottom: 12px;">
-                            주제를 선택하면 해당 주제의 예시 상황이 표시됩니다. 선택하지 않으면 랜덤하게 선택됩니다.
-                        </p>
-
-                        <div th:each="subject : ${subjects}"
-                             th:id="'categories-' + ${subject}"
-                             class="category-section"
-                             style="display: none;">
-                            <div class="category-chips">
-                                <th:block th:with="categories=${categoriesBySubject.get(subject)}">
-                                    <span th:if="${#lists.isEmpty(categories)}" style="color: #95a5a6;">
-                                        등록된 예시 상황이 없습니다. 프롬프트 관리에서 추가해주세요.
-                                    </span>
-                                    <th:block th:unless="${#lists.isEmpty(categories)}">
-                                        <span th:each="category : ${categories}"
-                                              class="category-chip"
-                                              th:classappend="${!category.active} ? 'disabled' : ''"
-                                              th:data-category="${category.categoryName}"
-                                              th:text="${category.categoryName}">기념일/이벤트</span>
-                                    </th:block>
-                                </th:block>
-                            </div>
-                        </div>
-
-                        <input type="hidden" id="situationCategory" name="situationCategory">
-                    </div>
                 </div>
             </div>
 
@@ -421,12 +588,14 @@
                     <div id="previewSubject" style="padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 6px;">주제: -</div>
                     <div id="previewType" style="padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 6px;">유형: -</div>
                     <div id="previewCategory" style="padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 6px;">상황: 랜덤</div>
+                    <div id="previewModel" style="padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 6px;">🤖 GPT-4o Mini</div>
+                    <div id="previewTemp" style="padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 6px;">🌡️ 0.8</div>
                 </div>
                 <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: center;">
                     <button type="button" id="previewPromptBtn" class="btn-preview" disabled>
                         📋 프롬프트 미리보기
                     </button>
-                    <button type="submit" class="btn btn-success" style="padding: 14px 40px; font-size: 1.1rem;">
+                    <button type="button" id="generateBtn" class="btn btn-success" style="padding: 14px 40px; font-size: 1.1rem;">
                         AI로 카드 생성하기
                     </button>
                 </div>
@@ -468,6 +637,15 @@
             document.addEventListener('DOMContentLoaded', function() {
                 const form = document.getElementById('generateForm');
                 const loadingOverlay = document.getElementById('loadingOverlay');
+
+                // 폼의 기본 제출 이벤트에서 HTML5 유효성 검사 우회
+                form.addEventListener('submit', function(e) {
+                    // 이벤트가 JavaScript에서 수동으로 트리거된 경우에만 허용
+                    if (!form.dataset.validated) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
 
                 // 라디오 버튼 스타일링 (chip 스타일)
                 function updateRadioStyles() {
@@ -529,19 +707,70 @@
                     });
                 });
 
-                // 모드, 유형 선택시 스타일 업데이트
-                document.querySelectorAll('input[name="mode"], input[name="type"]').forEach(radio => {
+                // 모드, 유형, 온도 선택시 스타일 업데이트
+                document.querySelectorAll('input[name="mode"], input[name="type"], input[name="temperature"]').forEach(radio => {
                     radio.addEventListener('change', function() {
                         updateRadioStyles();
                         updatePreview();
                     });
                 });
 
+                // AI 모델 선택시 추론 모델 여부에 따라 온도 UI 제어
+                document.querySelectorAll('input[name="aiModel"]').forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        updateRadioStyles();
+                        updatePreview();
+                        handleReasoningModelTemperature(this.value);
+                    });
+                });
+
+                // 추론 모델 여부 확인 (o1, o3, o4, gpt-5 시리즈)
+                function isReasoningModel(modelId) {
+                    if (!modelId) return false;
+                    const lower = modelId.toLowerCase();
+                    return lower.startsWith('o1') ||
+                           lower.startsWith('o3') ||
+                           lower.startsWith('o4') ||
+                           lower.startsWith('gpt-5');
+                }
+
+                // 추론 모델 선택 시 온도 UI 비활성화
+                function handleReasoningModelTemperature(modelId) {
+                    const tempSection = document.getElementById('temperatureSection');
+                    const tempChips = document.querySelectorAll('.temp-option');
+                    const tempNotice = document.getElementById('tempReasoningNotice');
+
+                    if (isReasoningModel(modelId)) {
+                        // 추론 모델: 온도 비활성화
+                        tempChips.forEach(chip => {
+                            chip.classList.add('disabled');
+                            chip.style.opacity = '0.5';
+                            chip.style.pointerEvents = 'none';
+                        });
+                        tempNotice.style.display = 'block';
+                        document.getElementById('previewTemp').textContent = '🌡️ 1.0 (고정)';
+                    } else {
+                        // 일반 모델: 온도 활성화
+                        tempChips.forEach(chip => {
+                            chip.classList.remove('disabled');
+                            chip.style.opacity = '1';
+                            chip.style.pointerEvents = 'auto';
+                        });
+                        tempNotice.style.display = 'none';
+                        const selectedTemp = document.querySelector('input[name="temperature"]:checked');
+                        if (selectedTemp) {
+                            document.getElementById('previewTemp').textContent = '🌡️ ' + selectedTemp.value;
+                        }
+                    }
+                }
+
                 // 미리보기 업데이트
                 function updatePreview() {
                     const mode = document.querySelector('input[name="mode"]:checked');
                     const subject = document.querySelector('input[name="subject"]:checked');
                     const type = document.querySelector('input[name="type"]:checked');
+                    const aiModel = document.querySelector('input[name="aiModel"]:checked');
+                    const temperature = document.querySelector('input[name="temperature"]:checked');
 
                     if (mode) {
                         const modeLabel = mode.closest('label').querySelector('.option-title').textContent;
@@ -555,11 +784,75 @@
                         const typeLabel = type.closest('label').querySelector('.option-title').textContent;
                         document.getElementById('previewType').textContent = '유형: ' + typeLabel;
                     }
+                    if (aiModel) {
+                        const modelLabel = aiModel.closest('label').querySelector('.option-title').textContent;
+                        document.getElementById('previewModel').textContent = '🤖 ' + modelLabel;
+                    }
+                    if (temperature) {
+                        document.getElementById('previewTemp').textContent = '🌡️ ' + temperature.value;
+                    }
                 }
 
-                // 폼 제출시 로딩 표시
-                form.addEventListener('submit', function() {
+                // 생성 버튼 클릭시 검증 및 폼 제출
+                const generateBtn = document.getElementById('generateBtn');
+                generateBtn.addEventListener('click', function(event) {
+                    // 기본 동작 완전 방지
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const mode = document.querySelector('input[name="mode"]:checked');
+                    const subject = document.querySelector('input[name="subject"]:checked');
+                    const type = document.querySelector('input[name="type"]:checked');
+                    const requiredNotice = document.getElementById('requiredNotice');
+                    const requiredMessage = document.getElementById('requiredMessage');
+
+                    // 필수 선택 검증
+                    const missing = [];
+                    if (!mode) missing.push('모드');
+                    if (!subject) missing.push('주제');
+                    if (!type) missing.push('유형');
+
+                    if (missing.length > 0) {
+                        requiredMessage.textContent = missing.join(', ') + '을(를) 선택해주세요.';
+                        requiredNotice.classList.add('show');
+                        requiredNotice.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return false;
+                    }
+
+                    // 검증 통과 - 로딩 표시
+                    requiredNotice.classList.remove('show');
                     loadingOverlay.classList.add('active');
+
+                    // 브라우저 유효성 검사를 완전히 우회하기 위해
+                    // 새로운 숨겨진 폼을 동적으로 생성하여 제출
+                    const hiddenForm = document.createElement('form');
+                    hiddenForm.method = 'POST';
+                    hiddenForm.action = form.action;
+                    hiddenForm.style.display = 'none';
+
+                    // 필요한 필드만 hidden input으로 추가
+                    const fields = {
+                        'mode': mode.value,
+                        'subject': subject.value,
+                        'type': type.value,
+                        'situationCategory': document.getElementById('situationCategory').value,
+                        'promptId': document.getElementById('promptId').value,
+                        'aiModel': document.querySelector('input[name="aiModel"]:checked')?.value || 'gpt-4o-mini',
+                        'temperature': document.querySelector('input[name="temperature"]:checked')?.value || '0.8'
+                    };
+
+                    for (const [name, value] of Object.entries(fields)) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = name;
+                        input.value = value || '';
+                        hiddenForm.appendChild(input);
+                    }
+
+                    document.body.appendChild(hiddenForm);
+                    hiddenForm.submit();
+
+                    return false;
                 });
 
                 // ==================== 프롬프트 사이드 패널 ====================
@@ -613,6 +906,9 @@
                 if (selectedPrompt) {
                     showPromptDetail(selectedPrompt);
                 }
+
+                // 페이지 로드 시 기본 선택된 AI 모델 스타일 적용
+                updateRadioStyles();
 
                 // ==================== 프롬프트 미리보기 ====================
                 const previewPromptBtn = document.getElementById('previewPromptBtn');

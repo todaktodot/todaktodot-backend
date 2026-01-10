@@ -121,6 +121,75 @@
             </div>
         </div>
 
+        <!-- AI 생성 이력 (AI로 생성된 카드인 경우에만 표시) -->
+        <div th:if="${generationInfo}" class="card" style="background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%); border: 1px solid #e0e7ff;">
+            <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h3 style="color: white;">🤖 AI 생성 정보</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-row" style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label>AI 모델</label>
+                        <div>
+                            <span class="badge" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 6px 12px;"
+                                  th:text="${generationInfo.aiModel}">gpt-4o-mini</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>온도 (Temperature)</label>
+                        <div th:text="${generationInfo.temperature}">0.80</div>
+                    </div>
+                    <div class="form-group">
+                        <label>프롬프트 ID</label>
+                        <div>
+                            <a th:href="@{/admin/prompt/prompt/{id}(id=${generationInfo.promptId})}"
+                               th:text="'#' + ${generationInfo.promptId}"
+                               style="color: #3498db;">#1</a>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>상황 카테고리</label>
+                        <div th:text="${generationInfo.situationCategory} ?: '랜덤'">기념일/이벤트</div>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label>생성일시</label>
+                        <div th:text="${#temporals.format(generationInfo.regDt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01 00:00:00</div>
+                    </div>
+                </div>
+
+                <!-- 최종 프롬프트 (접기/펼치기) -->
+                <div class="form-group">
+                    <label>
+                        <button type="button" class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.85rem;"
+                                onclick="toggleSection('finalPromptSection')">
+                            📋 최종 프롬프트 보기
+                        </button>
+                    </label>
+                    <div id="finalPromptSection" style="display: none; margin-top: 12px;">
+                        <pre style="background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto;"
+                             th:text="${generationInfo.finalPrompt}">프롬프트 내용</pre>
+                    </div>
+                </div>
+
+                <!-- AI 응답 원문 (접기/펼치기) -->
+                <div class="form-group" th:if="${generationInfo.aiResponse}">
+                    <label>
+                        <button type="button" class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.85rem;"
+                                onclick="toggleSection('aiResponseSection')">
+                            💬 AI 응답 원문 보기
+                        </button>
+                    </label>
+                    <div id="aiResponseSection" style="display: none; margin-top: 12px;">
+                        <pre style="background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow-y: auto;"
+                             th:text="${generationInfo.aiResponse}">AI 응답 내용</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 하단 액션 버튼 -->
         <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: space-between;">
             <a th:href="@{/admin/daily-card}" class="btn btn-secondary">&larr; 목록으로</a>
@@ -142,5 +211,18 @@
             </div>
         </div>
     </div>
+
+    <th:block layout:fragment="scripts">
+        <script>
+            function toggleSection(sectionId) {
+                const section = document.getElementById(sectionId);
+                if (section.style.display === 'none') {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            }
+        </script>
+    </th:block>
 </body>
 </html>

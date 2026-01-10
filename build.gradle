@@ -22,7 +22,6 @@ configurations {
 
 repositories {
 	mavenCentral()
-	maven { url 'https://repo.spring.io/milestone' }
 }
 
 dependencies {
@@ -61,9 +60,9 @@ dependencies {
 	implementation 'p6spy:p6spy:3.9.1'
 	implementation 'com.github.gavlyukovskiy:datasource-decorator-spring-boot-autoconfigure:1.9.2'
 
-	// Spring AI - OpenAI
-	implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-M4")
-	implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+	// Spring AI - OpenAI (1.1.0 GA - 2025.11.12 릴리스)
+	implementation platform("org.springframework.ai:spring-ai-bom:1.1.0")
+	implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'

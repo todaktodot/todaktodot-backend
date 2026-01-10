@@ -32,4 +32,10 @@ public class GenerateDailyCardRequestDTO {
 
     @Schema(description = "상황 카테고리 (선택사항, null이면 랜덤 선택)")
     private String situationCategory;
+
+    @Schema(description = "AI 모델 (선택사항, 기본값: gpt-4o-mini)", example = "gpt-4o-mini")
+    private String aiModel = "gpt-4o-mini";
+
+    @Schema(description = "AI 온도 설정 (0.0~2.0, 기본값: 0.8)", example = "0.8")
+    private Double temperature = 0.8;
 }
