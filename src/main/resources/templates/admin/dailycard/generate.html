@@ -492,7 +492,7 @@
                             <th:block th:each="aiModel, stat : ${aiModels}">
                                 <label class="option-chip ai-model-chip model-option">
                                     <input type="radio" name="aiModel" th:value="${aiModel.get('id')}"
-                                           th:checked="${stat.first}">
+                                           th:checked="${aiModel.get('id') == 'gpt-5.2'}">
                                     <span class="option-title" th:text="${aiModel.get('name')}">GPT-4o Mini</span>
                                     <span class="option-desc" th:text="${aiModel.get('desc')}">빠르고 저렴함</span>
                                 </label>
