@@ -910,6 +910,12 @@
                 // 페이지 로드 시 기본 선택된 AI 모델 스타일 적용
                 updateRadioStyles();
 
+                // 페이지 로드 시 기본 선택된 AI 모델의 추론 모델 여부 체크
+                const defaultAiModel = document.querySelector('input[name="aiModel"]:checked');
+                if (defaultAiModel) {
+                    handleReasoningModelTemperature(defaultAiModel.value);
+                }
+
                 // ==================== 프롬프트 미리보기 ====================
                 const previewPromptBtn = document.getElementById('previewPromptBtn');
                 const promptPreviewSection = document.getElementById('promptPreviewSection');
