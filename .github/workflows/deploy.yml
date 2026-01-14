@@ -1,0 +1,31 @@
+name: Deploy Dev Server
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 배포 시작 알림 (n8n -> Discord)
+      - name: Notify Deploy Start
+        run: |
+          curl -X POST https://todaktodot-n8n.duckdns.org/webhook/github-deploy \
+            -H "Content-Type: application/json" \
+            -d '{
+              "ref": "refs/heads/${{ github.ref_name }}",
+              "after": "${{ github.sha }}",
+              "pusher": {"name": "${{ github.actor }}"},
+              "head_commit": {"message": "${{ github.event.head_commit.message }}"}
+            }'
+
+      # 2. SSH로 배포 스크립트 실행
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            /home/ec2-user/deploy.sh
