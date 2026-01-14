@@ -39,8 +39,12 @@ public class DeployNotificationListener {
 
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
+        log.info("========== 배포 알림 리스너 시작 ==========");
+        log.info("알림 활성화 여부: {}", notificationEnabled);
+        log.info("Webhook URL: {}", n8nWebhookUrl);
+
         if (!notificationEnabled) {
-            log.debug("배포 알림이 비활성화되어 있습니다.");
+            log.info("배포 알림이 비활성화되어 있습니다.");
             return;
         }
 
