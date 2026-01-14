@@ -15,5 +15,5 @@ public class SampleServiceImpl implements SampleService{
     public void getList(SampleRequestDTO sampleRequestDTO) {
 
     }
-    // 테스트커밋용16
+    // 테스트커밋용17
 }
