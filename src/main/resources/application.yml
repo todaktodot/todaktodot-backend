@@ -29,3 +29,9 @@ server:
     include-binding-errors: always
     include-exception: false
     include-stacktrace: never
+
+# 배포 알림 설정
+deploy:
+  notification:
+    enabled: false
+    n8n-webhook-url: ${N8N_DEPLOY_WEBHOOK_URL:}

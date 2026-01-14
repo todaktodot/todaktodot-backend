@@ -35,9 +35,26 @@ public class SecurityConfig {
     @Value("${admin.password:admin123!}")
     private String adminPassword;
 
-    // ==================== 어드민용 필터 체인 (HTTP Basic Auth) ====================
+    // ==================== Actuator용 필터 체인 (Prometheus 메트릭 수집용) ====================
     @Bean
     @Order(1)
+    public SecurityFilterChain actuatorFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/actuator/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        // health, info는 공개, prometheus/metrics는 인증 필요
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/prometheus", "/actuator/metrics/**").permitAll()  // TODO: 프로덕션에서는 IP 제한 또는 인증 추가
+                        .anyRequest().denyAll()
+                );
+
+        return http.build();
+    }
+
+    // ==================== 어드민용 필터 체인 (HTTP Basic Auth) ====================
+    @Bean
+    @Order(2)
     public SecurityFilterChain adminFilterChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/admin/**")
@@ -53,7 +70,7 @@ public class SecurityConfig {
 
     // ==================== 앱 API용 필터 체인 (JWT) ====================
     @Bean
-    @Order(2)
+    @Order(3)
     public SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/**")
