@@ -8,6 +8,14 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Debug n8n DNS
+        run: |
+          set -euxo pipefail
+          echo "Resolver:"; cat /etc/resolv.conf || true
+          echo "getent:"; getent hosts todaktodot-n8n.duckdns.org || true
+          echo "nslookup:"; nslookup todaktodot-n8n.duckdns.org || true
+          echo "dig(A):"; dig +time=2 +tries=1 todaktodot-n8n.duckdns.org A || true
+          echo "dig(A) @1.1.1.1:"; dig @1.1.1.1 +time=2 +tries=1 todaktodot-n8n.duckdns.org A || true
       # 1. 배포 시작 알림 (n8n -> Discord)
       - name: Notify Deploy Start
         env:
