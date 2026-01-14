@@ -1,5 +1,6 @@
 package com.todaktodot.TDTD.domain.dailycard.repository.entity;
 
+import com.todaktodot.TDTD.domain.aireport.repository.entity.Report;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
