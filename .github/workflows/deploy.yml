@@ -19,7 +19,26 @@ jobs:
               "pusher": {"name": "${{ github.actor }}"},
               "head_commit": {"message": "${{ github.event.head_commit.message }}"}
             }'
+      # 1.5. DNS / HOST 진단 (임시)
+      - name: Debug EC2 host DNS
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo "EC2_HOST(raw)='${{ secrets.EC2_HOST }}'"
+          echo -n "${{ secrets.EC2_HOST }}" | xxd -p; echo
 
+          echo "getent hosts:"
+          getent hosts "${{ secrets.EC2_HOST }}" || true
+
+          echo "nslookup:"
+          nslookup "${{ secrets.EC2_HOST }}" || true
+
+          echo "dig A:"
+          dig +time=2 +tries=1 "${{ secrets.EC2_HOST }}" A || true
+
+          echo "TCP 22 check:"
+          timeout 5 bash -lc "cat < /dev/null > /dev/tcp/${{ secrets.EC2_HOST }}/22" \
+            && echo "22 open" || echo "22 connect failed"
       # 2. SSH로 배포 스크립트 실행
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
