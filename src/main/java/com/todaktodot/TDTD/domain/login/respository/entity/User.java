@@ -47,14 +47,14 @@ public class User {
     @CreationTimestamp
     private LocalDateTime regDt;
 
-    @Column(name = "REGR_ID", nullable = false, columnDefinition = "BIGINT")
+    @Column(name = "REGR_ID", columnDefinition = "BIGINT")
     private Long regrId;
 
     @Column(name = "UPD_DT", nullable = false)
     @UpdateTimestamp
     private LocalDateTime updDt;
 
-    @Column(name = "UPDR_ID", nullable = false, columnDefinition = "BIGINT")
+    @Column(name = "UPDR_ID", columnDefinition = "BIGINT")
     private Long updrId;
 
     @Column(name = "DEL_YN", nullable = false, length = 1)
