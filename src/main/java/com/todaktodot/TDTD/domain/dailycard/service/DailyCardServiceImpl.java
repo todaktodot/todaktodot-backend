@@ -310,6 +310,10 @@ public class DailyCardServiceImpl implements DailyCardService {
             Set<Long> answeredCardIds = new HashSet<>(
                     dailyCardUserAnswerRepository.findAnsweredCardIdsByCoupleId(coupleId)
             );
+            int coupleAssignedCount = 0;
+            int coupleSkippedCount = 0;
+
+            log.info("커플 배정 시작: coupleId={}, answeredCardCount={}", coupleId, answeredCardIds.size());
 
             var lastAssignment = coupleDailyCardRepository
                     .findTopByCoupleIdAndDelYnOrderByIssuedDateDesc(coupleId, "N");
@@ -340,6 +344,9 @@ public class DailyCardServiceImpl implements DailyCardService {
                         lastSubject = existingAssignments.get(0).getDailyCard().getSubject();
                     }
                     skippedDateCount++;
+                    coupleSkippedCount++;
+                    log.info("커플 배정 스킵: coupleId={}, targetDate={}, reason=alreadyAssigned",
+                            coupleId, targetDate);
                     continue;
                 }
 
@@ -366,8 +373,16 @@ public class DailyCardServiceImpl implements DailyCardService {
                         .build());
 
                 assignedCount += 2;
+                coupleAssignedCount += 2;
                 lastSubject = subjectForDate;
+
+                log.info("커플 배정 완료: coupleId={}, targetDate={}, mode={}, subject={}, roleplayCardId={}, balanceCardId={}",
+                        coupleId, targetDate, modeForDate, subjectForDate,
+                        roleplayCard.getCardId(), balanceCard.getCardId());
             }
+
+            log.info("커플 배정 요약: coupleId={}, assignedCount={}, skippedCount={}",
+                    coupleId, coupleAssignedCount, coupleSkippedCount);
         }
 
         log.info("데일리카드 배정 완료: startDate={}, endDate={}, days={}, assignedCount={}, skippedDateCount={}",
