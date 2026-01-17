@@ -1,10 +1,13 @@
 package com.todaktodot.TDTD.domain.couple.repository;
 
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface CoupleRepository extends JpaRepository<CoupleEntity, Long> {
@@ -21,4 +24,10 @@ public interface CoupleRepository extends JpaRepository<CoupleEntity, Long> {
      */
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM CoupleEntity c WHERE (c.userId1 = :userId OR c.userId2 = :userId) AND c.delYn = 'N'")
     boolean existsByUserId(@Param("userId") Long userId);
+
+    List<CoupleEntity> findByDelYn(String delYn);
+
+    Page<CoupleEntity> findByDelYn(String delYn, Pageable pageable);
+
+    long countByDelYn(String delYn);
 }

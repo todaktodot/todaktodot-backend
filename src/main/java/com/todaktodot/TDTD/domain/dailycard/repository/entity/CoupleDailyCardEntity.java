@@ -31,12 +31,8 @@ public class CoupleDailyCardEntity {
     @Column(name = "ISSUED_DATE", nullable = false)
     private LocalDate issuedDate;
 
-    @Column(name = "SELECTED_TYPE", length = 20)
-    @Enumerated(EnumType.STRING)
-    private CardType selectedType;
-
-    @Column(name = "SELECTED_BY_USER_ID")
-    private Long selectedByUserId;
+    @Column(name = "SELECTED_YN", nullable = false, length = 1)
+    private String selectedYn = "N";
 
     @CreationTimestamp
     @Column(name = "REG_DT", nullable = false, updatable = false)
@@ -68,11 +64,11 @@ public class CoupleDailyCardEntity {
         this.regrId = regrId;
         this.updrId = updrId;
         this.delYn = "N";
+        this.selectedYn = "N";
     }
 
-    public void selectType(CardType selectedType, Long selectedByUserId) {
-        this.selectedType = selectedType;
-        this.selectedByUserId = selectedByUserId;
+    public void markSelected(Long selectedByUserId) {
+        this.selectedYn = "Y";
         this.updrId = selectedByUserId;
     }
 }

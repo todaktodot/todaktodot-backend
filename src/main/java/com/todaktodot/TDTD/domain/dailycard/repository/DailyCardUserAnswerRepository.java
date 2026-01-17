@@ -23,4 +23,9 @@ public interface DailyCardUserAnswerRepository extends JpaRepository<DailyCardUs
             Long coupleCardId, Integer questionNo, Long userId, String delYn);
 
     boolean existsByCoupleCardIdAndUserIdAndDelYn(Long coupleCardId, Long userId, String delYn);
+
+    @Query("SELECT DISTINCT a.cardId FROM DailyCardUserAnswerEntity a " +
+           "JOIN CoupleDailyCardEntity c ON a.coupleCardId = c.coupleCardId " +
+           "WHERE c.coupleId = :coupleId AND a.delYn = 'N' AND c.delYn = 'N'")
+    List<Long> findAnsweredCardIdsByCoupleId(@Param("coupleId") Long coupleId);
 }

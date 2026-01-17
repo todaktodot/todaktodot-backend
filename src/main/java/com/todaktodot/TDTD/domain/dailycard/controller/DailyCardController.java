@@ -1,6 +1,8 @@
 package com.todaktodot.TDTD.domain.dailycard.controller;
 
+import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignBatchRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.GenerateDailyCardRequestDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.service.DailyCardService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +38,18 @@ public class DailyCardController {
             @PathVariable Long cardId) {
 
         GenerateDailyCardResponseDTO response = dailyCardService.getDailyCard(cardId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "데일리카드 배정", description = "커플별 데일리카드를 기간(일수) 기준으로 배정합니다")
+    @ApiResponse(responseCode = "200", description = "배정 성공")
+    @PostMapping("/assign/batch")
+    public ResponseEntity<AssignBatchResponseDTO> assignDailyCards(
+            @Valid @RequestBody AssignBatchRequestDTO requestDTO) {
+
+        AssignBatchResponseDTO response = dailyCardService.assignDailyCardsForCouples(
+                requestDTO.getStartDate(),
+                requestDTO.getEndDate());
         return ResponseEntity.ok(response);
     }
 }
