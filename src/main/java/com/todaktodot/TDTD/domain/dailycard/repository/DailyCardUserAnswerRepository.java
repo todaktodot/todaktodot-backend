@@ -19,6 +19,10 @@ public interface DailyCardUserAnswerRepository extends JpaRepository<DailyCardUs
            "WHERE a.coupleCardId = :coupleCardId AND a.delYn = 'N'")
     List<DailyCardUserAnswerEntity> findAllByCoupleCardId(@Param("coupleCardId") Long coupleCardId);
 
+    @Query("SELECT a FROM DailyCardUserAnswerEntity a " +
+           "WHERE a.coupleCardId IN :coupleCardIds AND a.delYn = 'N'")
+    List<DailyCardUserAnswerEntity> findAllByCoupleCardIds(@Param("coupleCardIds") List<Long> coupleCardIds);
+
     boolean existsByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(
             Long coupleCardId, Integer questionNo, Long userId, String delYn);
 

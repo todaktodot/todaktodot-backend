@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>커플 관리</title>
+</head>
+<body>
+    <h2 layout:fragment="pageTitle">커플 관리</h2>
+
+    <div layout:fragment="content">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="value" th:text="${totalCount}">0</div>
+                <div class="label">전체 커플</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" th:text="${activeCount}">0</div>
+                <div class="label">활성 커플</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" th:text="${inactiveCount}">0</div>
+                <div class="label">비활성 커플</div>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <form th:action="@{/admin/couple}" method="get" class="filter-row">
+                <div class="filter-group">
+                    <label>상태</label>
+                    <select name="delYn">
+                        <option value="" th:selected="${delYn == null || delYn == ''}">전체</option>
+                        <option value="N" th:selected="${delYn == 'N'}">활성</option>
+                        <option value="Y" th:selected="${delYn == 'Y'}">비활성</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn btn-primary">검색</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>커플 목록 (<span th:text="${couples.totalElements}">0</span>개)</h3>
+            </div>
+            <div class="card-body">
+                <div th:if="${couples.empty}" class="empty-state">
+                    <div class="icon">👥</div>
+                    <h3>등록된 커플이 없습니다</h3>
+                    <p>현재 연결된 커플이 없습니다.</p>
+                </div>
+
+                <div th:unless="${couples.empty}" class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>유저 1</th>
+                                <th>유저 2</th>
+                                <th>관계 단계</th>
+                                <th>우리가 만난 날</th>
+                                <th>연결 일시</th>
+                                <th>상태</th>
+                                <th>등록일</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="couple : ${couples}">
+                                <td>
+                                    <a th:href="@{/admin/couple/{id}(id=${couple.coupleId})}"
+                                       th:text="${couple.coupleId}" style="color: #3498db;">1</a>
+                                </td>
+                                <td th:text="${couple.userId1}">100</td>
+                                <td th:text="${couple.userId2}">200</td>
+                                <td th:text="${couple.relationshipStage}">-</td>
+                                <td th:text="${couple.firstMetDt != null} ? ${#temporals.format(couple.firstMetDt, 'yyyy-MM-dd')} : '-'">-</td>
+                                <td th:text="${couple.connectedDt != null} ? ${#temporals.format(couple.connectedDt, 'yyyy-MM-dd HH:mm')} : '-'">-</td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${couple.delYn == 'N'} ? 'badge-active' : 'badge-inactive'"
+                                          th:text="${couple.delYn == 'N'} ? '활성' : '비활성'">활성</span>
+                                </td>
+                                <td th:text="${couple.regDt != null} ? ${#temporals.format(couple.regDt, 'yyyy-MM-dd HH:mm')} : '-'">-</td>
+                                <td>
+                                    <a th:href="@{/admin/couple/{id}(id=${couple.coupleId})}"
+                                       class="btn btn-sm btn-primary">상세</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div th:if="${couples.totalPages > 1}" class="pagination">
+                    <a th:if="${couples.hasPrevious()}"
+                       th:href="@{/admin/couple(page=${couples.number - 1}, delYn=${delYn})}">
+                        &laquo; 이전
+                    </a>
+
+                    <th:block th:each="i : ${#numbers.sequence(0, couples.totalPages - 1)}">
+                        <span th:if="${i == couples.number}" class="active" th:text="${i + 1}">1</span>
+                        <a th:unless="${i == couples.number}"
+                           th:href="@{/admin/couple(page=${i}, delYn=${delYn})}"
+                           th:text="${i + 1}">1</a>
+                    </th:block>
+
+                    <a th:if="${couples.hasNext()}"
+                       th:href="@{/admin/couple(page=${couples.number + 1}, delYn=${delYn})}">
+                        다음 &raquo;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

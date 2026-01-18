@@ -29,6 +29,9 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
     List<CoupleDailyCardEntity> findAllByCoupleIdAndIssuedDateAndDelYnOrderByCoupleCardIdAsc(
             Long coupleId, LocalDate issuedDate, String delYn);
 
+    List<CoupleDailyCardEntity> findAllByCoupleIdAndDelYnOrderByIssuedDateDescCoupleCardIdDesc(
+            Long coupleId, String delYn);
+
     @Query("SELECT c FROM CoupleDailyCardEntity c " +
            "LEFT JOIN FETCH c.dailyCard " +
            "WHERE c.coupleCardId = :coupleCardId AND c.delYn = 'N'")

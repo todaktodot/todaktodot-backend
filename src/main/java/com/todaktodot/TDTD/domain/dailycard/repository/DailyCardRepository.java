@@ -25,6 +25,12 @@ public interface DailyCardRepository extends JpaRepository<DailyCardEntity, Long
            "WHERE d.cardId = :cardId")
     Optional<DailyCardEntity> findByIdWithQuestionsAndOptions(@Param("cardId") Long cardId);
 
+    @Query("SELECT DISTINCT d FROM DailyCardEntity d " +
+           "LEFT JOIN FETCH d.questions q " +
+           "LEFT JOIN FETCH q.options " +
+           "WHERE d.cardId IN :cardIds")
+    List<DailyCardEntity> findAllByIdWithQuestionsAndOptions(@Param("cardIds") List<Long> cardIds);
+
     List<DailyCardEntity> findByModeAndSubjectAndTypeAndUseYnAndDelYn(
             CardMode mode, CardSubject subject, CardType type, String useYn, String delYn);
 
