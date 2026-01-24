@@ -4,7 +4,7 @@ spring:
 
   # 기본 프로파일 설정 (로컬 개발 환경)
   profiles:
-    active: local
+    active: dev
 
   # JPA 공통 설정
   jpa:

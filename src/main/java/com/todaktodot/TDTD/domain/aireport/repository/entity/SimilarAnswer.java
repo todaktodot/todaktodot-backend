@@ -1,13 +1,11 @@
 package com.todaktodot.TDTD.domain.aireport.repository.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,9 +25,6 @@ public class SimilarAnswer {
 
     @Column(name = "CARD_ID", nullable = false)
     private Long cardId;
-
-    @Column(name = "TOTAL_SYNC_RATE", nullable = false)
-    private String totalSyncRate;
 
     @Column(name = "REG_DT", nullable = false, updatable = false)
     @CreationTimestamp
@@ -52,4 +47,19 @@ public class SimilarAnswer {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "REPORT_ID")
     private Report report;
+
+    @Builder
+    public SimilarAnswer(Long answerId1, Long answerId2, Long cardId, Long regrId, Long updrId, String delYn, Report report) {
+        this.answerId1 = answerId1;
+        this.answerId2 = answerId2;
+        this.cardId = cardId;
+        this.regrId = regrId;
+        this.updrId = updrId;
+        this.delYn = delYn;
+        this.report = report;
+    }
+
+    public void addReport(Report report) {
+        this.report = report;
+    }
 }

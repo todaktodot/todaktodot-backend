@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -20,9 +20,9 @@ public class ReportDetailResponseDTO {
     @Schema(description = "AI리포트ID")
     private Long reportId;
     @Schema(description = "주간시작일자")
-    private LocalDateTime startDt;
+    private LocalDate startDt;
     @Schema(description = "주간종료일자")
-    private LocalDateTime endDt;
+    private LocalDate endDt;
     @Schema(description = "전체 싱크로율", example = "78")
     private String totalSyncRate;
     @Schema(description = "경제관 싱크로율", example = "45")
@@ -40,15 +40,18 @@ public class ReportDetailResponseDTO {
     @Schema(description = "대화가 더 필요한 주제 목록")
     private List<SimpleDailycardInfoDTO> diffrentSubjectList;
 
-    static private class SimpleDailycardInfoDTO {
-        @Schema(description = "응답ID-1")
+    @AllArgsConstructor
+    @Builder
+    @Getter
+    static public class SimpleDailycardInfoDTO {
+        @Schema(description = "첫번째 응답ID")
         private Long answerId1;
-        @Schema(description = "응답ID-2")
+        @Schema(description = "두번째 응답ID")
         private Long answerId2;
-        @Schema(description = "데일리카드ID")
+        @Schema(description = "데일리카드 ID")
         private Long cardId;
-        @Schema(description = "응답 날짜")
-        private LocalDateTime answerDt;
+        @Schema(description = "응답 날짜 (발급날짜)")
+        private LocalDate answerDt;
         @Schema(description = "데일리카드 모드", example = "위스키모드")
         private String mode;
         @Schema(description = "데일리카드 주제", example = "경제관")

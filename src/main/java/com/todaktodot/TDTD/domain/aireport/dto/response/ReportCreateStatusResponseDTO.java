@@ -14,9 +14,9 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 public class ReportCreateStatusResponseDTO {
-    @Schema(description = "지난 한 주 AI 리포트 생성 가능 여부", example = "true")
+    @Schema(description = "지난 한 주 AI 리포트 생성 가능 여부 - True: 리포트 생성 가능, False: 리포트 생성 불가", example = "true")
     private boolean isCreatable;
 
-    @Schema(description = "현재 주 AI 리포트 최초 진입 여부", example = "false")
+    @Schema(description = "현재 주 AI 리포트 최초 진입 여부 - True: 리포트 최초 진입, False: 최초 진입 아님", example = "false")
     private boolean isInitalize;
 }

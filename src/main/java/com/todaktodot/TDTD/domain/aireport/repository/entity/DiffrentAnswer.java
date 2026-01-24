@@ -50,4 +50,18 @@ public class DiffrentAnswer {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "REPORT_ID")
     private Report report;
+
+    @Builder
+    public DiffrentAnswer(Long answerId1, Long answerId2, Long cardId, Long regrId, Long updrId, String delYn) {
+        this.answerId1 = answerId1;
+        this.answerId2 = answerId2;
+        this.cardId = cardId;
+        this.regrId = regrId;
+        this.updrId = updrId;
+        this.delYn = delYn;
+    }
+
+    public void addReport(Report report) {
+        this.report = report;
+    }
 }

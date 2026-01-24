@@ -32,4 +32,6 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                                                      @Param("startDT") LocalDateTime startDT,
                                                      @Param("endDT") LocalDateTime endDT,
                                                      @Param("delYn") String delYn);
+    //커플ID와 데일리카드ID로 일치하는 커플 데일리카드 조회
+    Optional<CoupleDailyCardEntity> findByCardIdAndCoupleId(Long cardId, Long coupleId);
 }
