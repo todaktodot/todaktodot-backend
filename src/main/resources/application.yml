@@ -4,7 +4,7 @@ spring:
 
   # 기본 프로파일 설정 (로컬 개발 환경)
   profiles:
-    active: dev
+    active: local
 
   # JPA 공통 설정
   jpa:
@@ -18,7 +18,7 @@ spring:
 # 공통 로깅 설정
 logging:
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg [%X{traceId:-}]%n"
   level:
     com.todaktodot.TDTD: info
 
@@ -29,3 +29,23 @@ server:
     include-binding-errors: always
     include-exception: false
     include-stacktrace: never
+
+# 배포 알림 설정
+deploy:
+  notification:
+    enabled: false
+    n8n-webhook-url: ${N8N_DEPLOY_WEBHOOK_URL:}
+
+# Actuator 설정 (Prometheus 메트릭 수집용)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus, metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  prometheus:
+    metrics:
+      export:
+        enabled: true
