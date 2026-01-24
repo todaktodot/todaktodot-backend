@@ -1,7 +1,8 @@
 package com.todaktodot.TDTD.domain.login.service;
 
+import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.login.dto.request.LoginRequestDTO;
-import com.todaktodot.TDTD.domain.login.dto.response.LoginTokenResponseDTO;
+import com.todaktodot.TDTD.domain.login.dto.response.LoginResponseDTO;
 import com.todaktodot.TDTD.domain.login.dto.response.SocialUserResponse;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
@@ -16,12 +17,13 @@ public class LoginServiceImpl implements LoginService {
     private final SocialUserProvider socialUserProvider;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
+    private final CoupleRepository coupleRepository;
 
     /**
      * 로그인
      */
     @Override
-    public LoginTokenResponseDTO login(LoginRequestDTO loginRequestDTO) {
+    public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
         // 1. 소셜 플랫폼에 토큰 검증 요청 및 유저 정보 추출
         SocialUserResponse socialUser = socialUserProvider.getLoginedSocialUser(loginRequestDTO.getProvider(), loginRequestDTO.getToken());
 
@@ -32,6 +34,7 @@ public class LoginServiceImpl implements LoginService {
                         .name(socialUser.getName())
                         .provider(socialUser.getProvider())
                         .providerId(socialUser.getId())
+                        .joinYN("N")
                         .role(Role.USER)
                         .build()));
 
@@ -39,6 +42,9 @@ public class LoginServiceImpl implements LoginService {
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
-        return new LoginTokenResponseDTO(accessToken, refreshToken);
+        //4. 커플여부 확인
+        boolean isCouple = coupleRepository.existsByUserId(user.getId());
+
+        return new LoginResponseDTO(accessToken, refreshToken, user.getJoinYN().equals("Y"), isCouple);
     }
 }

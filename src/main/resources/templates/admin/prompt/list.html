@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>프롬프트 관리</title>
+</head>
+<body>
+    <h2 layout:fragment="pageTitle">프롬프트 관리</h2>
+
+    <div layout:fragment="content">
+        <!-- 알림 메시지 -->
+        <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+
+        <!-- 통계 카드 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="value" th:text="${promptCount}">0</div>
+                <div class="label">전체 프롬프트</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" th:text="${categoryCount}">0</div>
+                <div class="label">예시 상황 카테고리</div>
+            </div>
+        </div>
+
+        <!-- 프롬프트 목록 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>AI 프롬프트 목록</h3>
+                <a th:href="@{/admin/prompt/prompt/new}" class="btn btn-primary btn-sm">+ 새 프롬프트</a>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(prompts)}" class="empty-state">
+                    <div class="icon">✨</div>
+                    <h3>등록된 프롬프트가 없습니다</h3>
+                    <p>새로운 AI 프롬프트를 생성해보세요.</p>
+                </div>
+
+                <div th:unless="${#lists.isEmpty(prompts)}" class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>프롬프트명</th>
+                                <th>설명</th>
+                                <th>버전</th>
+                                <th>상태</th>
+                                <th>등록일</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="prompt : ${prompts}">
+                                <td th:text="${prompt.promptId}">1</td>
+                                <td>
+                                    <a th:href="@{/admin/prompt/prompt/{id}(id=${prompt.promptId})}"
+                                       th:text="${prompt.promptName}" style="color: #3498db;">DAILY_CARD_GENERATE</a>
+                                </td>
+                                <td class="truncate" th:text="${prompt.promptDesc}">설명</td>
+                                <td>v<span th:text="${prompt.version}">1</span></td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${prompt.active} ? 'badge-active' : 'badge-inactive'"
+                                          th:text="${prompt.active} ? '활성' : '비활성'">활성</span>
+                                </td>
+                                <td th:text="${#temporals.format(prompt.regDt, 'yyyy-MM-dd')}">2024-01-01</td>
+                                <td>
+                                    <div class="actions">
+                                        <a th:href="@{/admin/prompt/prompt/{id}/edit(id=${prompt.promptId})}"
+                                           class="btn btn-sm btn-primary">수정</a>
+                                        <form th:action="@{/admin/prompt/prompt/{id}/toggle-status(id=${prompt.promptId})}"
+                                              method="post" style="display:inline;">
+                                            <button type="submit" class="btn btn-sm"
+                                                    th:classappend="${prompt.active} ? 'btn-secondary' : 'btn-success'"
+                                                    th:text="${prompt.active} ? '비활성화' : '활성화'">비활성화</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 예시 상황 카테고리 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>예시 상황 카테고리</h3>
+                <a th:href="@{/admin/prompt/category/new}" class="btn btn-primary btn-sm">+ 새 카테고리</a>
+            </div>
+            <div class="card-body">
+                <div th:each="subject : ${subjects}" style="margin-bottom: 24px;">
+                    <h4 style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <span class="badge"
+                              th:classappend="'badge-' + ${subject.name().toLowerCase()}"
+                              th:text="${subject.displayName}">연애관</span>
+                        <small style="color: #7f8c8d;" th:text="${subject.description}"></small>
+                    </h4>
+
+                    <div th:with="categories=${categoriesBySubject.get(subject)}">
+                        <div th:if="${#lists.isEmpty(categories)}"
+                             style="padding: 16px; background: #f8fafc; border-radius: 8px; color: #95a5a6;">
+                            등록된 카테고리가 없습니다.
+                        </div>
+
+                        <div th:unless="${#lists.isEmpty(categories)}"
+                             style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            <div th:each="category : ${categories}"
+                                 style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid #e1e8ed;">
+                                <span th:text="${category.categoryName}">기념일/이벤트</span>
+                                <span th:unless="${category.active}" class="badge badge-inactive" style="font-size: 0.7rem;">비활성</span>
+                                <div style="display: flex; gap: 4px;">
+                                    <a th:href="@{/admin/prompt/category/{id}/edit(id=${category.categoryId})}"
+                                       class="btn btn-icon btn-sm btn-secondary" style="padding: 4px 8px;">수정</a>
+                                    <form th:action="@{/admin/prompt/category/{id}/toggle-status(id=${category.categoryId})}"
+                                          method="post" style="display:inline;">
+                                        <button type="submit" class="btn btn-icon btn-sm"
+                                                th:classappend="${category.active} ? 'btn-secondary' : 'btn-success'"
+                                                style="padding: 4px 8px;"
+                                                th:text="${category.active} ? '끄기' : '켜기'">끄기</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

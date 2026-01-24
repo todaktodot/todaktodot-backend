@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>프롬프트 상세</title>
+</head>
+<body>
+    <h2 layout:fragment="pageTitle">프롬프트 상세</h2>
+
+    <div layout:fragment="content">
+        <!-- 상단 액션 버튼 -->
+        <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <a th:href="@{/admin/prompt}" class="btn btn-secondary">&larr; 목록으로</a>
+            <a th:href="@{/admin/prompt/prompt/{id}/edit(id=${prompt.promptId})}" class="btn btn-primary">수정</a>
+        </div>
+
+        <!-- 프롬프트 정보 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>프롬프트 정보</h3>
+                <span class="badge"
+                      th:classappend="${prompt.active} ? 'badge-active' : 'badge-inactive'"
+                      th:text="${prompt.active} ? '활성' : '비활성'">활성</span>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>프롬프트 ID</label>
+                        <div th:text="${prompt.promptId}">1</div>
+                    </div>
+                    <div class="form-group">
+                        <label>프롬프트명</label>
+                        <div th:text="${prompt.promptName}">DAILY_CARD_GENERATE</div>
+                    </div>
+                    <div class="form-group">
+                        <label>버전</label>
+                        <div>v<span th:text="${prompt.version}">1</span></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>설명</label>
+                    <div th:text="${prompt.promptDesc}">설명</div>
+                </div>
+
+                <div class="form-group">
+                    <label>프롬프트 내용</label>
+                    <div style="background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; max-height: 600px; overflow-y: auto; font-size: 0.9rem; line-height: 1.6;">
+                        <th:block th:text="${prompt.promptContent}">프롬프트 내용</th:block>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>등록일시</label>
+                        <div th:text="${#temporals.format(prompt.regDt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01 00:00:00</div>
+                    </div>
+                    <div class="form-group">
+                        <label>수정일시</label>
+                        <div th:text="${#temporals.format(prompt.updDt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01 00:00:00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 하단 액션 버튼 -->
+        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: space-between;">
+            <a th:href="@{/admin/prompt}" class="btn btn-secondary">&larr; 목록으로</a>
+            <div style="display: flex; gap: 10px;">
+                <form th:action="@{/admin/prompt/prompt/{id}/toggle-status(id=${prompt.promptId})}" method="post">
+                    <button type="submit" class="btn"
+                            th:classappend="${prompt.active} ? 'btn-secondary' : 'btn-success'"
+                            th:text="${prompt.active} ? '비활성화' : '활성화'">비활성화</button>
+                </form>
+                <a th:href="@{/admin/prompt/prompt/{id}/edit(id=${prompt.promptId})}" class="btn btn-primary">수정</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

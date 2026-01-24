@@ -82,4 +82,12 @@ public class DailyCardQuestionEntity {
         this.options.add(option);
         option.setQuestion(this);
     }
+
+    public void update(QuestionType questionType, String answerReqYn,
+                       String questionCnts, Long updrId) {
+        this.questionType = questionType;
+        this.answerReqYn = answerReqYn;
+        this.questionCnts = questionCnts;
+        this.updrId = updrId;
+    }
 }

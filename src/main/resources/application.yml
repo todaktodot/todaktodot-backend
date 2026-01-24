@@ -18,7 +18,7 @@ spring:
 # 공통 로깅 설정
 logging:
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg [%X{traceId:-}]%n"
+    console: '%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg [%X{traceId:-}]%n'
   level:
     com.todaktodot.TDTD: info
 
@@ -35,17 +35,3 @@ deploy:
   notification:
     enabled: false
     n8n-webhook-url: ${N8N_DEPLOY_WEBHOOK_URL:}
-
-# Actuator 설정 (Prometheus 메트릭 수집용)
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health, info, prometheus, metrics
-  endpoint:
-    health:
-      show-details: when-authorized
-  prometheus:
-    metrics:
-      export:
-        enabled: true

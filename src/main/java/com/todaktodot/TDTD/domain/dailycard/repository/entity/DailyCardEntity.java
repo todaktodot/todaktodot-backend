@@ -79,4 +79,14 @@ public class DailyCardEntity {
         this.questions.add(question);
         question.setDailyCard(this);
     }
+
+    public void update(CardMode mode, CardSubject subject, CardType type,
+                       String cardTitle, String useYn, Long updrId) {
+        this.mode = mode;
+        this.subject = subject;
+        this.type = type;
+        this.cardTitle = cardTitle;
+        this.useYn = useYn;
+        this.updrId = updrId;
+    }
 }
