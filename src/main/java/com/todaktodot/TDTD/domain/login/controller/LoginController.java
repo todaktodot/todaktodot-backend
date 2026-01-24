@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/login")
-@Tag(name="LoginController", description = "로그인 API")
+@Tag(name="로그인", description = "로그인 API")
 public class LoginController {
 
     private final LoginService loginService;

@@ -34,6 +34,7 @@ public class LoginServiceImpl implements LoginService {
                         .name(socialUser.getName())
                         .provider(socialUser.getProvider())
                         .providerId(socialUser.getId())
+                        .alarmYN("Y")
                         .joinYN("N")
                         .role(Role.USER)
                         .build()));
