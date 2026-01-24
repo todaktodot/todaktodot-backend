@@ -13,7 +13,7 @@ public class LoginResponseDTO {
     private String accessToken;
     @Schema(description = "리프레쉬 토큰")
     private String refreshToken;
-    @Schema(description = "가입 여부", example = "false")
+    @Schema(description = "약관동의 여부", example = "false")
     private boolean isJoined;
     @Schema(description = "커플 여부", example = "false")
     private boolean isCouple;
