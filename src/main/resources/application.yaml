@@ -18,7 +18,7 @@ spring:
 # 공통 로깅 설정
 logging:
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg [%X{traceId:-}]%n"
+    console: '%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg [%X{traceId:-}]%n'
   level:
     com.todaktodot.TDTD: info
 

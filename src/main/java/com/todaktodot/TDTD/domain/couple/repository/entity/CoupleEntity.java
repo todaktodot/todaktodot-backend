@@ -1,5 +1,6 @@
 package com.todaktodot.TDTD.domain.couple.repository.entity;
 
+import com.todaktodot.TDTD.domain.aireport.repository.entity.Report;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,6 +11,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "COUPLE")
@@ -57,6 +60,9 @@ public class CoupleEntity {
     @Column(name = "DEL_YN", nullable = false, length = 1)
     @Builder.Default
     private String delYn = "N";
+
+    @OneToMany(mappedBy = "coupleEntity", cascade = CascadeType.PERSIST)
+    private List<Report> reportList = new ArrayList<>();
 
     public void updateCoupleInfo(LocalDate firstMetDt, RelationshipStage relationshipStage, Long updrId) {
         this.firstMetDt = firstMetDt;
