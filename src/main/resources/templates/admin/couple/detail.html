@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>커플 상세</title>
+</head>
+<body>
+    <h2 layout:fragment="pageTitle">커플 상세</h2>
+
+    <div layout:fragment="content">
+        <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <a th:href="@{/admin/couple}" class="btn btn-secondary">&larr; 목록으로</a>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>커플 정보</h3>
+                <span class="badge"
+                      th:classappend="${couple.delYn == 'N'} ? 'badge-active' : 'badge-inactive'"
+                      th:text="${couple.delYn == 'N'} ? '활성' : '비활성'">활성</span>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>커플 ID</label>
+                        <div th:text="${couple.coupleId}">1</div>
+                    </div>
+                    <div class="form-group">
+                        <label>유저 1 ID</label>
+                        <div th:text="${couple.userId1}">100</div>
+                    </div>
+                    <div class="form-group">
+                        <label>유저 2 ID</label>
+                        <div th:text="${couple.userId2}">200</div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>관계 단계</label>
+                        <div th:text="${couple.relationshipStage}">-</div>
+                    </div>
+                    <div class="form-group">
+                        <label>우리가 만난 날</label>
+                        <div th:text="${couple.firstMetDt != null} ? ${#temporals.format(couple.firstMetDt, 'yyyy-MM-dd')} : '-'">-</div>
+                    </div>
+                    <div class="form-group">
+                        <label>연결 일시</label>
+                        <div th:text="${couple.connectedDt != null} ? ${#temporals.format(couple.connectedDt, 'yyyy-MM-dd HH:mm:ss')} : '-'">-</div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>등록일시</label>
+                        <div th:text="${couple.regDt != null} ? ${#temporals.format(couple.regDt, 'yyyy-MM-dd HH:mm:ss')} : '-'">-</div>
+                    </div>
+                    <div class="form-group">
+                        <label>수정일시</label>
+                        <div th:text="${couple.updDt != null} ? ${#temporals.format(couple.updDt, 'yyyy-MM-dd HH:mm:ss')} : '-'">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>커플 내 유저 정보</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>유저 1</label>
+                        <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e1e8ed;">
+                            <div><strong>ID:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.userId} : '-'">-</span></div>
+                            <div><strong>이름:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.name} : '-'">-</span></div>
+                            <div><strong>닉네임:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.nickname} : '-'">-</span></div>
+                            <div><strong>이메일:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.email} : '-'">-</span></div>
+                            <div><strong>가입경로:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.provider} : '-'">-</span></div>
+                            <div><strong>가입여부:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.joinYn} : '-'">-</span></div>
+                            <div><strong>등록일:</strong> <span th:text="${couple.user1 != null && couple.user1.regDt != null} ? ${#temporals.format(couple.user1.regDt, 'yyyy-MM-dd HH:mm:ss')} : '-'">-</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>유저 2</label>
+                        <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e1e8ed;">
+                            <div><strong>ID:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.userId} : '-'">-</span></div>
+                            <div><strong>이름:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.name} : '-'">-</span></div>
+                            <div><strong>닉네임:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.nickname} : '-'">-</span></div>
+                            <div><strong>이메일:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.email} : '-'">-</span></div>
+                            <div><strong>가입경로:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.provider} : '-'">-</span></div>
+                            <div><strong>가입여부:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.joinYn} : '-'">-</span></div>
+                            <div><strong>등록일:</strong> <span th:text="${couple.user2 != null && couple.user2.regDt != null} ? ${#temporals.format(couple.user2.regDt, 'yyyy-MM-dd HH:mm:ss')} : '-'">-</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>커플 데일리카드 이력 (<span th:text="${#lists.size(couple.dailyCards)}">0</span>개)</h3>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(couple.dailyCards)}" class="empty-state">
+                    <div class="icon">CARD</div>
+                    <h3>배정된 데일리카드가 없습니다</h3>
+                </div>
+
+                <div th:unless="${#lists.isEmpty(couple.dailyCards)}">
+                    <div th:each="card : ${couple.dailyCards}" class="question-item" style="border-left-color: #2563eb;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <div>
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                        th:attr="data-target=${'card-detail-' + card.coupleCardId}"
+                                        onclick="toggleCardDetail(this)"
+                                        style="margin-right: 8px;">
+                                    펼치기
+                                </button>
+                                <strong th:text="${#temporals.format(card.issuedDate, 'yyyy-MM-dd')}">2024-01-01</strong>
+                                <span style="margin-left: 8px; color: #7f8c8d;">카드 ID:</span>
+                                <span th:text="${card.cardId}">1</span>
+                                <span style="margin-left: 8px; color: #7f8c8d;">커플 카드 ID:</span>
+                                <span th:text="${card.coupleCardId}">1</span>
+                            </div>
+                            <div>
+                                <span class="badge"
+                                      th:classappend="'badge-' + ${card.mode.name().toLowerCase()}"
+                                      th:text="${card.mode.displayName}">디저트</span>
+                                <span class="badge"
+                                      th:classappend="'badge-' + ${card.subject.name().toLowerCase()}"
+                                      th:text="${card.subject.displayName}">연애관</span>
+                                <span class="badge"
+                                      th:classappend="'badge-' + ${card.type.name().toLowerCase()}"
+                                      th:text="${card.type.displayName}">상황극</span>
+                                <span class="badge"
+                                      th:classappend="${card.selectedYn == 'Y'} ? 'badge-active' : 'badge-inactive'"
+                                      th:text="${card.selectedYn == 'Y'} ? '선택됨' : '미선택'">선택됨</span>
+                            </div>
+                        </div>
+
+                        <div th:id="${'card-detail-' + card.coupleCardId}" style="display: none;">
+                            <div style="background: #fff; padding: 12px 16px; border-radius: 8px; border: 1px solid #e1e8ed; margin-bottom: 16px;">
+                                <strong>카드 내용</strong>
+                                <p th:text="${card.cardTitle}" style="margin-top: 6px; white-space: pre-wrap;">카드 제목</p>
+                            </div>
+
+                            <div th:each="question, iterStat : ${card.questions}" style="margin-bottom: 16px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong>질문 [[${iterStat.count}]]</strong>
+                                        <span class="badge" style="margin-left: 8px;"
+                                              th:classappend="${question.questionType.name() == 'MULTIPLE_CHOICE'} ? 'badge-roleplay' : 'badge-balance'"
+                                              th:text="${question.questionTypeDisplayName}">객관식</span>
+                                    </div>
+                                </div>
+                                <p th:text="${question.questionCnts}" style="margin: 8px 0 12px 0;">질문 내용</p>
+
+                                <div th:if="${!#lists.isEmpty(question.options)}" style="margin-bottom: 12px;">
+                                    <ul class="option-list">
+                                        <li th:each="option : ${question.options}" class="option-item">
+                                            <span class="option-number" th:text="${option.optionNo}">1</span>
+                                            <span th:text="${option.optionCnts}">선택지 내용</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>유저 1 답변</label>
+                                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                             th:text="${question.user1Answer != null} ? ${question.user1Answer} : '-'">-</div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>유저 2 답변</label>
+                                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                             th:text="${question.user2Answer != null} ? ${question.user2Answer} : '-'">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <a th:href="@{/admin/couple}" class="btn btn-secondary">&larr; 목록으로</a>
+        </div>
+    </div>
+
+    <th:block layout:fragment="scripts">
+        <script>
+            function toggleCardDetail(button) {
+                const targetId = button.getAttribute('data-target');
+                const section = document.getElementById(targetId);
+                if (!section) {
+                    return;
+                }
+
+                const isHidden = section.style.display === 'none' || section.style.display === '';
+                section.style.display = isHidden ? 'block' : 'none';
+                button.textContent = isHidden ? '접기' : '펼치기';
+            }
+        </script>
+    </th:block>
+</body>
+</html>

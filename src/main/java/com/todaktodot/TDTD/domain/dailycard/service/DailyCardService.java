@@ -3,6 +3,7 @@ package com.todaktodot.TDTD.domain.dailycard.service;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.GenerateDailyCardRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
@@ -45,6 +46,14 @@ public interface DailyCardService {
      * @return 할당된 커플 카드 정보
      */
     AssignCardResponseDTO assignCardToCouple(Long userId, AssignCardRequestDTO requestDTO);
+
+    /**
+     * 커플별 데일리카드 배정(배치/관리자 실행)
+     *
+     * @param startDate 배정 시작일
+     * @param endDate 배정 종료일
+     */
+    AssignBatchResponseDTO assignDailyCardsForCouples(java.time.LocalDate startDate, java.time.LocalDate endDate);
 
     /**
      * AI 프롬프트 미리보기

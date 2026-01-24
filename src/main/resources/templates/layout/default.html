@@ -23,6 +23,12 @@
             <nav class="sidebar-nav">
                 <ul>
                     <li>
+                        <a th:href="@{/admin/couple}"
+                           th:classappend="${activeMenu == 'couple'} ? 'active' : ''">
+                            <span>커플 관리</span>
+                        </a>
+                    </li>
+                    <li>
                         <a th:href="@{/admin/daily-card}"
                            th:classappend="${activeMenu == 'dailycard'} ? 'active' : ''">
                             <span>데일리카드 관리</span>

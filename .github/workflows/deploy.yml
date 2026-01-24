@@ -8,17 +8,30 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Debug n8n DNS
+        run: |
+          set -euxo pipefail
+          echo "Resolver:"; cat /etc/resolv.conf || true
+          echo "getent:"; getent hosts todaktodot-n8n.duckdns.org || true
+          echo "nslookup:"; nslookup todaktodot-n8n.duckdns.org || true
+          echo "dig(A):"; dig +time=2 +tries=1 todaktodot-n8n.duckdns.org A || true
+          echo "dig(A) @1.1.1.1:"; dig @1.1.1.1 +time=2 +tries=1 todaktodot-n8n.duckdns.org A || true
       # 1. 배포 시작 알림 (n8n -> Discord)
       - name: Notify Deploy Start
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
+          JSON_PAYLOAD=$(jq -n \
+            --arg ref "refs/heads/${{ github.ref_name }}" \
+            --arg after "${{ github.sha }}" \
+            --arg pusher "${{ github.actor }}" \
+            --arg message "$COMMIT_MESSAGE" \
+            --arg timestamp "$(TZ=Asia/Seoul date +"%Y-%m-%d %H:%M:%S")" \
+            '{ref: $ref, after: $after, pusher: {name: $pusher}, head_commit: {message: $message}, timestamp: $timestamp}')
+
           curl -X POST https://todaktodot-n8n.duckdns.org/webhook/github-deploy \
             -H "Content-Type: application/json" \
-            -d '{
-              "ref": "refs/heads/${{ github.ref_name }}",
-              "after": "${{ github.sha }}",
-              "pusher": {"name": "${{ github.actor }}"},
-              "head_commit": {"message": "${{ github.event.head_commit.message }}"}
-            }'
+            -d "$JSON_PAYLOAD"
       # 1.5. DNS / HOST 진단 (임시)
       - name: Debug EC2 host DNS
         shell: bash

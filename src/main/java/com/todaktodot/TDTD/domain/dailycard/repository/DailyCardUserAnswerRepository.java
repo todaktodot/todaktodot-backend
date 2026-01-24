@@ -24,6 +24,10 @@ public interface DailyCardUserAnswerRepository extends JpaRepository<DailyCardUs
            "WHERE a.coupleCardId = :coupleCardId AND a.delYn = 'N'")
     List<DailyCardUserAnswerEntity> findAllByCoupleCardId(@Param("coupleCardId") Long coupleCardId);
 
+    @Query("SELECT a FROM DailyCardUserAnswerEntity a " +
+           "WHERE a.coupleCardId IN :coupleCardIds AND a.delYn = 'N'")
+    List<DailyCardUserAnswerEntity> findAllByCoupleCardIds(@Param("coupleCardIds") List<Long> coupleCardIds);
+
     boolean existsByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(
             Long coupleCardId, Integer questionNo, Long userId, String delYn);
 
@@ -65,4 +69,10 @@ public interface DailyCardUserAnswerRepository extends JpaRepository<DailyCardUs
                                                      @Param("userId2") Long userId2,
                                                      @Param("questionType") QuestionType questionType,
                                                      @Param("delYn") String delYn);
+
+
+    @Query("SELECT DISTINCT a.cardId FROM DailyCardUserAnswerEntity a " +
+           "JOIN CoupleDailyCardEntity c ON a.coupleCardId = c.coupleCardId " +
+           "WHERE c.coupleId = :coupleId AND a.delYn = 'N' AND c.delYn = 'N'")
+    List<Long> findAnsweredCardIdsByCoupleId(@Param("coupleId") Long coupleId);
 }

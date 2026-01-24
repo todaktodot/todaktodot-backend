@@ -1,0 +1,77 @@
+package com.todaktodot.TDTD.domain.feedback.repository.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+@Entity
+@Table(name = "AI_CARD_FEEDBACK_INFO")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class AiCardFeedbackInfoEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "INFO_ID")
+    private Long infoId;
+
+    @Column(name = "FEEDBACK_ID", nullable = false)
+    private Long feedbackId;
+
+    @Column(name = "AI_MODEL", length = 50, nullable = false)
+    private String aiModel;
+
+    @Column(name = "TEMPERATURE", nullable = false, length = 10)
+    private String temperature;
+
+    @Column(name = "FINAL_PROMPT", columnDefinition = "TEXT", nullable = false)
+    private String finalPrompt;
+
+    @Column(name = "AI_RESPONSE_RAW", columnDefinition = "TEXT")
+    private String aiResponseRaw;
+
+    @Column(name = "STATUS", length = 20, nullable = false)
+    private String status;
+
+    @CreationTimestamp
+    @Column(name = "REG_DT", nullable = false, updatable = false)
+    private LocalDateTime regDt;
+
+    @Column(name = "REGR_ID", nullable = false)
+    private Long regrId;
+
+    @UpdateTimestamp
+    @Column(name = "UPD_DT", nullable = false)
+    private LocalDateTime updDt;
+
+    @Column(name = "UPDR_ID", nullable = false)
+    private Long updrId;
+
+    @Column(name = "DEL_YN", length = 1, nullable = false)
+    private String delYn = "N";
+
+    @Builder
+    public AiCardFeedbackInfoEntity(Long feedbackId, String aiModel, String temperature,
+                                    String finalPrompt, String aiResponseRaw, String status,
+                                    Long regrId, Long updrId) {
+        this.feedbackId = feedbackId;
+        this.aiModel = aiModel;
+        this.temperature = temperature;
+        this.finalPrompt = finalPrompt;
+        this.aiResponseRaw = aiResponseRaw;
+        this.status = status;
+        this.regrId = regrId;
+        this.updrId = updrId;
+        this.delYn = "N";
+    }
+}
