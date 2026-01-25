@@ -52,7 +52,26 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
                 .map(value -> coupleRepository.findByDelYn(value, pageable))
                 .orElseGet(() -> coupleRepository.findAll(pageable));
 
-        return couples.map(CoupleListDTO::from);
+        List<Long> userIds = couples.getContent().stream()
+                .flatMap(couple -> java.util.stream.Stream.of(couple.getUserId1(), couple.getUserId2()))
+                .distinct()
+                .toList();
+
+        Map<Long, String> userNameById = userIds.isEmpty()
+                ? Map.of()
+                : userRepository.findByIdIn(userIds).stream()
+                        .filter(user -> user.getId() != null)
+                        .collect(Collectors.toMap(
+                                User::getId,
+                                user -> Optional.ofNullable(user.getName()).orElse(""),
+                                (existing, ignored) -> existing
+                        ));
+
+        return couples.map(couple -> CoupleListDTO.from(
+                couple,
+                userNameById.get(couple.getUserId1()),
+                userNameById.get(couple.getUserId2())
+        ));
     }
 
     @Override

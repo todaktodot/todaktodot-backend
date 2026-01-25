@@ -73,8 +73,8 @@
                                     <a th:href="@{/admin/couple/{id}(id=${couple.coupleId})}"
                                        th:text="${couple.coupleId}" style="color: #3498db;">1</a>
                                 </td>
-                                <td th:text="${couple.userId1}">100</td>
-                                <td th:text="${couple.userId2}">200</td>
+                                <td th:text="${couple.user1Display}">100</td>
+                                <td th:text="${couple.user2Display}">200</td>
                                 <td th:text="${couple.relationshipStage}">-</td>
                                 <td th:text="${couple.firstMetDt != null} ? ${#temporals.format(couple.firstMetDt, 'yyyy-MM-dd')} : '-'">-</td>
                                 <td th:text="${couple.connectedDt != null} ? ${#temporals.format(couple.connectedDt, 'yyyy-MM-dd HH:mm')} : '-'">-</td>

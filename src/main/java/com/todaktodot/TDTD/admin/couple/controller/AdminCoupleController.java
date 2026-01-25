@@ -36,10 +36,11 @@ public class AdminCoupleController {
     public String list(@RequestParam(defaultValue = "0") int page,
                        @RequestParam(required = false) String delYn,
                        Model model) {
-        Page<CoupleListDTO> couples = adminCoupleService.getCouples(delYn, PageRequest.of(page, DEFAULT_PAGE_SIZE));
+        String resolvedDelYn = (delYn == null || delYn.isBlank()) ? "N" : delYn;
+        Page<CoupleListDTO> couples = adminCoupleService.getCouples(resolvedDelYn, PageRequest.of(page, DEFAULT_PAGE_SIZE));
 
         model.addAttribute("couples", couples);
-        model.addAttribute("delYn", delYn);
+        model.addAttribute("delYn", resolvedDelYn);
         model.addAttribute("totalCount", adminCoupleService.getTotalCount());
         model.addAttribute("activeCount", adminCoupleService.getActiveCount());
         model.addAttribute("inactiveCount", adminCoupleService.getInactiveCount());
