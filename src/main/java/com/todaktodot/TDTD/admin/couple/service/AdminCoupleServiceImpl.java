@@ -2,6 +2,7 @@ package com.todaktodot.TDTD.admin.couple.service;
 
 import com.todaktodot.TDTD.admin.couple.dto.CoupleDetailDTO;
 import com.todaktodot.TDTD.admin.couple.dto.CoupleListDTO;
+import com.todaktodot.TDTD.admin.couple.dto.FeedbackSummaryDTO;
 import com.todaktodot.TDTD.admin.couple.dto.UserSummaryDTO;
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
@@ -12,6 +13,10 @@ import com.todaktodot.TDTD.domain.dailycard.repository.entity.CoupleDailyCardEnt
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.DailyCardEntity;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.DailyCardQuestionEntity;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.DailyCardUserAnswerEntity;
+import com.todaktodot.TDTD.domain.feedback.repository.CoupleDailyCardFeedbackRepository;
+import com.todaktodot.TDTD.domain.feedback.repository.DailyCardFeedbackRepository;
+import com.todaktodot.TDTD.domain.feedback.repository.entity.CoupleDailyCardFeedbackEntity;
+import com.todaktodot.TDTD.domain.feedback.repository.entity.DailyCardFeedbackEntity;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
 import java.util.ArrayList;
@@ -19,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,6 +42,8 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
     private final CoupleDailyCardRepository coupleDailyCardRepository;
     private final DailyCardRepository dailyCardRepository;
     private final DailyCardUserAnswerRepository dailyCardUserAnswerRepository;
+    private final CoupleDailyCardFeedbackRepository coupleDailyCardFeedbackRepository;
+    private final DailyCardFeedbackRepository dailyCardFeedbackRepository;
 
     @Override
     public Page<CoupleListDTO> getCouples(String delYn, Pageable pageable) {
@@ -103,6 +111,21 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
                 .findAllByCoupleCardIds(coupleCardIds).stream()
                 .collect(Collectors.groupingBy(DailyCardUserAnswerEntity::getCoupleCardId));
 
+        // 피드백 매핑 배치 조회
+        Map<Long, Long> feedbackIdByCoupleCardId = coupleDailyCardFeedbackRepository
+                .findAllByCoupleCardIdInAndDelYn(coupleCardIds, "N").stream()
+                .collect(Collectors.toMap(
+                        CoupleDailyCardFeedbackEntity::getCoupleCardId,
+                        CoupleDailyCardFeedbackEntity::getFeedbackId
+                ));
+
+        // 피드백 내용 배치 조회
+        Set<Long> feedbackIds = Set.copyOf(feedbackIdByCoupleCardId.values());
+        Map<Long, DailyCardFeedbackEntity> feedbackById = feedbackIds.isEmpty()
+                ? Map.of()
+                : dailyCardFeedbackRepository.findAllById(feedbackIds).stream()
+                        .collect(Collectors.toMap(DailyCardFeedbackEntity::getFeedbackId, f -> f));
+
         List<CoupleDetailDTO.CoupleDailyCardDTO> dailyCards = new ArrayList<>();
 
         for (CoupleDailyCardEntity coupleCard : coupleCards) {
@@ -151,6 +174,19 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
 
             questions.sort((a, b) -> a.getQuestionNo().compareTo(b.getQuestionNo()));
 
+            // bothAnswered 계산: 필수 질문에 대해 둘 다 답변했는지 확인
+            boolean bothAnswered = checkBothAnswered(dailyCard, answersByQuestion, couple);
+
+            // 피드백 조회
+            Long feedbackId = feedbackIdByCoupleCardId.get(coupleCard.getCoupleCardId());
+            FeedbackSummaryDTO feedback = null;
+            if (feedbackId != null) {
+                DailyCardFeedbackEntity feedbackEntity = feedbackById.get(feedbackId);
+                if (feedbackEntity != null) {
+                    feedback = FeedbackSummaryDTO.from(feedbackEntity);
+                }
+            }
+
             dailyCards.add(new CoupleDetailDTO.CoupleDailyCardDTO(
                     coupleCard.getCoupleCardId(),
                     coupleCard.getCardId(),
@@ -161,7 +197,9 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
                     dailyCard.getSubject(),
                     dailyCard.getType(),
                     dailyCard.getCardTitle(),
-                    questions
+                    questions,
+                    bothAnswered,
+                    feedback
             ));
         }
 
@@ -179,6 +217,38 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
                 user2,
                 dailyCards
         );
+    }
+
+    /**
+     * 커플 둘 다 필수 질문에 답변했는지 확인
+     */
+    private boolean checkBothAnswered(DailyCardEntity dailyCard,
+                                       Map<Integer, List<DailyCardUserAnswerEntity>> answersByQuestion,
+                                       CoupleEntity couple) {
+        for (DailyCardQuestionEntity question : dailyCard.getQuestions()) {
+            // 필수 질문만 체크
+            if (!"Y".equals(question.getAnswerReqYn())) {
+                continue;
+            }
+
+            List<DailyCardUserAnswerEntity> questionAnswers = answersByQuestion
+                    .getOrDefault(question.getQuestionNo(), List.of());
+
+            boolean user1Answered = questionAnswers.stream()
+                    .anyMatch(a -> a.getUserId().equals(couple.getUserId1())
+                            && a.getAnswerContent() != null
+                            && !a.getAnswerContent().isBlank());
+
+            boolean user2Answered = questionAnswers.stream()
+                    .anyMatch(a -> a.getUserId().equals(couple.getUserId2())
+                            && a.getAnswerContent() != null
+                            && !a.getAnswerContent().isBlank());
+
+            if (!user1Answered || !user2Answered) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private String resolveAnswerText(DailyCardQuestionEntity question, String answerContent) {

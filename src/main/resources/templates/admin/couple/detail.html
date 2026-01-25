@@ -137,6 +137,10 @@
                                 <span class="badge"
                                       th:classappend="${card.selectedYn == 'Y'} ? 'badge-active' : 'badge-inactive'"
                                       th:text="${card.selectedYn == 'Y'} ? '선택됨' : '미선택'">선택됨</span>
+                                <!-- AI 피드백 상태 배지 -->
+                                <span th:if="${card.feedback != null}" class="badge" style="background: #10b981; color: white;">피드백 완료</span>
+                                <span th:if="${card.bothAnswered && card.feedback == null}" class="badge" style="background: #f59e0b; color: white;">생성 가능</span>
+                                <span th:if="${!card.bothAnswered}" class="badge badge-inactive">답변 대기</span>
                             </div>
                         </div>
 
@@ -179,6 +183,52 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- AI 피드백 섹션 -->
+                            <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; border: 1px solid #bae6fd; margin-top: 16px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <strong style="color: #0369a1;">AI 피드백</strong>
+                                    <span th:if="${!card.bothAnswered}" class="badge badge-inactive">답변 대기중</span>
+                                </div>
+
+                                <!-- 케이스 1: 둘 다 답변 완료 + 피드백 미생성 -->
+                                <div th:if="${card.bothAnswered && card.feedback == null}">
+                                    <p style="color: #7f8c8d; margin-bottom: 12px;">커플 두 명 모두 답변을 완료했습니다. AI 피드백을 생성할 수 있습니다.</p>
+                                    <button type="button" class="btn btn-primary"
+                                            th:attr="data-couple-id=${couple.coupleId},
+                                                     data-couple-card-id=${card.coupleCardId},
+                                                     data-card-id=${card.cardId},
+                                                     data-issued-date=${#temporals.format(card.issuedDate, 'yyyy-MM-dd')}"
+                                            onclick="generateFeedback(this)">
+                                        AI 피드백 생성
+                                    </button>
+                                </div>
+
+                                <!-- 케이스 2: 피드백 존재 -->
+                                <div th:if="${card.feedback != null}">
+                                    <div style="margin-bottom: 12px;">
+                                        <label style="font-weight: 600; color: #374151;">요약</label>
+                                        <p th:text="${card.feedback.summary}" style="margin-top: 4px; white-space: pre-wrap;">요약 내용</p>
+                                    </div>
+                                    <div style="margin-bottom: 12px;">
+                                        <label style="font-weight: 600; color: #374151;">공통점</label>
+                                        <p th:text="${card.feedback.matchPoints}" style="margin-top: 4px; white-space: pre-wrap;">공통점 내용</p>
+                                    </div>
+                                    <div style="margin-bottom: 12px;">
+                                        <label style="font-weight: 600; color: #374151;">차이점</label>
+                                        <p th:text="${card.feedback.differences}" style="margin-top: 4px; white-space: pre-wrap;">차이점 내용</p>
+                                    </div>
+                                    <div>
+                                        <label style="font-weight: 600; color: #374151;">대화 시작 질문</label>
+                                        <p th:text="${card.feedback.conversationStarter}" style="margin-top: 4px; white-space: pre-wrap;">대화 시작 질문</p>
+                                    </div>
+                                </div>
+
+                                <!-- 케이스 3: 둘 다 답변 안함 -->
+                                <div th:if="${!card.bothAnswered && card.feedback == null}">
+                                    <p style="color: #7f8c8d;">커플 두 명 모두 답변을 완료해야 AI 피드백을 생성할 수 있습니다.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -202,6 +252,47 @@
                 const isHidden = section.style.display === 'none' || section.style.display === '';
                 section.style.display = isHidden ? 'block' : 'none';
                 button.textContent = isHidden ? '접기' : '펼치기';
+            }
+
+            async function generateFeedback(button) {
+                if (!confirm('AI 피드백을 생성하시겠습니까?\n생성에 수 초가 소요될 수 있습니다.')) {
+                    return;
+                }
+
+                const coupleId = button.getAttribute('data-couple-id');
+                const coupleCardId = button.getAttribute('data-couple-card-id');
+                const cardId = button.getAttribute('data-card-id');
+                const issuedDate = button.getAttribute('data-issued-date');
+
+                const originalText = button.textContent;
+                button.disabled = true;
+                button.textContent = '생성중...';
+
+                try {
+                    const response = await fetch(`/admin/couple/${coupleId}/feedback/generate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            coupleCardId: parseInt(coupleCardId),
+                            cardId: parseInt(cardId),
+                            issuedDate: issuedDate
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || '피드백 생성에 실패했습니다.');
+                    }
+
+                    alert('AI 피드백이 생성되었습니다.');
+                    location.reload();
+                } catch (error) {
+                    alert('오류: ' + error.message);
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
             }
         </script>
     </th:block>

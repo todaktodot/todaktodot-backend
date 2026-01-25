@@ -75,11 +75,14 @@ public class CoupleDetailDTO {
         private final CardType type;
         private final String cardTitle;
         private final List<DailyCardQuestionDTO> questions;
+        private final boolean bothAnswered;
+        private final FeedbackSummaryDTO feedback;
 
         public CoupleDailyCardDTO(Long coupleCardId, Long cardId, LocalDate issuedDate,
                                   String selectedYn, String delYn, CardMode mode,
                                   CardSubject subject, CardType type, String cardTitle,
-                                  List<DailyCardQuestionDTO> questions) {
+                                  List<DailyCardQuestionDTO> questions,
+                                  boolean bothAnswered, FeedbackSummaryDTO feedback) {
             this.coupleCardId = coupleCardId;
             this.cardId = cardId;
             this.issuedDate = issuedDate;
@@ -90,6 +93,8 @@ public class CoupleDetailDTO {
             this.type = type;
             this.cardTitle = cardTitle;
             this.questions = questions;
+            this.bothAnswered = bothAnswered;
+            this.feedback = feedback;
         }
     }
 
