@@ -16,7 +16,7 @@ public interface AdminDailyCardService {
 
     DailyCardDetailDTO getDailyCardDetail(Long cardId);
 
-    void updateDailyCard(DailyCardUpdateDTO updateDTO);
+    Long updateDailyCard(DailyCardUpdateDTO updateDTO);
 
     void deleteDailyCard(Long cardId);
 

@@ -105,10 +105,10 @@ public class AdminDailyCardController {
         }
 
         updateDTO.setCardId(cardId);
-        adminDailyCardService.updateDailyCard(updateDTO);
+        Long newCardId = adminDailyCardService.updateDailyCard(updateDTO);
 
         redirectAttributes.addFlashAttribute("message", "카드가 수정되었습니다.");
-        return "redirect:/admin/daily-card/" + cardId;
+        return "redirect:/admin/daily-card/" + newCardId;
     }
 
     @PostMapping("/{cardId}/delete")

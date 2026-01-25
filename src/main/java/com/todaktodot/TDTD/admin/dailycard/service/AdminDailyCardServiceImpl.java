@@ -51,13 +51,16 @@ public class AdminDailyCardServiceImpl implements AdminDailyCardService {
 
     @Override
     @Transactional
-    public void updateDailyCard(DailyCardUpdateDTO updateDTO) {
-        // 카드와 질문, 옵션을 함께 조회
+    public Long updateDailyCard(DailyCardUpdateDTO updateDTO) {
         DailyCardEntity card = dailyCardRepository.findByIdWithQuestionsAndOptions(updateDTO.getCardId())
                 .orElseThrow(() -> new IllegalArgumentException("카드를 찾을 수 없습니다: " + updateDTO.getCardId()));
 
-        // 1. 카드 기본 정보 업데이트
-        card.update(
+        DailyCardEntity newCard = DailyCardEntity.builder()
+                .regrId(ADMIN_USER_ID)
+                .updrId(ADMIN_USER_ID)
+                .build();
+
+        newCard.update(
                 updateDTO.getMode(),
                 updateDTO.getSubject(),
                 updateDTO.getType(),
@@ -66,35 +69,72 @@ public class AdminDailyCardServiceImpl implements AdminDailyCardService {
                 ADMIN_USER_ID
         );
 
-        // 2. 질문 업데이트
+        DailyCardEntity savedCard = dailyCardRepository.save(newCard);
+
+        aiCardGenerationInfoRepository.findByCardId(card.getCardId())
+                .ifPresent(info -> {
+                    String finalPrompt = "이 데일리카드는 데일리카드 ID " + card.getCardId()
+                            + "로부터 수정되어 재발급되었습니다.\n\n" + info.getFinalPrompt();
+
+                    AiCardGenerationInfoEntity newInfo = AiCardGenerationInfoEntity.builder()
+                            .cardId(savedCard.getCardId())
+                            .promptId(info.getPromptId())
+                            .aiModel(info.getAiModel())
+                            .temperature(info.getTemperature())
+                            .mode(info.getMode())
+                            .subject(info.getSubject())
+                            .type(info.getType())
+                            .situationCategory(info.getSituationCategory())
+                            .finalPrompt(finalPrompt)
+                            .aiResponse(info.getAiResponse())
+                            .regrId(ADMIN_USER_ID)
+                            .build();
+
+                    aiCardGenerationInfoRepository.save(newInfo);
+                });
+
         if (updateDTO.getQuestions() != null) {
             for (DailyCardUpdateDTO.QuestionUpdateDTO questionDTO : updateDTO.getQuestions()) {
-                card.getQuestions().stream()
-                        .filter(q -> q.getQuestionNo().equals(questionDTO.getQuestionNo()))
-                        .findFirst()
-                        .ifPresent(question -> {
-                            question.update(
-                                    questionDTO.getQuestionType(),
-                                    questionDTO.getAnswerReqYn(),
-                                    questionDTO.getQuestionCnts(),
-                                    ADMIN_USER_ID
-                            );
+                String answerReqYn = "Y".equals(questionDTO.getAnswerReqYn()) ? "Y" : "N";
+                DailyCardQuestionEntity question = DailyCardQuestionEntity.builder()
+                        .cardId(savedCard.getCardId())
+                        .questionNo(questionDTO.getQuestionNo())
+                        .questionType(questionDTO.getQuestionType())
+                        .answerReqYn(answerReqYn)
+                        .questionCnts(questionDTO.getQuestionCnts())
+                        .regrId(ADMIN_USER_ID)
+                        .updrId(ADMIN_USER_ID)
+                        .build();
 
-                            // 3. 옵션 업데이트
-                            if (questionDTO.getOptions() != null) {
-                                for (DailyCardUpdateDTO.OptionUpdateDTO optionDTO : questionDTO.getOptions()) {
-                                    question.getOptions().stream()
-                                            .filter(o -> o.getOptionNo().equals(optionDTO.getOptionNo()))
-                                            .findFirst()
-                                            .ifPresent(option -> option.update(
-                                                    optionDTO.getOptionCnts(),
-                                                    ADMIN_USER_ID
-                                            ));
-                                }
-                            }
-                        });
+                questionRepository.save(question);
+
+                if (questionDTO.getOptions() != null) {
+                    for (DailyCardUpdateDTO.OptionUpdateDTO optionDTO : questionDTO.getOptions()) {
+                        DailyCardOptionEntity option = DailyCardOptionEntity.builder()
+                                .cardId(savedCard.getCardId())
+                                .questionNo(questionDTO.getQuestionNo())
+                                .optionNo(optionDTO.getOptionNo())
+                                .optionCnts(optionDTO.getOptionCnts())
+                                .regrId(ADMIN_USER_ID)
+                                .updrId(ADMIN_USER_ID)
+                                .build();
+
+                        optionRepository.save(option);
+                    }
+                }
             }
         }
+
+        card.update(
+                card.getMode(),
+                card.getSubject(),
+                card.getType(),
+                card.getCardTitle(),
+                "N",
+                ADMIN_USER_ID
+        );
+
+        return savedCard.getCardId();
     }
 
     @Override
