@@ -27,6 +27,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +39,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     private final AiCardFeedbackInfoRepository aiCardFeedbackInfoRepository;
     private final CoupleDailyCardFeedbackRepository coupleDailyCardFeedbackRepository;
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
 
     private static final String QUESTION_TYPE_SUBJECTIVE = "SUBJECTIVE";
     private static final String ANSWER_REQUIRED = "Y";
@@ -86,27 +88,86 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     @Override
     public GenerateFeedbackResponseDTO generateFeedback(Long userId, GenerateFeedbackRequestDTO requestDTO) {
-        FeedbackContext context = loadFeedbackContext(userId, requestDTO);
+        // ==================== 1단계: 조회 트랜잭션 ====================
+        // 중복 체크 + 컨텍스트 로드 + 캐시 조회를 한 트랜잭션에서 수행 후 커넥션 반환
+        FeedbackContextOrCachedResult contextOrCached = transactionTemplate.execute(status -> {
+            Long coupleCardId = requestDTO.getCoupleCardId();
 
-        if (!context.hasSubjectiveAnswer()) {
-            DailyCardFeedbackEntity cachedFeedback = dailyCardFeedbackRepository
-                    .findByCardIdAndChoiceCombinationHashAndHasSubjectiveAndDelYn(
-                            context.cardId(), context.combinationHash(), "N", "N")
-                    .orElse(null);
+            // 중복 피드백 요청 시 리턴
+            checkDuplicateFeedbackRequest(coupleCardId);
 
-            if (cachedFeedback != null) {
-                saveOrUpdateCoupleFeedbackMapping(context.coupleCardId(), cachedFeedback.getFeedbackId(), userId);
-                return GenerateFeedbackResponseDTO.from(cachedFeedback);
+            FeedbackContext context = loadFeedbackContext(userId, requestDTO);
+
+            // 객관식만 있을 경우 캐시 조회
+            if (!context.hasSubjectiveAnswer()) {
+                DailyCardFeedbackEntity cachedFeedback = dailyCardFeedbackRepository
+                        .findByCardIdAndChoiceCombinationHashAndHasSubjectiveAndDelYn(
+                                context.cardId(), context.combinationHash(), "N", "N")
+                        .orElse(null);
+
+                if (cachedFeedback != null) {
+                    // 캐시 히트 시 매핑 저장 후 캐시된 피드백 반환
+                    saveOrUpdateCoupleFeedbackMapping(context.coupleCardId(), cachedFeedback.getFeedbackId(), userId);
+                    return FeedbackContextOrCachedResult.cached(cachedFeedback);
+                }
             }
+
+            return FeedbackContextOrCachedResult.needsGeneration(context);
+        });
+
+        if (contextOrCached == null) {
+            throw new IllegalStateException("피드백 컨텍스트 조회에 실패했습니다.");
         }
 
+        // 캐시 히트인 경우 바로 반환
+        if (contextOrCached.isCached()) {
+            return GenerateFeedbackResponseDTO.from(contextOrCached.cachedFeedback());
+        }
+
+        FeedbackContext context = contextOrCached.context();
+
+        // ==================== 2단계: AI 호출 ====================
         String aiModel = "gpt-4o-mini";
         double temperature = 0.7;
         FeedbackGenerationResult feedbackResult = callAiForFeedback(context, aiModel, temperature);
 
-        return saveFeedbackResult(userId, context, feedbackResult, aiModel);
+        // ==================== 3단계: 저장 트랜잭션 ====================
+        return transactionTemplate.execute(status ->
+                saveFeedbackResult(userId, context, feedbackResult, aiModel)
+        );
     }
 
+    /**
+     * 조회 단계의 결과를 담는 컨테이너.
+     * 캐시 히트 시 cachedFeedback을, 캐시 미스 시 context를 반환.
+     */
+    private record FeedbackContextOrCachedResult(
+            FeedbackContext context,
+            DailyCardFeedbackEntity cachedFeedback
+    ) {
+        static FeedbackContextOrCachedResult cached(DailyCardFeedbackEntity feedback) {
+            return new FeedbackContextOrCachedResult(null, feedback);
+        }
+
+        static FeedbackContextOrCachedResult needsGeneration(FeedbackContext context) {
+            return new FeedbackContextOrCachedResult(context, null);
+        }
+
+        boolean isCached() {
+            return cachedFeedback != null;
+        }
+    }
+
+
+    private void checkDuplicateFeedbackRequest(Long coupleCardId) {
+        boolean alreadyExists = coupleDailyCardFeedbackRepository
+                .findByCoupleCardIdAndDelYn(coupleCardId, "N")
+                .isPresent();
+
+        if (alreadyExists) {
+            throw new IllegalStateException("이미 해당 카드에 대한 피드백이 발급되었습니다.");
+        }
+    }
 
     private FeedbackContext loadFeedbackContext(Long userId, GenerateFeedbackRequestDTO requestDTO) {
         Long cardId = requestDTO.getCardId();
