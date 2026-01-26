@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>데일리카드 배정</title>
+    <style>
+        .date-range-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .date-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .date-input-group label {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+        .date-input-group input[type="date"] {
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+        .date-input-group input[type="date"]:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        .date-separator {
+            font-size: 1.2rem;
+            color: #95a5a6;
+            padding-top: 24px;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .loading-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .loading-content {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .result-card {
+            margin-top: 24px;
+            display: none;
+        }
+        .result-card.show {
+            display: block;
+        }
+        .result-card.success {
+            border-left: 4px solid #27ae60;
+        }
+        .result-card.error {
+            border-left: 4px solid #e74c3c;
+        }
+        .result-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .result-item {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .result-item .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        .result-item .label {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            margin-top: 4px;
+        }
+        .result-item.highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .result-item.highlight .value,
+        .result-item.highlight .label {
+            color: white;
+        }
+        .info-box {
+            background: #e8f4fd;
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .info-box h4 {
+            margin: 0 0 8px;
+            color: #2980b9;
+            font-size: 0.95rem;
+        }
+        .info-box ul {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 0.9rem;
+            color: #34495e;
+        }
+        .info-box li {
+            margin-bottom: 4px;
+        }
+        .btn-assign {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-assign:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn-assign:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .error-message {
+            background: #fdf2f2;
+            border: 1px solid #e74c3c;
+            border-radius: 8px;
+            padding: 16px;
+            color: #c0392b;
+            margin-top: 16px;
+        }
+        .quick-select-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .btn-quick {
+            padding: 10px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            background: #f8fafc;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #2c3e50;
+            transition: all 0.2s ease;
+        }
+        .btn-quick:hover {
+            background: #e8f4fd;
+            border-color: #3498db;
+            color: #3498db;
+        }
+        .btn-quick.active {
+            background: #3498db;
+            border-color: #3498db;
+            color: white;
+        }
+        .btn-quick .date-preview {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 400;
+            margin-top: 2px;
+            opacity: 0.8;
+        }
+        /* 배정 내역 리스트 스타일 */
+        .history-card {
+            margin-top: 24px;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-filter {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .history-filter-note {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+        .history-filter-form {
+            background: #f8fafc;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .history-filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            align-items: end;
+        }
+        .history-filter-form label {
+            display: block;
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin-bottom: 6px;
+        }
+        .history-filter-form input,
+        .history-filter-form select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #dce4ec;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .history-filter-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .btn-filter {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: #3498db;
+            color: white;
+        }
+        .btn-filter:hover {
+            background: #2d85c4;
+        }
+        .btn-reset {
+            padding: 10px 16px;
+            border: 1px solid #e1e8ed;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            background: white;
+            color: #2c3e50;
+        }
+        .btn-reset:hover {
+            background: #f3f6f9;
+        }
+        .btn-view-history {
+            padding: 8px 16px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 16px;
+        }
+        .btn-view-history:hover {
+            background: #219a52;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            table-layout: fixed;
+        }
+        .history-table th,
+        .history-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e1e8ed;
+        }
+        .history-table th:nth-child(1),
+        .history-table td:nth-child(1) {
+            width: 18%;
+        }
+        .history-table th:nth-child(2),
+        .history-table td:nth-child(2) {
+            width: 11%;
+            white-space: nowrap;
+        }
+        .history-table th:nth-child(3),
+        .history-table td:nth-child(3) {
+            width: 11%;
+            white-space: nowrap;
+        }
+        .history-table th:nth-child(4),
+        .history-table td:nth-child(4) {
+            width: 11%;
+            white-space: nowrap;
+        }
+        .history-table th:nth-child(5),
+        .history-table td:nth-child(5) {
+            width: 11%;
+            white-space: nowrap;
+        }
+        .history-table th:nth-child(6),
+        .history-table td:nth-child(6) {
+            width: 22%;
+        }
+        .history-table th:nth-child(7),
+        .history-table td:nth-child(7) {
+            width: 16%;
+            white-space: nowrap;
+        }
+        .history-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.85rem;
+        }
+        .history-table td {
+            font-size: 0.9rem;
+            color: #34495e;
+        }
+        .history-table tr:hover {
+            background: #f8fafc;
+        }
+        .history-empty {
+            text-align: center;
+            padding: 40px;
+            color: #95a5a6;
+        }
+        .history-loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <h2 layout:fragment="pageTitle">데일리카드 배정</h2>
+
+    <div layout:fragment="content">
+        <!-- 로딩 오버레이 -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <h3>데일리카드를 배정하고 있습니다...</h3>
+                <p style="color: #7f8c8d;">잠시만 기다려주세요</p>
+            </div>
+        </div>
+
+        <!-- 안내 박스 -->
+        <div class="info-box">
+            <h4>데일리카드 배정 안내</h4>
+            <ul>
+                <li>배정 기간은 시작일 기준 <strong>최대 7일</strong>까지 가능합니다.</li>
+                <li>활성화된 모든 커플에게 날짜별로 <strong>2개의 데일리카드</strong>가 배정됩니다.</li>
+                <li>이미 배정된 날짜는 건너뛰고, 새로운 날짜에만 배정됩니다.</li>
+                <li>배정된 카드는 해당 날짜 08시에 사용자에게 노출됩니다.</li>
+            </ul>
+        </div>
+
+        <!-- 배정 폼 -->
+        <div class="card">
+            <div class="card-header">
+                <h3>배정 기간 설정</h3>
+            </div>
+            <div class="card-body">
+                <!-- 퀵 선택 버튼 -->
+                <div class="quick-select-container">
+                    <button type="button" id="btn1Day" class="btn-quick">
+                        1일 배정 (내일)
+                        <span id="preview1Day" class="date-preview"></span>
+                    </button>
+                    <button type="button" id="btn7Day" class="btn-quick">
+                        7일 배정 (차주 월~일)
+                        <span id="preview7Day" class="date-preview"></span>
+                    </button>
+                </div>
+
+                <div class="date-range-container">
+                    <div class="date-input-group">
+                        <label for="startDate">시작일</label>
+                        <input type="date" id="startDate" required>
+                    </div>
+                    <span class="date-separator">~</span>
+                    <div class="date-input-group">
+                        <label for="endDate">종료일</label>
+                        <input type="date" id="endDate" required>
+                    </div>
+                    <div style="padding-top: 24px;">
+                        <button type="button" id="assignBtn" class="btn-assign">
+                            데일리카드 배정하기
+                        </button>
+                    </div>
+                </div>
+                <p id="dateRangeInfo" style="margin-top: 12px; font-size: 0.9rem; color: #7f8c8d;"></p>
+            </div>
+        </div>
+
+        <!-- 결과 표시 -->
+        <div id="resultCard" class="card result-card">
+            <div class="card-header">
+                <h3 id="resultTitle">배정 결과</h3>
+            </div>
+            <div class="card-body">
+                <div id="resultContent"></div>
+            </div>
+        </div>
+
+        <!-- 배정 내역 리스트 -->
+        <div id="historyCard" class="card history-card">
+            <div class="card-header">
+                <div class="history-header">
+                    <h3>배정 내역</h3>
+                    <div class="history-filter">
+                        <span class="history-filter-note">필터 적용 후 검색</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="history-filter-form">
+                    <div class="history-filter-grid">
+                        <div>
+                            <label for="filterCoupleName">커플</label>
+                            <input type="text" id="filterCoupleName" placeholder="이름 검색">
+                        </div>
+                        <div>
+                            <label for="filterIssuedStartDate">배정일 시작</label>
+                            <input type="date" id="filterIssuedStartDate">
+                        </div>
+                        <div>
+                            <label for="filterIssuedEndDate">배정일 종료</label>
+                            <input type="date" id="filterIssuedEndDate">
+                        </div>
+                        <div>
+                            <label for="filterMode">모드</label>
+                            <select id="filterMode">
+                                <option value="">전체</option>
+                                <option th:each="mode : ${modes}"
+                                        th:value="${mode.name()}"
+                                        th:text="${mode.displayName}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filterSubject">주제</label>
+                            <select id="filterSubject">
+                                <option value="">전체</option>
+                                <option th:each="subject : ${subjects}"
+                                        th:value="${subject.name()}"
+                                        th:text="${subject.displayName}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filterType">유형</label>
+                            <select id="filterType">
+                                <option value="">전체</option>
+                                <option th:each="type : ${types}"
+                                        th:value="${type.name()}"
+                                        th:text="${type.displayName}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filterCardTitle">카드 제목</label>
+                            <input type="text" id="filterCardTitle" placeholder="제목 검색">
+                        </div>
+                        <div>
+                            <label for="filterRegStartDate">배정 시간 시작</label>
+                            <input type="date" id="filterRegStartDate">
+                        </div>
+                        <div>
+                            <label for="filterRegEndDate">배정 시간 종료</label>
+                            <input type="date" id="filterRegEndDate">
+                        </div>
+                        <div class="history-filter-actions">
+                            <button type="button" id="applyHistoryFilter" class="btn-filter">검색</button>
+                            <button type="button" id="resetHistoryFilter" class="btn-reset">초기화</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="historyContent">
+                    <div class="history-loading">로딩 중...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block layout:fragment="scripts">
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const startDateInput = document.getElementById('startDate');
+                const endDateInput = document.getElementById('endDate');
+                const assignBtn = document.getElementById('assignBtn');
+                const dateRangeInfo = document.getElementById('dateRangeInfo');
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                const resultCard = document.getElementById('resultCard');
+                const resultTitle = document.getElementById('resultTitle');
+                const resultContent = document.getElementById('resultContent');
+                const btn1Day = document.getElementById('btn1Day');
+                const btn7Day = document.getElementById('btn7Day');
+                const preview1Day = document.getElementById('preview1Day');
+                const preview7Day = document.getElementById('preview7Day');
+                const historyContent = document.getElementById('historyContent');
+                const filterCoupleName = document.getElementById('filterCoupleName');
+                const filterIssuedStartDate = document.getElementById('filterIssuedStartDate');
+                const filterIssuedEndDate = document.getElementById('filterIssuedEndDate');
+                const filterMode = document.getElementById('filterMode');
+                const filterSubject = document.getElementById('filterSubject');
+                const filterType = document.getElementById('filterType');
+                const filterCardTitle = document.getElementById('filterCardTitle');
+                const filterRegStartDate = document.getElementById('filterRegStartDate');
+                const filterRegEndDate = document.getElementById('filterRegEndDate');
+                const applyHistoryFilterBtn = document.getElementById('applyHistoryFilter');
+                const resetHistoryFilterBtn = document.getElementById('resetHistoryFilter');
+
+                // 현재 필터 상태
+                let currentFilter = {};
+
+                // 날짜 포맷 함수 (YYYY-MM-DD)
+                function formatDate(date) {
+                    return date.toISOString().split('T')[0];
+                }
+
+                // 날짜 표시용 포맷 (MM/DD)
+                function formatDateShort(date) {
+                    return (date.getMonth() + 1) + '/' + date.getDate();
+                }
+
+                // 내일 날짜 계산
+                function getTomorrow() {
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    return tomorrow;
+                }
+
+                // 차주 월요일~일요일 계산
+                function getNextWeekRange() {
+                    const today = new Date();
+                    const dayOfWeek = today.getDay(); // 0=일, 1=월, ..., 6=토
+
+                    // 차주 월요일까지 남은 일수 계산
+                    // 일요일(0)이면 1일 후, 월요일(1)이면 7일 후, 화요일(2)이면 6일 후...
+                    const daysUntilNextMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
+
+                    const nextMonday = new Date(today);
+                    nextMonday.setDate(today.getDate() + daysUntilNextMonday);
+
+                    const nextSunday = new Date(nextMonday);
+                    nextSunday.setDate(nextMonday.getDate() + 6);
+
+                    return { start: nextMonday, end: nextSunday };
+                }
+
+                // 퀵 버튼 미리보기 업데이트
+                const tomorrow = getTomorrow();
+                const nextWeekRange = getNextWeekRange();
+                preview1Day.textContent = formatDateShort(tomorrow);
+                preview7Day.textContent = formatDateShort(nextWeekRange.start) + ' ~ ' + formatDateShort(nextWeekRange.end);
+
+                // 퀵 버튼 활성화 상태 업데이트
+                function updateQuickButtonState() {
+                    const startVal = startDateInput.value;
+                    const endVal = endDateInput.value;
+
+                    // 1일 배정 버튼 활성화 여부
+                    const tomorrowStr = formatDate(tomorrow);
+                    if (startVal === tomorrowStr && endVal === tomorrowStr) {
+                        btn1Day.classList.add('active');
+                    } else {
+                        btn1Day.classList.remove('active');
+                    }
+
+                    // 7일 배정 버튼 활성화 여부
+                    const nextMondayStr = formatDate(nextWeekRange.start);
+                    const nextSundayStr = formatDate(nextWeekRange.end);
+                    if (startVal === nextMondayStr && endVal === nextSundayStr) {
+                        btn7Day.classList.add('active');
+                    } else {
+                        btn7Day.classList.remove('active');
+                    }
+                }
+
+                // 1일 배정 버튼 클릭
+                btn1Day.addEventListener('click', function() {
+                    const tomorrowStr = formatDate(tomorrow);
+                    startDateInput.value = tomorrowStr;
+                    endDateInput.value = tomorrowStr;
+                    updateDateRangeInfo();
+                    updateQuickButtonState();
+                });
+
+                // 7일 배정 버튼 클릭
+                btn7Day.addEventListener('click', function() {
+                    startDateInput.value = formatDate(nextWeekRange.start);
+                    endDateInput.value = formatDate(nextWeekRange.end);
+                    updateDateRangeInfo();
+                    updateQuickButtonState();
+                });
+
+                // 오늘 날짜를 기본값으로 설정
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                startDateInput.value = todayStr;
+
+                // 7일 후를 종료일 기본값으로
+                const nextWeek = new Date(today);
+                nextWeek.setDate(nextWeek.getDate() + 6);
+                endDateInput.value = nextWeek.toISOString().split('T')[0];
+
+                // 날짜 범위 정보 업데이트
+                function updateDateRangeInfo() {
+                    const start = new Date(startDateInput.value);
+                    const end = new Date(endDateInput.value);
+
+                    if (startDateInput.value && endDateInput.value) {
+                        const diffTime = end - start;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                        if (diffDays < 1) {
+                            dateRangeInfo.textContent = '종료일은 시작일 이후여야 합니다.';
+                            dateRangeInfo.style.color = '#e74c3c';
+                            assignBtn.disabled = true;
+                        } else if (diffDays > 7) {
+                            dateRangeInfo.textContent = '배정 기간은 최대 7일까지 가능합니다. (현재: ' + diffDays + '일)';
+                            dateRangeInfo.style.color = '#e74c3c';
+                            assignBtn.disabled = true;
+                        } else {
+                            dateRangeInfo.textContent = '총 ' + diffDays + '일간 배정됩니다.';
+                            dateRangeInfo.style.color = '#27ae60';
+                            assignBtn.disabled = false;
+                        }
+                    } else {
+                        dateRangeInfo.textContent = '';
+                        assignBtn.disabled = true;
+                    }
+                }
+
+                startDateInput.addEventListener('change', function() {
+                    updateDateRangeInfo();
+                    updateQuickButtonState();
+                });
+                endDateInput.addEventListener('change', function() {
+                    updateDateRangeInfo();
+                    updateQuickButtonState();
+                });
+                updateDateRangeInfo();
+                updateQuickButtonState();
+
+                // 배정 내역 로드
+                async function loadHistory(filters = {}) {
+                    historyContent.innerHTML = '<div class="history-loading">로딩 중...</div>';
+
+                    try {
+                        let url = '/admin/daily-card-assign/history';
+                        const params = new URLSearchParams();
+                        if (filters.coupleName) params.append('coupleName', filters.coupleName);
+                        if (filters.issuedStartDate) params.append('issuedStartDate', filters.issuedStartDate);
+                        if (filters.issuedEndDate) params.append('issuedEndDate', filters.issuedEndDate);
+                        if (filters.cardMode) params.append('cardMode', filters.cardMode);
+                        if (filters.cardSubject) params.append('cardSubject', filters.cardSubject);
+                        if (filters.cardType) params.append('cardType', filters.cardType);
+                        if (filters.cardTitle) params.append('cardTitle', filters.cardTitle);
+                        if (filters.regStartDate) params.append('regStartDate', filters.regStartDate);
+                        if (filters.regEndDate) params.append('regEndDate', filters.regEndDate);
+                        if ([...params.keys()].length > 0) {
+                            url += `?${params.toString()}`;
+                        }
+
+                        const response = await fetch(url);
+                        const data = await response.json();
+
+                        renderHistory(data);
+                    } catch (error) {
+                        console.error('배정 내역 로드 오류:', error);
+                        historyContent.innerHTML = '<div class="history-empty">배정 내역을 불러오는 중 오류가 발생했습니다.</div>';
+                    }
+                }
+
+                // 배정 내역 렌더링
+                function renderHistory(data) {
+                    if (!data || data.length === 0) {
+                        historyContent.innerHTML = '<div class="history-empty">배정 내역이 없습니다.</div>';
+                        return;
+                    }
+
+                    let html = `
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>커플</th>
+                                    <th>배정일</th>
+                                    <th>모드</th>
+                                    <th>주제</th>
+                                    <th>유형</th>
+                                    <th>카드 제목</th>
+                                    <th>배정 시간</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    for (const item of data) {
+                        const regDt = new Date(item.regDt);
+                        const regDtStr = regDt.toLocaleString('ko-KR', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        html += `
+                            <tr>
+                                <td>${escapeHtml(item.coupleName)}</td>
+                                <td>${item.issuedDate}</td>
+                                <td>${renderBadge(item.cardMode, item.cardModeDisplayName)}</td>
+                                <td>${renderBadge(item.cardSubject, item.cardSubjectDisplayName)}</td>
+                                <td>${renderBadge(item.cardType, item.cardTypeDisplayName)}</td>
+                                <td>${escapeHtml(item.cardTitle)}</td>
+                                <td>${regDtStr}</td>
+                            </tr>
+                        `;
+                    }
+
+                    html += '</tbody></table>';
+                    historyContent.innerHTML = html;
+                }
+
+                // HTML 이스케이프
+                function escapeHtml(text) {
+                    if (!text) return '';
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                }
+
+                function renderBadge(value, displayName) {
+                    const label = displayName || value || '-';
+                    const safeLabel = escapeHtml(label);
+                    const badgeClass = value && value !== '-' ? `badge badge-${value.toLowerCase()}` : 'badge badge-inactive';
+                    return `<span class="${badgeClass}">${safeLabel}</span>`;
+                }
+
+                function getHistoryFilters() {
+                    return {
+                        coupleName: filterCoupleName.value.trim(),
+                        issuedStartDate: filterIssuedStartDate.value,
+                        issuedEndDate: filterIssuedEndDate.value,
+                        cardMode: filterMode.value,
+                        cardSubject: filterSubject.value,
+                        cardType: filterType.value,
+                        cardTitle: filterCardTitle.value.trim(),
+                        regStartDate: filterRegStartDate.value,
+                        regEndDate: filterRegEndDate.value
+                    };
+                }
+
+                function applyHistoryFilter() {
+                    currentFilter = getHistoryFilters();
+                    loadHistory(currentFilter);
+                }
+
+                applyHistoryFilterBtn.addEventListener('click', applyHistoryFilter);
+                resetHistoryFilterBtn.addEventListener('click', function() {
+                    filterCoupleName.value = '';
+                    filterIssuedStartDate.value = '';
+                    filterIssuedEndDate.value = '';
+                    filterMode.value = '';
+                    filterSubject.value = '';
+                    filterType.value = '';
+                    filterCardTitle.value = '';
+                    filterRegStartDate.value = '';
+                    filterRegEndDate.value = '';
+                    currentFilter = {};
+                    loadHistory();
+                });
+
+                // 초기 로드
+                loadHistory();
+
+                // 배정 버튼 클릭
+                assignBtn.addEventListener('click', async function() {
+                    const startDate = startDateInput.value;
+                    const endDate = endDateInput.value;
+
+                    if (!startDate || !endDate) {
+                        alert('시작일과 종료일을 모두 입력해주세요.');
+                        return;
+                    }
+
+                    // 로딩 표시
+                    loadingOverlay.classList.add('active');
+                    resultCard.classList.remove('show', 'success', 'error');
+
+                    try {
+                        const response = await fetch('/admin/daily-card-assign/batch', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                startDate: startDate,
+                                endDate: endDate
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            // 성공
+                            resultCard.classList.add('show', 'success');
+                            resultTitle.textContent = '배정 완료';
+                            resultContent.innerHTML = `
+                                <div class="result-summary">
+                                    <div class="result-item">
+                                        <div class="value">${data.startDate}</div>
+                                        <div class="label">시작일</div>
+                                    </div>
+                                    <div class="result-item">
+                                        <div class="value">${data.endDate}</div>
+                                        <div class="label">종료일</div>
+                                    </div>
+                                    <div class="result-item">
+                                        <div class="value">${data.days}일</div>
+                                        <div class="label">배정 기간</div>
+                                    </div>
+                                    <div class="result-item">
+                                        <div class="value">${data.coupleCount}쌍</div>
+                                        <div class="label">대상 커플</div>
+                                    </div>
+                                    <div class="result-item highlight">
+                                        <div class="value">${data.assignedCount}개</div>
+                                        <div class="label">배정된 카드</div>
+                                    </div>
+                                    <div class="result-item">
+                                        <div class="value">${data.skippedDateCount}일</div>
+                                        <div class="label">건너뛴 날짜</div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-view-history" id="viewHistoryBtn"
+                                        data-start="${data.startDate}" data-end="${data.endDate}">
+                                    배정 내역 보기
+                                </button>
+                            `;
+
+                            // 배정 내역 보기 버튼 이벤트
+                            document.getElementById('viewHistoryBtn').addEventListener('click', function() {
+                                const start = this.dataset.start;
+                                const end = this.dataset.end;
+                                filterIssuedStartDate.value = start;
+                                filterIssuedEndDate.value = end;
+                                applyHistoryFilter();
+                                document.getElementById('historyCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            });
+
+                            // 리스트 자동 새로고침
+                            loadHistory(currentFilter);
+                        } else {
+                            // 실패
+                            resultCard.classList.add('show', 'error');
+                            resultTitle.textContent = '배정 실패';
+                            resultContent.innerHTML = `
+                                <div class="error-message">
+                                    ${data.message || '알 수 없는 오류가 발생했습니다.'}
+                                </div>
+                            `;
+                        }
+                    } catch (error) {
+                        console.error('배정 오류:', error);
+                        resultCard.classList.add('show', 'error');
+                        resultTitle.textContent = '배정 실패';
+                        resultContent.innerHTML = `
+                            <div class="error-message">
+                                네트워크 오류가 발생했습니다: ${error.message}
+                            </div>
+                        `;
+                    } finally {
+                        loadingOverlay.classList.remove('active');
+                        resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            });
+        </script>
+    </th:block>
+</body>
+</html>

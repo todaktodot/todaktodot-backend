@@ -50,4 +50,22 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                                                      @Param("delYn") String delYn);
     //커플ID와 데일리카드ID로 일치하는 커플 데일리카드 조회
     Optional<CoupleDailyCardEntity> findByCardIdAndCoupleId(Long cardId, Long coupleId);
+
+    // 배정 내역 조회 (날짜 범위 필터)
+    @Query("SELECT c FROM CoupleDailyCardEntity c " +
+           "LEFT JOIN FETCH c.dailyCard " +
+           "WHERE c.delYn = 'N' " +
+           "AND c.issuedDate BETWEEN :startDate AND :endDate " +
+           "ORDER BY c.regDt DESC, c.issuedDate DESC")
+    List<CoupleDailyCardEntity> findAssignmentHistory(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    // 최근 배정 내역 조회 (최신 N개)
+    @Query("SELECT c FROM CoupleDailyCardEntity c " +
+           "LEFT JOIN FETCH c.dailyCard " +
+           "WHERE c.delYn = 'N' " +
+           "ORDER BY c.regDt DESC, c.issuedDate DESC " +
+           "LIMIT :limit")
+    List<CoupleDailyCardEntity> findRecentAssignments(@Param("limit") int limit);
 }

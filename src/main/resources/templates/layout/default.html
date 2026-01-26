@@ -23,15 +23,10 @@
             <nav class="sidebar-nav">
                 <ul>
                     <li>
-                        <a th:href="@{/admin/couple}"
-                           th:classappend="${activeMenu == 'couple'} ? 'active' : ''">
-                            <span>커플 관리</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a th:href="@{/admin/daily-card}"
-                           th:classappend="${activeMenu == 'dailycard'} ? 'active' : ''">
-                            <span>데일리카드 관리</span>
+                        <a th:href="@{/admin/daily-card/generate}"
+                           th:classappend="${activeMenu == 'generate'} ? 'active' : ''">
+                            <span class="icon">✨</span>
+                            <span>데일리카드 AI 생성</span>
                         </a>
                     </li>
                     <li>
@@ -42,10 +37,21 @@
                         </a>
                     </li>
                     <li>
-                        <a th:href="@{/admin/daily-card/generate}"
-                           th:classappend="${activeMenu == 'generate'} ? 'active' : ''">
-                            <span class="icon">✨</span>
-                            <span>데일리카드 AI 생성</span>
+                        <a th:href="@{/admin/daily-card}"
+                           th:classappend="${activeMenu == 'dailycard'} ? 'active' : ''">
+                            <span>데일리카드 관리</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/admin/daily-card-assign}"
+                           th:classappend="${activeMenu == 'dailycard-assign'} ? 'active' : ''">
+                            <span>데일리카드 배정</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a th:href="@{/admin/couple}"
+                           th:classappend="${activeMenu == 'couple'} ? 'active' : ''">
+                            <span>커플 관리</span>
                         </a>
                     </li>
                 </ul>
