@@ -63,7 +63,7 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
                         .filter(user -> user.getId() != null)
                         .collect(Collectors.toMap(
                                 User::getId,
-                                user -> Optional.ofNullable(user.getName()).orElse(""),
+                                user -> Optional.ofNullable(user.getNickname()).orElse(""),
                                 (existing, ignored) -> existing
                         ));
 

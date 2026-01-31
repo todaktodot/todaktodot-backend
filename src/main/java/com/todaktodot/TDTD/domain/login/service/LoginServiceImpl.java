@@ -2,14 +2,21 @@ package com.todaktodot.TDTD.domain.login.service;
 
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.login.dto.request.LoginRequestDTO;
+import com.todaktodot.TDTD.domain.login.dto.request.TokenReissueRequestDTO;
 import com.todaktodot.TDTD.domain.login.dto.response.LoginResponseDTO;
 import com.todaktodot.TDTD.domain.login.dto.response.SocialUserResponse;
+import com.todaktodot.TDTD.domain.login.dto.response.TokenReissueResponseDTO;
+import com.todaktodot.TDTD.domain.login.respository.UserAccountRepository;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
+import com.todaktodot.TDTD.domain.login.respository.entity.UserAccount;
 import com.todaktodot.TDTD.global.jwt.JwtTokenProvider;
 import com.todaktodot.TDTD.global.security.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +24,7 @@ public class LoginServiceImpl implements LoginService {
     private final SocialUserProvider socialUserProvider;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
+    private final UserAccountRepository userAccountRepository;
     private final CoupleRepository coupleRepository;
 
     /**
@@ -27,25 +35,72 @@ public class LoginServiceImpl implements LoginService {
         // 1. 소셜 플랫폼에 토큰 검증 요청 및 유저 정보 추출
         SocialUserResponse socialUser = socialUserProvider.getLoginedSocialUser(loginRequestDTO.getProvider(), loginRequestDTO.getToken());
 
-        // 2. DB 저장 혹은 조회
-        User user = userRepository.findByProviderIdAndProvider(socialUser.getId(), socialUser.getProvider())
-                .orElseGet(() -> userRepository.save(User.builder()
+        // 2. 가입된 소셜계정인지 확인
+        UserAccount userAccount = userAccountRepository.findByProviderIdAndProviderAndDelYn(socialUser.getId(), socialUser.getProvider(), "N")
+                .orElseGet(() -> {
+                    UserAccount newUserAccount = UserAccount.builder()
                         .email(socialUser.getEmail())
                         .name(socialUser.getName())
                         .provider(socialUser.getProvider())
                         .providerId(socialUser.getId())
-                        .alarmYN("Y")
-                        .joinYN("N")
-                        .role(Role.USER)
-                        .build()));
+                        .build();
+
+                    User newUser = User.builder()
+                            .alarmYN("Y")
+                            .joinYN("N")
+                            .role(Role.USER)
+                            .socialAccounts(new ArrayList<>(List.of(newUserAccount)))
+                            .build();
+
+                    newUserAccount.setUser(newUser);
+
+                    userRepository.save(newUser);
+                    return userAccountRepository.save(newUserAccount);
+                });
 
         // 3. 서비스 전용 JWT 토큰 발급
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
+        User user = userAccount.getUser();
+        if (user == null) throw new IllegalArgumentException("계정과 연결된 유저가 존재하지 않습니다.");
+
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
+
+        //4. 리프레쉬 토큰 저장
+        userAccount.updateRefreshToken(refreshToken);
 
         //4. 커플여부 확인
         boolean isCouple = coupleRepository.existsByUserId(user.getId());
 
         return new LoginResponseDTO(accessToken, refreshToken, user.getJoinYN().equals("Y"), isCouple);
+    }
+
+    /**
+     * 토큰 재발급
+     */
+    @Override
+    public TokenReissueResponseDTO reissue(TokenReissueRequestDTO tokenReissueRequestDTO) {
+        String refreshToken = tokenReissueRequestDTO.getRefreshToken();
+        //TODO : 예외처리
+        if (refreshToken == null) throw new RuntimeException();
+        //TODO : 예외처리
+        User user = userRepository.findById(tokenReissueRequestDTO.getUserId()).orElseThrow(() -> new RuntimeException());
+        validate(tokenReissueRequestDTO.getRefreshToken(), user);
+
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
+
+        return new TokenReissueResponseDTO(accessToken, refreshToken);
+    }
+
+    private void validate(String refreshToken, User user) {
+        // 1. 유효한 리프레쉬인지
+        jwtTokenProvider.validateToken(refreshToken);
+        if (user.getSocialAccounts().isEmpty()) throw new IllegalArgumentException("유저와 연결된 소셜 계정이 없습니다.");
+
+        // 2. 일치하는 리프레쉬토큰인지
+        UserAccount userAccount = user.getSocialAccounts().getFirst();
+        if (!userAccount.getRefreshToken().equals(refreshToken)) {
+            //TODO : 보완
+            throw new RuntimeException("유효하지 않은 리프레쉬 토큰 입니다. 재로그인 해주세요.");
+        }
     }
 }

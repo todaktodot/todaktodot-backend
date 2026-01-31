@@ -8,7 +8,5 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByProviderIdAndProvider(String id, String provider);
-
     List<User> findByIdIn(Collection<Long> ids);
 }

@@ -33,7 +33,7 @@ public class JwtTokenProvider implements InitializingBean {
     /**
      * AccessToken 생성
      */
-    public String createAccessToken(Long userId, String email, Role role) {
+    public String createAccessToken(Long userId, Role role) {
         Date accessTokenExpiredAt = new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRE_TIME);
         return Jwts.builder()
                 .subject(String.valueOf(userId))
