@@ -2,6 +2,8 @@ package com.todaktodot.TDTD.admin.couple.dto;
 
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
 import java.time.LocalDateTime;
+
+import com.todaktodot.TDTD.domain.login.respository.entity.UserAccount;
 import lombok.Getter;
 
 @Getter
@@ -27,12 +29,13 @@ public class UserSummaryDTO {
     }
 
     public static UserSummaryDTO from(User user) {
+        UserAccount userAccount = user.getSocialAccounts().getFirst();
         return new UserSummaryDTO(
                 user.getId(),
-                user.getName(),
+                userAccount.getName(),
                 user.getNickname(),
-                user.getEmail(),
-                user.getProvider(),
+                userAccount.getEmail(),
+                userAccount.getProvider(),
                 user.getJoinYN(),
                 user.getRegDt()
         );

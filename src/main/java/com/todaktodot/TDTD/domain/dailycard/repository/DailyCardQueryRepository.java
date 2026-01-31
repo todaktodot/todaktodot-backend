@@ -46,12 +46,12 @@ public class DailyCardQueryRepository {
                         .and(question.delYn.eq("N")));
 
         var regrNameSubQuery = JPAExpressions
-                .select(regr.name)
+                .select(regr.nickname)
                 .from(regr)
                 .where(regr.id.eq(card.regrId));
 
         var updrNameSubQuery = JPAExpressions
-                .select(updr.name)
+                .select(updr.nickname)
                 .from(updr)
                 .where(updr.id.eq(card.updrId));
 

@@ -7,6 +7,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -19,23 +21,12 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "USER_EMAIL")
-    private String email;
-    @Column(name = "USER_NAME")
-    private String name;
-
     @Column(name = "NICK_NAME", length = 20)
     private String nickname;
 
     @Column(name = "USER_ROLE")
     @Enumerated(EnumType.STRING)
     private Role role;
-
-    @Column(name = "PROVIDER")
-    private String provider; // google, kakao, apple
-
-    @Column(name = "PROVIDER_ID")
-    private String providerId;
 
     @Column(name = "ALARM_YN")
     private String alarmYN;
@@ -61,16 +52,16 @@ public class User {
     @Builder.Default
     private String delYn = "N";
 
-    @Builder
-    public User(String email, String name, String nickname, Role role, String provider, String providerId, String joinYN) {
-        this.email = email;
-        this.name = name;
-        this.nickname = nickname;
-        this.role = role;
-        this.provider = provider;
-        this.providerId = providerId;
-        this.joinYN = joinYN;
-    }
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserAccount> socialAccounts = new ArrayList<>();
+
+//    @Builder
+//    public User(String nickname, Role role, String joinYN, UserAccount userAccount) {
+//        this.nickname = nickname;
+//        this.role = role;
+//        this.joinYN = joinYN;
+//        this.socialAccounts.add(userAccount);
+//    }
 
     public void updateNickname(String nickname) {
         this.nickname = nickname;

@@ -125,7 +125,7 @@ public class AdminDailyCardAssignServiceImpl implements AdminDailyCardAssignServ
         Map<Long, String> userNameMap = userRepository.findByIdIn(new ArrayList<>(userIds)).stream()
                 .collect(Collectors.toMap(
                         User::getId,
-                        user -> user.getName() != null ? user.getName() : "?",
+                        user -> user.getNickname() != null ? user.getNickname() : "?",
                         (a, b) -> a
                 ));
 

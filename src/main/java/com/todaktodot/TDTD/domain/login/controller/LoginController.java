@@ -1,13 +1,16 @@
 package com.todaktodot.TDTD.domain.login.controller;
 
 import com.todaktodot.TDTD.domain.login.dto.request.LoginRequestDTO;
+import com.todaktodot.TDTD.domain.login.dto.request.TokenReissueRequestDTO;
 import com.todaktodot.TDTD.domain.login.dto.response.LoginResponseDTO;
+import com.todaktodot.TDTD.domain.login.dto.response.TokenReissueResponseDTO;
 import com.todaktodot.TDTD.domain.login.service.LoginService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,6 +35,17 @@ public class LoginController {
     @PostMapping
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
         LoginResponseDTO response = loginService.login(loginRequestDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 토큰 재발급
+     */
+    @Operation(description = "토큰 재발급 API")
+    @ApiResponse(responseCode = "200", description = "토큰 재발급 완료")
+    @PostMapping("/reissue")
+    public ResponseEntity<TokenReissueResponseDTO> reissue(@RequestBody @Valid TokenReissueRequestDTO tokenReissueRequestDTO) {
+        TokenReissueResponseDTO response = loginService.reissue(tokenReissueRequestDTO);
         return ResponseEntity.ok(response);
     }
 }

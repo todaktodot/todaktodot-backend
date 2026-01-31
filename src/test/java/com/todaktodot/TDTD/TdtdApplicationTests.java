@@ -24,7 +24,7 @@ class TdtdApplicationTests {
 		Role role = Role.USER;
 
 		// 토큰 생성
-		String accessToken = jwtTokenProvider.createAccessToken(userId, email, role);
+		String accessToken = jwtTokenProvider.createAccessToken(userId, role);
 		String refreshToken = jwtTokenProvider.createRefreshToken(userId);
 
 		// 콘솔에 출력
