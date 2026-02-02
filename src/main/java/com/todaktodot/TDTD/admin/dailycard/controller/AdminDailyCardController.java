@@ -142,11 +142,10 @@ public class AdminDailyCardController {
         Map<CardSubject, List<SituationCategoryDTO>> categoriesBySubject =
                 adminPromptService.getCategoriesGroupedBySubject();
 
-        var prompts = adminPromptService.getAllPrompts();
+        var prompts = adminPromptService.getActivePromptsByType("CARD_GENERATION");
 
         // 가장 최근 프롬프트(ID가 가장 큰)를 기본값으로 설정
         Long defaultPromptId = prompts.stream()
-                .filter(p -> p.isActive())
                 .mapToLong(p -> p.getPromptId())
                 .max()
                 .orElse(0L);

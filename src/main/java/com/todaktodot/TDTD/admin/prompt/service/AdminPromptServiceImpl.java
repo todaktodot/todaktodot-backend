@@ -5,6 +5,7 @@ import com.todaktodot.TDTD.admin.prompt.dto.SituationCategoryDTO;
 import com.todaktodot.TDTD.admin.prompt.repository.AiPromptRepository;
 import com.todaktodot.TDTD.admin.prompt.repository.SituationCategoryRepository;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
+import com.todaktodot.TDTD.admin.prompt.repository.entity.PromptType;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.SituationCategoryEntity;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardSubject;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ public class AdminPromptServiceImpl implements AdminPromptService {
 
     @Override
     public List<AiPromptDTO> getAllPrompts() {
-        return aiPromptRepository.findAllActive().stream()
+        return aiPromptRepository.findLatestPerGroup().stream()
                 .map(AiPromptDTO::from)
                 .collect(Collectors.toList());
     }
@@ -53,14 +54,20 @@ public class AdminPromptServiceImpl implements AdminPromptService {
     @Override
     @Transactional
     public AiPromptDTO createPrompt(AiPromptDTO.CreateRequest request) {
-        Integer maxVersion = aiPromptRepository.findMaxVersionByPromptName(request.getPromptName());
-        int newVersion = maxVersion != null ? maxVersion + 1 : 1;
+        Long newGroupId = aiPromptRepository.findNextPromptGroupId();
+
+        PromptType promptType = PromptType.CARD_GENERATION;
+        if (request.getPromptType() != null && !request.getPromptType().isBlank()) {
+            promptType = PromptType.valueOf(request.getPromptType());
+        }
 
         AiPromptEntity entity = AiPromptEntity.builder()
+                .promptGroupId(newGroupId)
+                .promptType(promptType)
                 .promptName(request.getPromptName())
                 .promptDesc(request.getPromptDesc())
                 .promptContent(request.getPromptContent())
-                .version(newVersion)
+                .version(1)
                 .regrId(ADMIN_USER_ID)
                 .updrId(ADMIN_USER_ID)
                 .build();
@@ -71,11 +78,28 @@ public class AdminPromptServiceImpl implements AdminPromptService {
 
     @Override
     @Transactional
-    public void updatePrompt(Long promptId, AiPromptDTO.UpdateRequest request) {
-        AiPromptEntity entity = aiPromptRepository.findById(promptId)
+    public AiPromptDTO updatePrompt(Long promptId, AiPromptDTO.UpdateRequest request) {
+        AiPromptEntity oldEntity = aiPromptRepository.findById(promptId)
                 .orElseThrow(() -> new IllegalArgumentException("프롬프트를 찾을 수 없습니다: " + promptId));
 
-        entity.update(request.getPromptDesc(), request.getPromptContent(), ADMIN_USER_ID);
+        oldEntity.updateUseYn("N", ADMIN_USER_ID);
+
+        Integer maxVersion = aiPromptRepository.findMaxVersionByPromptGroupId(oldEntity.getPromptGroupId());
+        int newVersion = (maxVersion != null ? maxVersion : 0) + 1;
+
+        AiPromptEntity newEntity = AiPromptEntity.builder()
+                .promptGroupId(oldEntity.getPromptGroupId())
+                .promptType(oldEntity.getPromptType())
+                .promptName(oldEntity.getPromptName())
+                .promptDesc(request.getPromptDesc())
+                .promptContent(request.getPromptContent())
+                .version(newVersion)
+                .regrId(ADMIN_USER_ID)
+                .updrId(ADMIN_USER_ID)
+                .build();
+
+        AiPromptEntity saved = aiPromptRepository.save(newEntity);
+        return AiPromptDTO.from(saved);
     }
 
     @Override
@@ -94,7 +118,7 @@ public class AdminPromptServiceImpl implements AdminPromptService {
         AiPromptEntity entity = aiPromptRepository.findById(promptId)
                 .orElseThrow(() -> new IllegalArgumentException("프롬프트를 찾을 수 없습니다: " + promptId));
 
-        aiPromptRepository.delete(entity);
+        entity.softDelete(ADMIN_USER_ID);
     }
 
     // ==================== 예시 상황 카테고리 관련 ====================
@@ -181,8 +205,23 @@ public class AdminPromptServiceImpl implements AdminPromptService {
     // ==================== 통계 ====================
 
     @Override
+    public List<AiPromptDTO> getPromptVersionHistory(Long promptGroupId) {
+        return aiPromptRepository.findAllByPromptGroupId(promptGroupId).stream()
+                .map(AiPromptDTO::from)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AiPromptDTO> getActivePromptsByType(String promptType) {
+        PromptType type = PromptType.valueOf(promptType);
+        return aiPromptRepository.findLatestActivePerGroupByType(type).stream()
+                .map(AiPromptDTO::from)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public long getPromptCount() {
-        return aiPromptRepository.countByDelYn("N");
+        return aiPromptRepository.countDistinctGroups();
     }
 
     @Override

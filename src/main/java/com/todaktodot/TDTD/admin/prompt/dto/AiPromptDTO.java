@@ -12,7 +12,10 @@ import java.time.LocalDateTime;
 public class AiPromptDTO {
 
     private Long promptId;
+    private Long promptGroupId;
     private String promptName;
+    private String promptType;
+    private String promptTypeDisplayName;
     private String promptDesc;
     private String promptContent;
     private Integer version;
@@ -23,7 +26,10 @@ public class AiPromptDTO {
     public static AiPromptDTO from(AiPromptEntity entity) {
         return AiPromptDTO.builder()
                 .promptId(entity.getPromptId())
+                .promptGroupId(entity.getPromptGroupId())
                 .promptName(entity.getPromptName())
+                .promptType(entity.getPromptType().name())
+                .promptTypeDisplayName(entity.getPromptType().getDisplayName())
                 .promptDesc(entity.getPromptDesc())
                 .promptContent(entity.getPromptContent())
                 .version(entity.getVersion())
@@ -41,6 +47,7 @@ public class AiPromptDTO {
     @Setter
     public static class CreateRequest {
         private String promptName;
+        private String promptType;
         private String promptDesc;
         private String promptContent;
     }

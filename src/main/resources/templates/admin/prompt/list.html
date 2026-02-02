@@ -43,6 +43,7 @@
                             <tr>
                                 <th>ID</th>
                                 <th>프롬프트명</th>
+                                <th>유형</th>
                                 <th>설명</th>
                                 <th>버전</th>
                                 <th>상태</th>
@@ -56,6 +57,9 @@
                                 <td>
                                     <a th:href="@{/admin/prompt/prompt/{id}(id=${prompt.promptId})}"
                                        th:text="${prompt.promptName}" style="color: #3498db;">DAILY_CARD_GENERATE</a>
+                                </td>
+                                <td>
+                                    <span class="badge badge-coffee" th:text="${prompt.promptTypeDisplayName}">유형</span>
                                 </td>
                                 <td class="truncate" th:text="${prompt.promptDesc}">설명</td>
                                 <td>v<span th:text="${prompt.version}">1</span></td>

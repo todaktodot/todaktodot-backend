@@ -2,6 +2,7 @@ package com.todaktodot.TDTD.admin.prompt.controller;
 
 import com.todaktodot.TDTD.admin.prompt.dto.AiPromptDTO;
 import com.todaktodot.TDTD.admin.prompt.dto.SituationCategoryDTO;
+import com.todaktodot.TDTD.admin.prompt.repository.entity.PromptType;
 import com.todaktodot.TDTD.admin.prompt.service.AdminPromptService;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardSubject;
 import lombok.RequiredArgsConstructor;
@@ -41,8 +42,10 @@ public class AdminPromptController {
     @GetMapping("/prompt/{promptId}")
     public String promptDetail(@PathVariable Long promptId, Model model) {
         AiPromptDTO prompt = adminPromptService.getPrompt(promptId);
+        List<AiPromptDTO> versionHistory = adminPromptService.getPromptVersionHistory(prompt.getPromptGroupId());
 
         model.addAttribute("prompt", prompt);
+        model.addAttribute("versionHistory", versionHistory);
         model.addAttribute("activeMenu", "prompt");
 
         return "admin/prompt/prompt-detail";
@@ -50,6 +53,7 @@ public class AdminPromptController {
 
     @GetMapping("/prompt/new")
     public String promptNewForm(Model model) {
+        model.addAttribute("promptTypes", PromptType.values());
         model.addAttribute("activeMenu", "prompt");
         return "admin/prompt/prompt-form";
     }
@@ -76,9 +80,10 @@ public class AdminPromptController {
     public String updatePrompt(@PathVariable Long promptId,
                                @ModelAttribute AiPromptDTO.UpdateRequest request,
                                RedirectAttributes redirectAttributes) {
-        adminPromptService.updatePrompt(promptId, request);
-        redirectAttributes.addFlashAttribute("message", "프롬프트가 수정되었습니다.");
-        return "redirect:/admin/prompt/prompt/" + promptId;
+        AiPromptDTO newVersion = adminPromptService.updatePrompt(promptId, request);
+        redirectAttributes.addFlashAttribute("message",
+                "새 버전(v" + newVersion.getVersion() + ")이 생성되었습니다.");
+        return "redirect:/admin/prompt/prompt/" + newVersion.getPromptId();
     }
 
     @PostMapping("/prompt/{promptId}/toggle-status")

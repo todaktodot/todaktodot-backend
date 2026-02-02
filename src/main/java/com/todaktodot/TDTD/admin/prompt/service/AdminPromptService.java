@@ -18,11 +18,15 @@ public interface AdminPromptService {
 
     AiPromptDTO createPrompt(AiPromptDTO.CreateRequest request);
 
-    void updatePrompt(Long promptId, AiPromptDTO.UpdateRequest request);
+    AiPromptDTO updatePrompt(Long promptId, AiPromptDTO.UpdateRequest request);
 
     void togglePromptStatus(Long promptId);
 
     void deletePrompt(Long promptId);
+
+    List<AiPromptDTO> getPromptVersionHistory(Long promptGroupId);
+
+    List<AiPromptDTO> getActivePromptsByType(String promptType);
 
     // 예시 상황 카테고리 관련
     List<SituationCategoryDTO> getAllCategories();

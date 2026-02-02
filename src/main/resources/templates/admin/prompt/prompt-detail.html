@@ -34,6 +34,10 @@
                         <div th:text="${prompt.promptName}">DAILY_CARD_GENERATE</div>
                     </div>
                     <div class="form-group">
+                        <label>유형</label>
+                        <div><span class="badge badge-coffee" th:text="${prompt.promptTypeDisplayName}">유형</span></div>
+                    </div>
+                    <div class="form-group">
                         <label>버전</label>
                         <div>v<span th:text="${prompt.version}">1</span></div>
                     </div>
@@ -60,6 +64,48 @@
                         <label>수정일시</label>
                         <div th:text="${#temporals.format(prompt.updDt, 'yyyy-MM-dd HH:mm:ss')}">2024-01-01 00:00:00</div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 버전 이력 -->
+        <div class="card" style="margin-top: 20px;" th:if="${versionHistory != null && !versionHistory.isEmpty()}">
+            <div class="card-header">
+                <h3>버전 이력</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>버전</th>
+                                <th>프롬프트 ID</th>
+                                <th>상태</th>
+                                <th>등록일</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="v : ${versionHistory}"
+                                th:style="${v.promptId == prompt.promptId} ? 'background: #ebf5fb;' : ''">
+                                <td>v<span th:text="${v.version}">1</span></td>
+                                <td th:text="${v.promptId}">1</td>
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${v.active} ? 'badge-active' : 'badge-inactive'"
+                                          th:text="${v.active} ? '활성' : '비활성'">활성</span>
+                                </td>
+                                <td th:text="${#temporals.format(v.regDt, 'yyyy-MM-dd HH:mm')}">2024-01-01</td>
+                                <td>
+                                    <a th:if="${v.promptId != prompt.promptId}"
+                                       th:href="@{/admin/prompt/prompt/{id}(id=${v.promptId})}"
+                                       class="btn btn-sm btn-secondary">보기</a>
+                                    <span th:if="${v.promptId == prompt.promptId}"
+                                          style="color: #3498db; font-weight: 500;">현재</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

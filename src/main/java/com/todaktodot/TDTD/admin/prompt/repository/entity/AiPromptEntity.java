@@ -21,8 +21,15 @@ public class AiPromptEntity {
     @Column(name = "PROMPT_ID")
     private Long promptId;
 
+    @Column(name = "PROMPT_GROUP_ID", nullable = false, columnDefinition = "BIGINT DEFAULT 0")
+    private Long promptGroupId;
+
     @Column(name = "PROMPT_NAME", length = 100, nullable = false)
     private String promptName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "PROMPT_TYPE", length = 30, nullable = false, columnDefinition = "VARCHAR(30) DEFAULT 'CARD_GENERATION'")
+    private PromptType promptType = PromptType.CARD_GENERATION;
 
     @Column(name = "PROMPT_DESC", length = 500)
     private String promptDesc;
@@ -54,8 +61,11 @@ public class AiPromptEntity {
     private String delYn = "N";
 
     @Builder
-    public AiPromptEntity(String promptName, String promptDesc, String promptContent,
+    public AiPromptEntity(Long promptGroupId, PromptType promptType,
+                          String promptName, String promptDesc, String promptContent,
                           Integer version, Long regrId, Long updrId) {
+        this.promptGroupId = promptGroupId;
+        this.promptType = promptType != null ? promptType : PromptType.CARD_GENERATION;
         this.promptName = promptName;
         this.promptDesc = promptDesc;
         this.promptContent = promptContent;
@@ -66,9 +76,8 @@ public class AiPromptEntity {
         this.delYn = "N";
     }
 
-    public void update(String promptDesc, String promptContent, Long updrId) {
-        this.promptDesc = promptDesc;
-        this.promptContent = promptContent;
+    public void softDelete(Long updrId) {
+        this.delYn = "Y";
         this.updrId = updrId;
     }
 
