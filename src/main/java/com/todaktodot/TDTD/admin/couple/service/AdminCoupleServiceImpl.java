@@ -300,4 +300,15 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
     public long getInactiveCount() {
         return coupleRepository.countByDelYn("Y");
     }
+
+    private static final Long ADMIN_USER_ID = 0L;
+
+    @Override
+    @Transactional
+    public void deleteFeedback(Long coupleCardId) {
+        CoupleDailyCardFeedbackEntity mapping = coupleDailyCardFeedbackRepository
+                .findByCoupleCardIdAndDelYn(coupleCardId, "N")
+                .orElseThrow(() -> new IllegalStateException("삭제할 피드백이 없습니다."));
+        mapping.softDelete(ADMIN_USER_ID);
+    }
 }

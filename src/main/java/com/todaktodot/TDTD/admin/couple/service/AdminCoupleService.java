@@ -16,4 +16,6 @@ public interface AdminCoupleService {
     long getActiveCount();
 
     long getInactiveCount();
+
+    void deleteFeedback(Long coupleCardId);
 }

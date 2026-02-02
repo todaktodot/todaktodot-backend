@@ -2,13 +2,17 @@ package com.todaktodot.TDTD.domain.feedback.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.todaktodot.TDTD.admin.prompt.repository.AiPromptRepository;
+import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
 import com.todaktodot.TDTD.domain.feedback.dto.ai.AiGeneratedFeedbackDTO;
 import com.todaktodot.TDTD.domain.feedback.dto.reqeust.GenerateFeedbackRequestDTO;
 import com.todaktodot.TDTD.domain.feedback.dto.response.GenerateFeedbackResponseDTO;
 import com.todaktodot.TDTD.domain.feedback.repository.AiCardFeedbackInfoRepository;
+import com.todaktodot.TDTD.domain.feedback.repository.AiFeedbackConfigRepository;
 import com.todaktodot.TDTD.domain.feedback.repository.CoupleDailyCardFeedbackRepository;
 import com.todaktodot.TDTD.domain.feedback.repository.DailyCardFeedbackRepository;
 import com.todaktodot.TDTD.domain.feedback.repository.entity.AiCardFeedbackInfoEntity;
+import com.todaktodot.TDTD.domain.feedback.repository.entity.AiFeedbackConfigEntity;
 import com.todaktodot.TDTD.domain.feedback.repository.entity.CoupleDailyCardFeedbackEntity;
 import com.todaktodot.TDTD.domain.feedback.repository.entity.DailyCardFeedbackEntity;
 import com.todaktodot.TDTD.domain.feedback.repository.entity.FeedbackStatus;
@@ -38,6 +42,8 @@ public class FeedbackServiceImpl implements FeedbackService {
     private final DailyCardFeedbackRepository dailyCardFeedbackRepository;
     private final AiCardFeedbackInfoRepository aiCardFeedbackInfoRepository;
     private final CoupleDailyCardFeedbackRepository coupleDailyCardFeedbackRepository;
+    private final AiFeedbackConfigRepository feedbackConfigRepository;
+    private final AiPromptRepository aiPromptRepository;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
 
@@ -127,13 +133,24 @@ public class FeedbackServiceImpl implements FeedbackService {
         FeedbackContext context = contextOrCached.context();
 
         // ==================== 2단계: AI 호출 ====================
-        String aiModel = "gpt-4o-mini";
-        double temperature = 0.7;
-        FeedbackGenerationResult feedbackResult = callAiForFeedback(context, aiModel, temperature);
+        AiFeedbackConfigEntity config = feedbackConfigRepository
+                .findTopByDelYnOrderByConfigIdDesc("N")
+                .orElseThrow(() -> new IllegalStateException("피드백 생성 설정이 없습니다. Admin에서 설정해주세요."));
+
+        if (config.getPromptId() == null) {
+            throw new IllegalStateException("적용 중인 피드백 프롬프트가 없습니다. Admin에서 프롬프트를 설정해주세요.");
+        }
+
+        AiPromptEntity promptEntity = aiPromptRepository.findById(config.getPromptId())
+                .orElseThrow(() -> new IllegalStateException("설정된 프롬프트(ID: " + config.getPromptId() + ")를 찾을 수 없습니다."));
+
+        String aiModel = config.getAiModel();
+        double temperature = config.getTemperature().doubleValue();
+        FeedbackGenerationResult feedbackResult = callAiForFeedback(context, promptEntity.getPromptContent(), aiModel, temperature);
 
         // ==================== 3단계: 저장 트랜잭션 ====================
         return transactionTemplate.execute(status ->
-                saveFeedbackResult(userId, context, feedbackResult, aiModel)
+                saveFeedbackResult(userId, context, feedbackResult, aiModel, config.getPromptId())
         );
     }
 
@@ -294,7 +311,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     }
 
     private GenerateFeedbackResponseDTO saveFeedbackResult(Long userId, FeedbackContext context,
-                                                           FeedbackGenerationResult feedbackResult, String aiModel) {
+                                                           FeedbackGenerationResult feedbackResult, String aiModel, Long promptId) {
         AiGeneratedFeedbackDTO aiFeedback = feedbackResult.parsedResponse();
 
         String matchPointsText = toText(aiFeedback.getMatchPoints());
@@ -331,6 +348,7 @@ public class FeedbackServiceImpl implements FeedbackService {
         aiCardFeedbackInfoRepository.save(
                 AiCardFeedbackInfoEntity.builder()
                         .feedbackId(feedback.getFeedbackId())
+                        .promptId(promptId)
                         .aiModel(aiModel)
                         .temperature(String.valueOf(feedbackResult.actualTemperature()))
                         .finalPrompt(feedbackResult.finalPrompt())
@@ -393,8 +411,9 @@ public class FeedbackServiceImpl implements FeedbackService {
         }
     }
 
-    private FeedbackGenerationResult callAiForFeedback(FeedbackContext context, String aiModel, double temperature) {
-        String prompt = buildFeedbackPrompt(context);
+    private FeedbackGenerationResult callAiForFeedback(FeedbackContext context, String promptContent, String aiModel, double temperature) {
+        String dynamicContext = buildDynamicContext(context);
+        String prompt = promptContent + "\n\n" + dynamicContext;
 
         ChatClient chatClient = chatClientBuilder.build();
         OpenAiChatOptions options = OpenAiChatOptions.builder()
@@ -426,17 +445,8 @@ public class FeedbackServiceImpl implements FeedbackService {
         }
     }
 
-    private String buildFeedbackPrompt(FeedbackContext context) {
+    private String buildDynamicContext(FeedbackContext context) {
         StringBuilder builder = new StringBuilder();
-        builder.append("너는 커플의 관계를 돕는 상담가다. 다음 데일리카드 답변을 바탕으로 피드백을 작성해라.\n");
-        builder.append("응답은 반드시 JSON 형식으로만 출력한다.\n");
-        builder.append("{\n");
-        builder.append("  \"summary\": \"...\",\n");
-        builder.append("  \"match_points\": [\"...\"],\n");
-        builder.append("  \"differences\": [\"...\"],\n");
-        builder.append("  \"conversation_starter\": \"...\"\n");
-        builder.append("}\n\n");
-
         builder.append("[카드 정보]\n");
         builder.append("- 제목: ").append(context.cardTitle()).append("\n");
         builder.append("- 모드: ").append(context.mode()).append("\n");

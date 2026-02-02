@@ -61,4 +61,9 @@ public class CoupleDailyCardFeedbackEntity {
         this.feedbackId = feedbackId;
         this.updrId = updrId;
     }
+
+    public void softDelete(Long updrId) {
+        this.delYn = "Y";
+        this.updrId = updrId;
+    }
 }

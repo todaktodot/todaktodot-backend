@@ -187,7 +187,10 @@
                             <!-- AI 피드백 섹션 -->
                             <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; border: 1px solid #bae6fd; margin-top: 16px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                    <strong style="color: #0369a1;">AI 피드백</strong>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <strong style="color: #0369a1;">AI 피드백</strong>
+                                        <a th:href="@{/admin/feedback}" style="font-size: 0.8rem; color: #3498db;">현재 적용중인 프롬프트 보기 →</a>
+                                    </div>
                                     <span th:if="${!card.bothAnswered}" class="badge badge-inactive">답변 대기중</span>
                                 </div>
 
@@ -218,9 +221,18 @@
                                         <label style="font-weight: 600; color: #374151;">차이점</label>
                                         <p th:text="${card.feedback.differences}" style="margin-top: 4px; white-space: pre-wrap;">차이점 내용</p>
                                     </div>
-                                    <div>
+                                    <div style="margin-bottom: 12px;">
                                         <label style="font-weight: 600; color: #374151;">대화 시작 질문</label>
                                         <p th:text="${card.feedback.conversationStarter}" style="margin-top: 4px; white-space: pre-wrap;">대화 시작 질문</p>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <button type="button" class="btn btn-secondary"
+                                                style="font-size: 0.8rem; padding: 4px 12px; background: #e74c3c; border-color: #e74c3c;"
+                                                th:attr="data-couple-id=${couple.coupleId},
+                                                         data-couple-card-id=${card.coupleCardId}"
+                                                onclick="deleteFeedback(this)">
+                                            피드백 삭제
+                                        </button>
                                     </div>
                                 </div>
 
@@ -252,6 +264,37 @@
                 const isHidden = section.style.display === 'none' || section.style.display === '';
                 section.style.display = isHidden ? 'block' : 'none';
                 button.textContent = isHidden ? '접기' : '펼치기';
+            }
+
+            async function deleteFeedback(button) {
+                if (!confirm('피드백을 삭제하시겠습니까?\n삭제 후 다시 생성할 수 있습니다.')) {
+                    return;
+                }
+
+                const coupleId = button.getAttribute('data-couple-id');
+                const coupleCardId = button.getAttribute('data-couple-card-id');
+
+                const originalText = button.textContent;
+                button.disabled = true;
+                button.textContent = '삭제중...';
+
+                try {
+                    const response = await fetch(`/admin/couple/${coupleId}/feedback?coupleCardId=${coupleCardId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || '피드백 삭제에 실패했습니다.');
+                    }
+
+                    alert('피드백이 삭제되었습니다.');
+                    location.reload();
+                } catch (error) {
+                    alert('오류: ' + error.message);
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
             }
 
             async function generateFeedback(button) {

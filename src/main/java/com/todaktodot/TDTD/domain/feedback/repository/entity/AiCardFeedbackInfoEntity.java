@@ -28,6 +28,9 @@ public class AiCardFeedbackInfoEntity {
     @Column(name = "FEEDBACK_ID", nullable = false)
     private Long feedbackId;
 
+    @Column(name = "PROMPT_ID")
+    private Long promptId;
+
     @Column(name = "AI_MODEL", length = 50, nullable = false)
     private String aiModel;
 
@@ -61,10 +64,11 @@ public class AiCardFeedbackInfoEntity {
     private String delYn = "N";
 
     @Builder
-    public AiCardFeedbackInfoEntity(Long feedbackId, String aiModel, String temperature,
+    public AiCardFeedbackInfoEntity(Long feedbackId, Long promptId, String aiModel, String temperature,
                                     String finalPrompt, String aiResponseRaw, String status,
                                     Long regrId, Long updrId) {
         this.feedbackId = feedbackId;
+        this.promptId = promptId;
         this.aiModel = aiModel;
         this.temperature = temperature;
         this.finalPrompt = finalPrompt;

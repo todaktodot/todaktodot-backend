@@ -37,6 +37,13 @@
                         </a>
                     </li>
                     <li>
+                        <a th:href="@{/admin/feedback}"
+                           th:classappend="${activeMenu == 'feedback'} ? 'active' : ''">
+                            <span class="icon">✨</span>
+                            <span>AI 피드백 관리</span>
+                        </a>
+                    </li>
+                    <li>
                         <a th:href="@{/admin/daily-card}"
                            th:classappend="${activeMenu == 'dailycard'} ? 'active' : ''">
                             <span>데일리카드 관리</span>
