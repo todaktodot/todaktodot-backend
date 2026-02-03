@@ -8,6 +8,7 @@ import com.todaktodot.TDTD.domain.dailycard.dto.request.GenerateDailyCardRequest
 import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
@@ -76,6 +77,11 @@ public class DailyCardServiceImpl implements DailyCardService {
             String situationCategory,
             double actualTemperature
     ) {}
+
+    /**
+     * 커플 단위 배정 결과를 담는 record
+     */
+    private record CoupleAssignResult(int assignedCount, int skippedDateCount) {}
 
     @Override
     @Transactional
@@ -310,83 +316,10 @@ public class DailyCardServiceImpl implements DailyCardService {
         int skippedDateCount = 0;
 
         for (CoupleEntity couple : couples) {
-            Long coupleId = couple.getCoupleId();
-            Set<Long> answeredCardIds = new HashSet<>(
-                    dailyCardUserAnswerRepository.findAnsweredCardIdsByCoupleId(coupleId)
-            );
-            int coupleAssignedCount = 0;
-            int coupleSkippedCount = 0;
-
-            log.info("커플 배정 시작: coupleId={}, answeredCardCount={}", coupleId, answeredCardIds.size());
-
-            var lastAssignment = coupleDailyCardRepository
-                    .findTopByCoupleIdAndDelYnOrderByIssuedDateDesc(coupleId, "N");
-
-            CardMode startMode = CardMode.DESSERT;
-            CardSubject lastSubject = null;
-            LocalDate lastIssuedDate = null;
-
-            if (lastAssignment.isPresent()) {
-                CoupleDailyCardEntity lastCard = lastAssignment.get();
-                lastIssuedDate = lastCard.getIssuedDate();
-                if (lastCard.getDailyCard() != null) {
-                    CardMode lastMode = lastCard.getDailyCard().getMode();
-                    startMode = advanceMode(lastMode, 1);
-
-                    if (lastIssuedDate.equals(startDate) || lastIssuedDate.equals(startDate.minusDays(1))) {
-                        lastSubject = lastCard.getDailyCard().getSubject();
-                    }
-                }
-            }
-
-            for (int dayIndex = 0; dayIndex < days; dayIndex++) {
-                LocalDate targetDate = startDate.plusDays(dayIndex);
-                if (coupleDailyCardRepository.countByCoupleIdAndIssuedDateAndDelYn(coupleId, targetDate, "N") > 0) {
-                    List<CoupleDailyCardEntity> existingAssignments = coupleDailyCardRepository
-                            .findAllByCoupleIdAndIssuedDateAndDelYnOrderByCoupleCardIdAsc(coupleId, targetDate, "N");
-                    if (!existingAssignments.isEmpty() && existingAssignments.get(0).getDailyCard() != null) {
-                        lastSubject = existingAssignments.get(0).getDailyCard().getSubject();
-                    }
-                    skippedDateCount++;
-                    coupleSkippedCount++;
-                    log.info("커플 배정 스킵: coupleId={}, targetDate={}, reason=alreadyAssigned",
-                            coupleId, targetDate);
-                    continue;
-                }
-
-                CardMode modeForDate = advanceMode(startMode, dayIndex);
-                CardSubject subjectForDate = pickSubject(lastSubject);
-
-                DailyCardEntity roleplayCard = pickCard(modeForDate, subjectForDate, CardType.ROLEPLAY, answeredCardIds);
-                DailyCardEntity balanceCard = pickCard(modeForDate, subjectForDate, CardType.BALANCE, answeredCardIds);
-
-                coupleDailyCardRepository.save(CoupleDailyCardEntity.builder()
-                        .coupleId(coupleId)
-                        .cardId(roleplayCard.getCardId())
-                        .issuedDate(targetDate)
-                        .regrId(SYSTEM_USER)
-                        .updrId(SYSTEM_USER)
-                        .build());
-
-                coupleDailyCardRepository.save(CoupleDailyCardEntity.builder()
-                        .coupleId(coupleId)
-                        .cardId(balanceCard.getCardId())
-                        .issuedDate(targetDate)
-                        .regrId(SYSTEM_USER)
-                        .updrId(SYSTEM_USER)
-                        .build());
-
-                assignedCount += 2;
-                coupleAssignedCount += 2;
-                lastSubject = subjectForDate;
-
-                log.info("커플 배정 완료: coupleId={}, targetDate={}, mode={}, subject={}, roleplayCardId={}, balanceCardId={}",
-                        coupleId, targetDate, modeForDate, subjectForDate,
-                        roleplayCard.getCardId(), balanceCard.getCardId());
-            }
-
-            log.info("커플 배정 요약: coupleId={}, assignedCount={}, skippedCount={}",
-                    coupleId, coupleAssignedCount, coupleSkippedCount);
+            CoupleAssignResult result = assignCardsForCouple(
+                    couple.getCoupleId(), startDate, endDate, SYSTEM_USER);
+            assignedCount += result.assignedCount();
+            skippedDateCount += result.skippedDateCount();
         }
 
         log.info("데일리카드 배정 완료: startDate={}, endDate={}, days={}, assignedCount={}, skippedDateCount={}",
@@ -400,6 +333,117 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .assignedCount(assignedCount)
                 .skippedDateCount(skippedDateCount)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public AssignMyCardResponseDTO assignMyDailyCards(Long userId, LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("배정 시작일과 종료일은 필수입니다.");
+        }
+
+        long rangeDays = ChronoUnit.DAYS.between(startDate, endDate);
+        if (rangeDays < 0 || rangeDays > 6) {
+            throw new IllegalArgumentException("배정 기간은 시작일 기준 1~7일(같은 날 포함)이어야 합니다.");
+        }
+
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        CoupleAssignResult result = assignCardsForCouple(
+                couple.getCoupleId(), startDate, endDate, userId);
+
+        return AssignMyCardResponseDTO.builder()
+                .coupleId(couple.getCoupleId())
+                .startDate(startDate)
+                .endDate(endDate)
+                .assignedCount(result.assignedCount())
+                .skippedDateCount(result.skippedDateCount())
+                .build();
+    }
+
+    /**
+     * 커플 단위 데일리카드 배정 (배치/실시간 공용)
+     * 이미 배정된 날짜는 스킵
+     */
+    private CoupleAssignResult assignCardsForCouple(Long coupleId, LocalDate startDate,
+                                                     LocalDate endDate, Long registratorId) {
+        int days = (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        Set<Long> answeredCardIds = new HashSet<>(
+                dailyCardUserAnswerRepository.findAnsweredCardIdsByCoupleId(coupleId)
+        );
+        int assignedCount = 0;
+        int skippedDateCount = 0;
+
+        log.info("커플 배정 시작: coupleId={}, answeredCardCount={}", coupleId, answeredCardIds.size());
+
+        var lastAssignment = coupleDailyCardRepository
+                .findTopByCoupleIdAndDelYnOrderByIssuedDateDesc(coupleId, "N");
+
+        CardMode startMode = CardMode.DESSERT;
+        CardSubject lastSubject = null;
+
+        if (lastAssignment.isPresent()) {
+            CoupleDailyCardEntity lastCard = lastAssignment.get();
+            LocalDate lastIssuedDate = lastCard.getIssuedDate();
+            if (lastCard.getDailyCard() != null) {
+                CardMode lastMode = lastCard.getDailyCard().getMode();
+                startMode = advanceMode(lastMode, 1);
+
+                if (lastIssuedDate.equals(startDate) || lastIssuedDate.equals(startDate.minusDays(1))) {
+                    lastSubject = lastCard.getDailyCard().getSubject();
+                }
+            }
+        }
+
+        for (int dayIndex = 0; dayIndex < days; dayIndex++) {
+            LocalDate targetDate = startDate.plusDays(dayIndex);
+            if (coupleDailyCardRepository.countByCoupleIdAndIssuedDateAndDelYn(coupleId, targetDate, "N") > 0) {
+                List<CoupleDailyCardEntity> existingAssignments = coupleDailyCardRepository
+                        .findAllByCoupleIdAndIssuedDateAndDelYnOrderByCoupleCardIdAsc(coupleId, targetDate, "N");
+                if (!existingAssignments.isEmpty() && existingAssignments.get(0).getDailyCard() != null) {
+                    lastSubject = existingAssignments.get(0).getDailyCard().getSubject();
+                }
+                skippedDateCount++;
+                log.info("커플 배정 스킵: coupleId={}, targetDate={}, reason=alreadyAssigned",
+                        coupleId, targetDate);
+                continue;
+            }
+
+            CardMode modeForDate = advanceMode(startMode, dayIndex);
+            CardSubject subjectForDate = pickSubject(lastSubject);
+
+            DailyCardEntity roleplayCard = pickCard(modeForDate, subjectForDate, CardType.ROLEPLAY, answeredCardIds);
+            DailyCardEntity balanceCard = pickCard(modeForDate, subjectForDate, CardType.BALANCE, answeredCardIds);
+
+            coupleDailyCardRepository.save(CoupleDailyCardEntity.builder()
+                    .coupleId(coupleId)
+                    .cardId(roleplayCard.getCardId())
+                    .issuedDate(targetDate)
+                    .regrId(registratorId)
+                    .updrId(registratorId)
+                    .build());
+
+            coupleDailyCardRepository.save(CoupleDailyCardEntity.builder()
+                    .coupleId(coupleId)
+                    .cardId(balanceCard.getCardId())
+                    .issuedDate(targetDate)
+                    .regrId(registratorId)
+                    .updrId(registratorId)
+                    .build());
+
+            assignedCount += 2;
+            lastSubject = subjectForDate;
+
+            log.info("커플 배정 완료: coupleId={}, targetDate={}, mode={}, subject={}, roleplayCardId={}, balanceCardId={}",
+                    coupleId, targetDate, modeForDate, subjectForDate,
+                    roleplayCard.getCardId(), balanceCard.getCardId());
+        }
+
+        log.info("커플 배정 요약: coupleId={}, assignedCount={}, skippedCount={}",
+                coupleId, assignedCount, skippedDateCount);
+
+        return new CoupleAssignResult(assignedCount, skippedDateCount);
     }
 
     private AiGenerationResult callAiForCardGeneration(CardMode mode, CardSubject subject, CardType type,

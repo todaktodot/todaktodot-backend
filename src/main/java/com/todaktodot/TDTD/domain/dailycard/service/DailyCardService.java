@@ -5,6 +5,7 @@ import com.todaktodot.TDTD.domain.dailycard.dto.request.GenerateDailyCardRequest
 import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
@@ -79,4 +80,16 @@ public interface DailyCardService {
      * @return 주간 데일리카드 목록
      */
     WeeklyCardResponseDTO getWeeklyCards(Long userId, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 내 커플 데일리카드 실시간 배정
+     * 프론트엔드가 원하는 시점에 호출하여 날짜 범위에 대해 배정.
+     * 이미 배정된 날짜는 자동 스킵
+     *
+     * @param userId 요청 사용자 ID
+     * @param startDate 배정 시작일
+     * @param endDate 배정 종료일
+     * @return 배정 결과 (배정 수, 스킵 수)
+     */
+    AssignMyCardResponseDTO assignMyDailyCards(Long userId, LocalDate startDate, LocalDate endDate);
 }

@@ -3,6 +3,7 @@ package com.todaktodot.TDTD.domain.dailycard.controller;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.service.DailyCardService;
@@ -61,6 +62,20 @@ public class DailyCardUserController {
 
         Long userId = userPrincipal.getId();
         WeeklyCardResponseDTO response = dailyCardService.getWeeklyCards(userId, startDate, endDate);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "내 커플 데일리카드 배정",
+               description = "요청 날짜 범위에 대해 데일리카드를 배정합니다. 이미 배정된 날짜는 자동 스킵됩니다.")
+    @ApiResponse(responseCode = "200", description = "배정 완료")
+    @PostMapping("/assign/me")
+    public ResponseEntity<AssignMyCardResponseDTO> assignMyDailyCards(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        Long userId = userPrincipal.getId();
+        AssignMyCardResponseDTO response = dailyCardService.assignMyDailyCards(userId, startDate, endDate);
         return ResponseEntity.ok(response);
     }
 }
