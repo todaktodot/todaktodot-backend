@@ -9,12 +9,14 @@ import com.todaktodot.TDTD.domain.login.respository.entity.UserAccount;
 import com.todaktodot.TDTD.global.jwt.JwtTokenProvider;
 import com.todaktodot.TDTD.global.security.Role;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -36,56 +38,42 @@ public class TestLoginController {
     @ApiResponse(responseCode = "200", description = "테스트 로그인 성공")
     @PostMapping("/test1")
     public ResponseEntity<LoginResponseDTO> testLogin1() {
-        // 테스트 유저 조회 또는 생성
-        UserAccount userTestAccount = userAccountRepository.findByProviderIdAndProviderAndDelYn("test123", "test", "N")
-                .orElseGet(() -> {
-                    UserAccount newUserAccount = UserAccount.builder()
-                            .email("test1@todaktodak.com")
-                            .name("김투닥")
-                            .provider("test")
-                            .providerId("test123")
-                            .build();
-
-                    User newUser = User.builder()
-                            .nickname("김투닥")
-                            .alarmYN("Y")
-                            .joinYN("N")
-                            .role(Role.USER)
-                            .socialAccounts(new ArrayList<>(List.of(newUserAccount)))
-                            .build();
-
-                    newUserAccount.setUser(newUser);
-
-                    userRepository.save(newUser);
-                    return userAccountRepository.save(newUserAccount);
-                });
-
-        User testUser = userTestAccount.getUser();
-        boolean isCouple = coupleRepository.existsByUserId(testUser.getId());
-
-        // JWT 토큰 발급
-        String accessToken = jwtTokenProvider.createAccessToken(testUser.getId(), testUser.getRole());
-        String refreshToken = jwtTokenProvider.createRefreshToken(testUser.getId());
-
-        return ResponseEntity.ok(new LoginResponseDTO(accessToken, refreshToken, testUser.getJoinYN().equals("Y"), isCouple));
+        return ResponseEntity.ok(loginWithTestUser("김투닥", "test123", "test"));
     }
 
     @Operation(summary = "테스트 로그인 - 이투닷", description = "local, dev 전용, 테스트 용도 회원 데이터(이투닷)로 토큰 발급합니다.")
     @ApiResponse(responseCode = "200", description = "테스트 로그인 성공")
     @PostMapping("/test2")
     public ResponseEntity<LoginResponseDTO> testLogin2() {
-        // 테스트 유저 조회 또는 생성
-        UserAccount userTestAccount = userAccountRepository.findByProviderIdAndProviderAndDelYn("test456", "test", "N")
+        return ResponseEntity.ok(loginWithTestUser("이투닷", "test456", "test"));
+    }
+
+    @Operation(summary = "테스트 로그인 - 커스텀", description = "local, dev 전용, 파라미터를 지정하여 테스트 계정 생성 및 토큰 발급합니다. 같은 providerId+provider로 재호출 시 기존 계정의 토큰을 반환합니다. 호출 전에 반드시 서버 개발자에게 검토를 받으시는걸 추천드립니다.")
+    @ApiResponse(responseCode = "200", description = "테스트 로그인 성공")
+    @PostMapping("/test")
+    public ResponseEntity<LoginResponseDTO> testLoginCustom(
+            @Parameter(description = "이름", example = "김테스트")
+            @RequestParam String name,
+            @Parameter(description = "고유 식별자", example = "test10001")
+            @RequestParam String providerId,
+            @Parameter(description = "인증 제공자", example = "KAKAO, GOOGLE, APPLE(예정)")
+            @RequestParam(defaultValue = "test") String provider) {
+
+        return ResponseEntity.ok(loginWithTestUser(name, providerId, provider));
+    }
+
+    private UserAccount getOrCreateTestUser(String name, String providerId, String provider) {
+
+        UserAccount userTestAccount = userAccountRepository.findByProviderIdAndProviderAndDelYn(providerId, provider, "N")
                 .orElseGet(() -> {
                     UserAccount newUserAccount = UserAccount.builder()
-                            .email("test2@todaktodak.com")
-                            .name("이투닷")
-                            .provider("test")
-                            .providerId("test456")
+                            .email(providerId + "@todaktodak.com")
+                            .name(name)
+                            .provider(provider)
+                            .providerId(providerId)
                             .build();
 
                     User newUser = User.builder()
-                            .nickname("김투닥")
                             .alarmYN("Y")
                             .joinYN("N")
                             .role(Role.USER)
@@ -97,14 +85,18 @@ public class TestLoginController {
                     userRepository.save(newUser);
                     return userAccountRepository.save(newUserAccount);
                 });
+        return userTestAccount;
+    }
+
+    private LoginResponseDTO loginWithTestUser(String name, String providerId, String provider) {
+        UserAccount userTestAccount = getOrCreateTestUser(name, providerId, provider);
 
         User testUser = userTestAccount.getUser();
         boolean isCouple = coupleRepository.existsByUserId(testUser.getId());
 
-        // JWT 토큰 발급
         String accessToken = jwtTokenProvider.createAccessToken(testUser.getId(), testUser.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(testUser.getId());
 
-        return ResponseEntity.ok(new LoginResponseDTO(accessToken, refreshToken, testUser.getJoinYN().equals("Y"), isCouple));
+        return new LoginResponseDTO(accessToken, refreshToken, testUser.getJoinYN().equals("Y"), isCouple);
     }
 }
