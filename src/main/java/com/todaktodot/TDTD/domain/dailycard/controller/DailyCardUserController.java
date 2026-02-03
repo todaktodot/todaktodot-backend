@@ -4,6 +4,7 @@ import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.service.DailyCardService;
 import com.todaktodot.TDTD.domain.login.respository.entity.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,9 +12,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @RestController
 @RequiredArgsConstructor
@@ -44,6 +48,19 @@ public class DailyCardUserController {
 
         Long userId = userPrincipal.getId();
         AssignCardResponseDTO response = dailyCardService.assignCardToCouple(userId, requestDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "주간 데일리카드 조회", description = "배정된 주간 데일리카드를 질문/선택지와 함께 조회합니다")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/weekly")
+    public ResponseEntity<WeeklyCardResponseDTO> getWeeklyCards(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        Long userId = userPrincipal.getId();
+        WeeklyCardResponseDTO response = dailyCardService.getWeeklyCards(userId, startDate, endDate);
         return ResponseEntity.ok(response);
     }
 }

@@ -7,9 +7,12 @@ import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardMode;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardSubject;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardType;
+
+import java.time.LocalDate;
 
 public interface DailyCardService {
 
@@ -66,4 +69,14 @@ public interface DailyCardService {
      * @return 최종 프롬프트 문자열
      */
     String previewPrompt(CardMode mode, CardSubject subject, CardType type, String situationCategory);
+
+    /**
+     * 주간 배정 데일리카드 조회 (카드 + 질문 + 선택지 포함)
+     *
+     * @param userId 요청 사용자 ID
+     * @param startDate 조회 시작일
+     * @param endDate 조회 종료일
+     * @return 주간 데일리카드 목록
+     */
+    WeeklyCardResponseDTO getWeeklyCards(Long userId, LocalDate startDate, LocalDate endDate);
 }

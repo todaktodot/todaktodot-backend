@@ -10,6 +10,8 @@ import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.repository.projection.WeeklyCardProjection;
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
 import com.todaktodot.TDTD.domain.dailycard.repository.AiCardGenerationInfoRepository;
@@ -28,6 +30,7 @@ import com.todaktodot.TDTD.admin.prompt.repository.entity.SituationCategoryEntit
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -687,6 +690,74 @@ public class DailyCardServiceImpl implements DailyCardService {
         }
         int index = ThreadLocalRandom.current().nextInt(subjects.size());
         return subjects.get(index);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WeeklyCardResponseDTO getWeeklyCards(Long userId, LocalDate startDate, LocalDate endDate) {
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        List<WeeklyCardProjection> rows = coupleDailyCardRepository
+                .findWeeklyCardsWithDetails(couple.getCoupleId(), startDate, endDate);
+
+        // flat rows → 중첩 DTO 변환 (coupleCardId → questionNo → options)
+        LinkedHashMap<Long, List<WeeklyCardProjection>> cardGroups = new LinkedHashMap<>();
+        for (WeeklyCardProjection row : rows) {
+            cardGroups.computeIfAbsent(row.getCoupleCardId(), k -> new ArrayList<>()).add(row);
+        }
+
+        List<WeeklyCardResponseDTO.DailyCardItem> dailyCards = new ArrayList<>();
+        for (var entry : cardGroups.entrySet()) {
+            List<WeeklyCardProjection> cardRows = entry.getValue();
+            WeeklyCardProjection first = cardRows.get(0);
+
+            LinkedHashMap<Integer, List<WeeklyCardProjection>> questionGroups = new LinkedHashMap<>();
+            for (WeeklyCardProjection row : cardRows) {
+                questionGroups.computeIfAbsent(row.getQuestionNo(), k -> new ArrayList<>()).add(row);
+            }
+
+            List<WeeklyCardResponseDTO.QuestionItem> questions = new ArrayList<>();
+            for (var qEntry : questionGroups.entrySet()) {
+                List<WeeklyCardProjection> qRows = qEntry.getValue();
+                WeeklyCardProjection qFirst = qRows.get(0);
+
+                List<WeeklyCardResponseDTO.OptionItem> options = new ArrayList<>();
+                for (WeeklyCardProjection qRow : qRows) {
+                    if (qRow.getOptionNo() != null) {
+                        options.add(WeeklyCardResponseDTO.OptionItem.builder()
+                                .optionNo(qRow.getOptionNo())
+                                .optionCnts(qRow.getOptionCnts())
+                                .build());
+                    }
+                }
+
+                questions.add(WeeklyCardResponseDTO.QuestionItem.builder()
+                        .questionNo(qFirst.getQuestionNo())
+                        .questionType(qFirst.getQuestionType())
+                        .questionCnts(qFirst.getQuestionCnts())
+                        .answerReqYn(qFirst.getAnswerReqYn())
+                        .options(options)
+                        .build());
+            }
+
+            dailyCards.add(WeeklyCardResponseDTO.DailyCardItem.builder()
+                    .coupleCardId(first.getCoupleCardId())
+                    .cardId(first.getCardId())
+                    .issuedDate(first.getIssuedDate())
+                    .cardTitle(first.getCardTitle())
+                    .mode(first.getMode())
+                    .subject(first.getSubject())
+                    .type(first.getType())
+                    .questions(questions)
+                    .build());
+        }
+
+        return WeeklyCardResponseDTO.builder()
+                .startDate(startDate)
+                .endDate(endDate)
+                .dailyCards(dailyCards)
+                .build();
     }
 
     private CardMode advanceMode(CardMode startMode, int offset) {
