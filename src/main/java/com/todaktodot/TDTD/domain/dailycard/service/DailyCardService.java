@@ -2,11 +2,13 @@ package com.todaktodot.TDTD.domain.dailycard.service;
 
 import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.GenerateDailyCardRequestDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.SelectCardTypeRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardMode;
@@ -92,4 +94,14 @@ public interface DailyCardService {
      * @return 배정 결과 (배정 수, 스킵 수)
      */
     AssignMyCardResponseDTO assignMyDailyCards(Long userId, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 데일리카드 유형 선택 및 미선택 카드 soft delete
+     * 당일 배정된 2개 카드 중 선택한 유형의 카드를 활성화하고, 나머지를 삭제 처리
+     *
+     * @param userId 선택하는 사용자 ID
+     * @param request 발급일자 + 선택 유형
+     * @return 선택된 카드 정보
+     */
+    SelectCardTypeResponseDTO selectCardType(Long userId, SelectCardTypeRequestDTO request);
 }

@@ -5,11 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.todaktodot.TDTD.domain.dailycard.dto.ai.AiGeneratedCardDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.GenerateDailyCardRequestDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.SelectCardTypeRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.WeeklyCardProjection;
@@ -802,6 +804,45 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .endDate(endDate)
                 .dailyCards(dailyCards)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public SelectCardTypeResponseDTO selectCardType(Long userId, SelectCardTypeRequestDTO request) {
+        // 1. userId → coupleId 조회
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        // 2. 선택할 카드 조회 + dailyCard EAGER 로드
+        CoupleDailyCardEntity selectedCard = coupleDailyCardRepository
+                .findByIdWithDailyCard(request.getCoupleCardId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 커플 카드입니다: " + request.getCoupleCardId()));
+
+        // 3. 접근 권한 검증
+        if (!selectedCard.getCoupleId().equals(couple.getCoupleId())) {
+            throw new IllegalStateException("해당 카드에 대한 접근 권한이 없습니다.");
+        }
+
+        // 4. 이미 유형 선택이 완료된 경우 차단
+        if ("Y".equals(selectedCard.getSelectedYn())) {
+            throw new IllegalStateException("이미 유형이 선택된 카드입니다: " + request.getCoupleCardId());
+        }
+
+        // 5. 선택 카드: markSelected 처리
+        CardType selectedType = selectedCard.getDailyCard().getType();
+        selectedCard.markSelected(userId, selectedType);
+
+        // 6. 같은 날짜의 나머지 카드 soft delete 처리
+        List<CoupleDailyCardEntity> siblingCards = coupleDailyCardRepository
+                .findAllByCoupleIdAndIssuedDateAndDelYn(
+                        couple.getCoupleId(), selectedCard.getIssuedDate(), "N");
+
+        siblingCards.stream()
+                .filter(card -> !card.getCoupleCardId().equals(request.getCoupleCardId()))
+                .forEach(card -> card.softDelete(userId));
+
+        return SelectCardTypeResponseDTO.from(selectedCard);
     }
 
     private CardMode advanceMode(CardMode startMode, int offset) {

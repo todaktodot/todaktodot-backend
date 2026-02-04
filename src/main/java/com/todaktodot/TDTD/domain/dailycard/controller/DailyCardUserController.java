@@ -1,9 +1,11 @@
 package com.todaktodot.TDTD.domain.dailycard.controller;
 
 import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.SelectCardTypeRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.service.DailyCardService;
@@ -76,6 +78,19 @@ public class DailyCardUserController {
 
         Long userId = userPrincipal.getId();
         AssignMyCardResponseDTO response = dailyCardService.assignMyDailyCards(userId, startDate, endDate);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "데일리카드 유형 선택",
+               description = "당일 배정된 2개의 데일리카드 중 하나를 선택합니다. 미선택 카드는 자동으로 삭제 처리됩니다.")
+    @ApiResponse(responseCode = "200", description = "유형 선택 완료")
+    @PostMapping("/select-type")
+    public ResponseEntity<SelectCardTypeResponseDTO> selectCardType(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @Valid @RequestBody SelectCardTypeRequestDTO requestDTO) {
+
+        Long userId = userPrincipal.getId();
+        SelectCardTypeResponseDTO response = dailyCardService.selectCardType(userId, requestDTO);
         return ResponseEntity.ok(response);
     }
 }
