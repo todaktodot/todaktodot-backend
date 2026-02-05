@@ -7,6 +7,7 @@ import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryDetailResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.service.DailyCardService;
@@ -106,6 +107,22 @@ public class DailyCardUserController {
 
         Long userId = userPrincipal.getId();
         HistoryCardResponseDTO response = dailyCardService.getHistoryCards(userId, startDate, endDate);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "히스토리 카드 리스트 + 상세 한 번에 조회",
+               description = "날짜 범위 내 배정된 데일리카드를 일자별로 조회합니다. "
+                       + "선택 완료 카드는 질문/선택지/답변/AI 피드백까지 포함합니다. "
+                       + "앱 메인 진입 시 한 번의 호출로 전체 데이터를 로드합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/history/with-details")
+    public ResponseEntity<HistoryDetailResponseDTO> getHistoryDetailCards(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        Long userId = userPrincipal.getId();
+        HistoryDetailResponseDTO response = dailyCardService.getHistoryDetailCards(userId, startDate, endDate);
         return ResponseEntity.ok(response);
     }
 }

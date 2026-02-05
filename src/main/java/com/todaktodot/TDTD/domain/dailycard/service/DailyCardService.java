@@ -9,6 +9,7 @@ import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryDetailResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
@@ -117,4 +118,17 @@ public interface DailyCardService {
      * @return 히스토리 카드 리스트
      */
     HistoryCardResponseDTO getHistoryCards(Long userId, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 히스토리 카드 상세 리스트 조회
+     * 날짜 범위 내 배정된 데일리카드를 일자별로 조회하되,
+     * 선택 완료 카드는 질문/선택지/답변/AI 피드백까지 포함.
+     * 앱 메인 진입 시 한 번의 호출로 모든 데이터를 로드하기 위한 API.
+     *
+     * @param userId 요청 사용자 ID
+     * @param startDate 조회 시작일
+     * @param endDate 조회 종료일
+     * @return 히스토리 카드 상세 리스트
+     */
+    HistoryDetailResponseDTO getHistoryDetailCards(Long userId, LocalDate startDate, LocalDate endDate);
 }

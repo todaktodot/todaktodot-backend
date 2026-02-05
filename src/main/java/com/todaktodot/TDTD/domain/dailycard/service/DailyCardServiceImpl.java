@@ -13,10 +13,16 @@ import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryDetailResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryCardProjection;
+import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryDetailProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.WeeklyCardProjection;
+import com.todaktodot.TDTD.domain.feedback.repository.CoupleDailyCardFeedbackRepository;
+import com.todaktodot.TDTD.domain.feedback.repository.DailyCardFeedbackRepository;
+import com.todaktodot.TDTD.domain.feedback.repository.entity.CoupleDailyCardFeedbackEntity;
+import com.todaktodot.TDTD.domain.feedback.repository.entity.DailyCardFeedbackEntity;
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
 import com.todaktodot.TDTD.domain.dailycard.repository.AiCardGenerationInfoRepository;
@@ -66,6 +72,8 @@ public class DailyCardServiceImpl implements DailyCardService {
     private final AiPromptRepository aiPromptRepository;
     private final SituationCategoryRepository situationCategoryRepository;
     private final AiCardGenerationInfoRepository aiCardGenerationInfoRepository;
+    private final CoupleDailyCardFeedbackRepository coupleDailyCardFeedbackRepository;
+    private final DailyCardFeedbackRepository dailyCardFeedbackRepository;
     private final ObjectMapper objectMapper;
 
     private static final Long SYSTEM_USER = 0L;
@@ -902,6 +910,153 @@ public class DailyCardServiceImpl implements DailyCardService {
         }
 
         return HistoryCardResponseDTO.builder()
+                .startDate(startDate)
+                .endDate(endDate)
+                .historyCards(historyCards)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HistoryDetailResponseDTO getHistoryDetailCards(Long userId, LocalDate startDate, LocalDate endDate) {
+        // 1. 커플 조회 (coupleId, userId1, userId2)
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        // 2. 메인 네이티브 쿼리 (카드 + 질문 + 선택지 + 답변)
+        List<HistoryDetailProjection> rows = coupleDailyCardRepository.findHistoryDetailCards(
+                couple.getCoupleId(), couple.getUserId1(), couple.getUserId2(),
+                startDate, endDate);
+
+        // 3. issuedDate별 그룹핑 (LinkedHashMap으로 순서 보장)
+        LinkedHashMap<LocalDate, List<HistoryDetailProjection>> dateGroups = new LinkedHashMap<>();
+        for (HistoryDetailProjection row : rows) {
+            dateGroups.computeIfAbsent(row.getIssuedDate(), k -> new ArrayList<>()).add(row);
+        }
+
+        // 4. 선택 완료 카드의 coupleCardId 수집 (피드백 배치 조회용)
+        List<Long> selectedCoupleCardIds = new ArrayList<>();
+        for (var entry : dateGroups.entrySet()) {
+            entry.getValue().stream()
+                    .filter(c -> "Y".equals(c.getSelectedYn()))
+                    .map(HistoryDetailProjection::getCoupleCardId)
+                    .findFirst()
+                    .ifPresent(selectedCoupleCardIds::add);
+        }
+
+        // 5. 피드백 배치 조회
+        Map<Long, HistoryDetailResponseDTO.FeedbackItem> feedbackMap = new LinkedHashMap<>();
+        if (!selectedCoupleCardIds.isEmpty()) {
+            List<CoupleDailyCardFeedbackEntity> feedbackMappings =
+                    coupleDailyCardFeedbackRepository.findAllByCoupleCardIdInAndDelYn(selectedCoupleCardIds, "N");
+
+            if (!feedbackMappings.isEmpty()) {
+                List<Long> feedbackIds = feedbackMappings.stream()
+                        .map(CoupleDailyCardFeedbackEntity::getFeedbackId)
+                        .distinct()
+                        .toList();
+                Map<Long, DailyCardFeedbackEntity> feedbackEntities = new LinkedHashMap<>();
+                dailyCardFeedbackRepository.findAllById(feedbackIds)
+                        .forEach(fb -> feedbackEntities.put(fb.getFeedbackId(), fb));
+
+                for (CoupleDailyCardFeedbackEntity mapping : feedbackMappings) {
+                    DailyCardFeedbackEntity fb = feedbackEntities.get(mapping.getFeedbackId());
+                    if (fb != null && "N".equals(fb.getDelYn())) {
+                        feedbackMap.put(mapping.getCoupleCardId(),
+                                HistoryDetailResponseDTO.FeedbackItem.builder()
+                                        .feedbackId(fb.getFeedbackId())
+                                        .summary(fb.getSummary())
+                                        .matchPoints(fb.getMatchPoints())
+                                        .differences(fb.getDifferences())
+                                        .conversationStarter(fb.getConversationStarter())
+                                        .build());
+                    }
+                }
+            }
+        }
+
+        // 6. 각 일자별로 DTO 조립
+        List<HistoryDetailResponseDTO.HistoryDetailCardItem> historyCards = new ArrayList<>();
+        for (var entry : dateGroups.entrySet()) {
+            List<HistoryDetailProjection> dayRows = entry.getValue();
+
+            // selectedYn='Y'인 행 필터
+            List<HistoryDetailProjection> selectedRows = dayRows.stream()
+                    .filter(c -> "Y".equals(c.getSelectedYn()))
+                    .toList();
+
+            if (!selectedRows.isEmpty()) {
+                // 선택 완료: 전체 상세 정보 조립
+                HistoryDetailProjection first = selectedRows.get(0);
+
+                // questionNo로 2차 그룹핑
+                LinkedHashMap<Integer, List<HistoryDetailProjection>> questionGroups = new LinkedHashMap<>();
+                for (HistoryDetailProjection row : selectedRows) {
+                    questionGroups.computeIfAbsent(row.getQuestionNo(), k -> new ArrayList<>()).add(row);
+                }
+
+                boolean user1HasAnswer = false;
+                boolean user2HasAnswer = false;
+                List<HistoryDetailResponseDTO.QuestionItem> questions = new ArrayList<>();
+
+                for (var qEntry : questionGroups.entrySet()) {
+                    List<HistoryDetailProjection> qRows = qEntry.getValue();
+                    HistoryDetailProjection qFirst = qRows.get(0);
+
+                    // 옵션 수집
+                    List<HistoryDetailResponseDTO.OptionItem> options = new ArrayList<>();
+                    for (HistoryDetailProjection qRow : qRows) {
+                        if (qRow.getOptionNo() != null) {
+                            options.add(HistoryDetailResponseDTO.OptionItem.builder()
+                                    .optionNo(qRow.getOptionNo())
+                                    .optionContent(qRow.getOptionCnts())
+                                    .build());
+                        }
+                    }
+
+                    String u1Answer = qFirst.getUser1Answer();
+                    String u2Answer = qFirst.getUser2Answer();
+                    if (u1Answer != null) user1HasAnswer = true;
+                    if (u2Answer != null) user2HasAnswer = true;
+
+                    questions.add(HistoryDetailResponseDTO.QuestionItem.builder()
+                            .questionNo(qFirst.getQuestionNo())
+                            .questionType(qFirst.getQuestionType())
+                            .questionContent(qFirst.getQuestionCnts())
+                            .answerRequired("Y".equals(qFirst.getAnswerReqYn()))
+                            .options(options)
+                            .user1Answer(u1Answer)
+                            .user2Answer(u2Answer)
+                            .build());
+                }
+
+                historyCards.add(HistoryDetailResponseDTO.HistoryDetailCardItem.builder()
+                        .issuedDate(first.getIssuedDate())
+                        .mode(first.getMode())
+                        .subject(first.getSubject())
+                        .selected(true)
+                        .coupleCardId(first.getCoupleCardId())
+                        .cardId(first.getCardId())
+                        .cardTitle(first.getCardTitle())
+                        .type(first.getType())
+                        .user1Answered(user1HasAnswer)
+                        .user2Answered(user2HasAnswer)
+                        .questions(questions)
+                        .feedback(feedbackMap.get(first.getCoupleCardId()))
+                        .build());
+            } else {
+                // 미선택: 모드/주제만 노출
+                HistoryDetailProjection first = dayRows.get(0);
+                historyCards.add(HistoryDetailResponseDTO.HistoryDetailCardItem.builder()
+                        .issuedDate(first.getIssuedDate())
+                        .mode(first.getMode())
+                        .subject(first.getSubject())
+                        .selected(false)
+                        .build());
+            }
+        }
+
+        return HistoryDetailResponseDTO.builder()
                 .startDate(startDate)
                 .endDate(endDate)
                 .historyCards(historyCards)
