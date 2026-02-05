@@ -2,11 +2,14 @@ package com.todaktodot.TDTD.domain.dailycard.service;
 
 import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.GenerateDailyCardRequestDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.SelectCardTypeRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardMode;
@@ -92,4 +95,26 @@ public interface DailyCardService {
      * @return 배정 결과 (배정 수, 스킵 수)
      */
     AssignMyCardResponseDTO assignMyDailyCards(Long userId, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 데일리카드 유형 선택 및 미선택 카드 soft delete
+     * 당일 배정된 2개 카드 중 선택한 유형의 카드를 활성화하고, 나머지를 삭제 처리
+     *
+     * @param userId 선택하는 사용자 ID
+     * @param request 발급일자 + 선택 유형
+     * @return 선택된 카드 정보
+     */
+    SelectCardTypeResponseDTO selectCardType(Long userId, SelectCardTypeRequestDTO request);
+
+    /**
+     * 히스토리 카드 리스트 조회
+     * 날짜 범위 내 배정된 데일리카드를 일자별로 조회.
+     * 유형 선택 완료 시 전체 정보, 미선택 시 모드/주제만 노출
+     *
+     * @param userId 요청 사용자 ID
+     * @param startDate 조회 시작일
+     * @param endDate 조회 종료일
+     * @return 히스토리 카드 리스트
+     */
+    HistoryCardResponseDTO getHistoryCards(Long userId, LocalDate startDate, LocalDate endDate);
 }

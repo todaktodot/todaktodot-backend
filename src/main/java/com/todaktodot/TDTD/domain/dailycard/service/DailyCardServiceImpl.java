@@ -10,8 +10,11 @@ import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryCardProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.WeeklyCardProjection;
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
@@ -801,6 +804,106 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .startDate(startDate)
                 .endDate(endDate)
                 .dailyCards(dailyCards)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public SelectCardTypeResponseDTO selectCardType(Long userId, SelectCardTypeRequestDTO request) {
+        // 1. userId → coupleId 조회
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        // 2. 선택할 카드 조회 + dailyCard EAGER 로드
+        CoupleDailyCardEntity selectedCard = coupleDailyCardRepository
+                .findByIdWithDailyCard(request.getCoupleCardId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 커플 카드입니다: " + request.getCoupleCardId()));
+
+        // 3. 접근 권한 검증
+        if (!selectedCard.getCoupleId().equals(couple.getCoupleId())) {
+            throw new IllegalStateException("해당 카드에 대한 접근 권한이 없습니다.");
+        }
+
+        // 4. 이미 유형 선택이 완료된 경우 차단
+        if ("Y".equals(selectedCard.getSelectedYn())) {
+            throw new IllegalStateException("이미 유형이 선택된 카드입니다: " + request.getCoupleCardId());
+        }
+
+        // 5. 선택 카드: markSelected 처리
+        CardType selectedType = selectedCard.getDailyCard().getType();
+        selectedCard.markSelected(userId, selectedType);
+
+        // 6. 같은 날짜의 나머지 카드 soft delete 처리
+        List<CoupleDailyCardEntity> siblingCards = coupleDailyCardRepository
+                .findAllByCoupleIdAndIssuedDateAndDelYn(
+                        couple.getCoupleId(), selectedCard.getIssuedDate(), "N");
+
+        siblingCards.stream()
+                .filter(card -> !card.getCoupleCardId().equals(request.getCoupleCardId()))
+                .forEach(card -> card.softDelete(userId));
+
+        return SelectCardTypeResponseDTO.from(selectedCard);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HistoryCardResponseDTO getHistoryCards(Long userId, LocalDate startDate, LocalDate endDate) {
+        // 1. userId → CoupleEntity (coupleId, userId1, userId2 획득)
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        // 2. 네이티브 쿼리 한 방 조회 (카드 마스터 + user1/user2 답변 여부)
+        List<HistoryCardProjection> rows = coupleDailyCardRepository.findHistoryCards(
+                couple.getCoupleId(), couple.getUserId1(), couple.getUserId2(),
+                startDate, endDate);
+
+        // 3. issuedDate별 그룹핑 (LinkedHashMap으로 순서 보장)
+        LinkedHashMap<LocalDate, List<HistoryCardProjection>> dateGroups = new LinkedHashMap<>();
+        for (HistoryCardProjection row : rows) {
+            dateGroups.computeIfAbsent(row.getIssuedDate(), k -> new ArrayList<>()).add(row);
+        }
+
+        // 4. 각 일자별로 선택/미선택 분기하여 DTO 조립
+        List<HistoryCardResponseDTO.HistoryCardItem> historyCards = new ArrayList<>();
+        for (var entry : dateGroups.entrySet()) {
+            List<HistoryCardProjection> dayCards = entry.getValue();
+
+            // selectedYn='Y'인 카드 찾기
+            HistoryCardProjection selectedCard = dayCards.stream()
+                    .filter(c -> "Y".equals(c.getSelectedYn()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (selectedCard != null) {
+                // 선택 완료: 전체 정보 노출
+                historyCards.add(HistoryCardResponseDTO.HistoryCardItem.builder()
+                        .issuedDate(selectedCard.getIssuedDate())
+                        .mode(selectedCard.getMode())
+                        .subject(selectedCard.getSubject())
+                        .selected(true)
+                        .coupleCardId(selectedCard.getCoupleCardId())
+                        .cardId(selectedCard.getCardId())
+                        .type(selectedCard.getType())
+                        .user1Answered(selectedCard.getUser1Answered() != null && selectedCard.getUser1Answered() == 1L)
+                        .user2Answered(selectedCard.getUser2Answered() != null && selectedCard.getUser2Answered() == 1L)
+                        .build());
+            } else {
+                // 미선택: 모드/주제만 노출
+                HistoryCardProjection first = dayCards.get(0);
+                historyCards.add(HistoryCardResponseDTO.HistoryCardItem.builder()
+                        .issuedDate(first.getIssuedDate())
+                        .mode(first.getMode())
+                        .subject(first.getSubject())
+                        .selected(false)
+                        .build());
+            }
+        }
+
+        return HistoryCardResponseDTO.builder()
+                .startDate(startDate)
+                .endDate(endDate)
+                .historyCards(historyCards)
                 .build();
     }
 
