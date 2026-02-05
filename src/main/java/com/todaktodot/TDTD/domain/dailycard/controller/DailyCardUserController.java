@@ -6,6 +6,7 @@ import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.service.DailyCardService;
@@ -91,6 +92,20 @@ public class DailyCardUserController {
 
         Long userId = userPrincipal.getId();
         SelectCardTypeResponseDTO response = dailyCardService.selectCardType(userId, requestDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "히스토리 카드 리스트 조회",
+               description = "날짜 범위 내 배정된 데일리카드를 일자별로 조회합니다. 유형 선택 여부에 따라 노출 정보가 달라집니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/history")
+    public ResponseEntity<HistoryCardResponseDTO> getHistoryCards(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        Long userId = userPrincipal.getId();
+        HistoryCardResponseDTO response = dailyCardService.getHistoryCards(userId, startDate, endDate);
         return ResponseEntity.ok(response);
     }
 }

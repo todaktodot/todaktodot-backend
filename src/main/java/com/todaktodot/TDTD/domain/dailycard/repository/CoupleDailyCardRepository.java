@@ -3,6 +3,7 @@ package com.todaktodot.TDTD.domain.dailycard.repository;
 import com.todaktodot.TDTD.domain.aireport.dto.response.SyncAnswerDTO;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardSubject;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CoupleDailyCardEntity;
+import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryCardProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.WeeklyCardProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -91,6 +92,37 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
         """, nativeQuery = true)
     List<WeeklyCardProjection> findWeeklyCardsWithDetails(
             @Param("coupleId") Long coupleId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    // 히스토리 카드 리스트 조회 (카드 마스터 + user1/user2 답변 여부 한 방 조회)
+    @Query(value = """
+        SELECT cdc.COUPLE_CARD_ID AS coupleCardId,
+               cdc.ISSUED_DATE AS issuedDate,
+               cdc.SELECTED_YN AS selectedYn,
+               dc.CARD_ID AS cardId,
+               dc.MODE AS mode,
+               dc.SUBJECT AS subject,
+               dc.TYPE AS type,
+               CASE WHEN a1.COUPLE_CARD_ID IS NOT NULL THEN true ELSE false END AS user1Answered,
+               CASE WHEN a2.COUPLE_CARD_ID IS NOT NULL THEN true ELSE false END AS user2Answered
+        FROM couple_daily_card cdc
+            JOIN daily_card dc ON dc.CARD_ID = cdc.CARD_ID AND dc.DEL_YN = 'N'
+            LEFT JOIN (SELECT DISTINCT COUPLE_CARD_ID FROM daily_card_user_answer
+                       WHERE USER_ID = :userId1 AND DEL_YN = 'N') a1
+                ON a1.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
+            LEFT JOIN (SELECT DISTINCT COUPLE_CARD_ID FROM daily_card_user_answer
+                       WHERE USER_ID = :userId2 AND DEL_YN = 'N') a2
+                ON a2.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
+        WHERE cdc.COUPLE_ID = :coupleId
+          AND cdc.ISSUED_DATE BETWEEN :startDate AND :endDate
+          AND cdc.DEL_YN = 'N'
+        ORDER BY cdc.ISSUED_DATE ASC
+        """, nativeQuery = true)
+    List<HistoryCardProjection> findHistoryCards(
+            @Param("coupleId") Long coupleId,
+            @Param("userId1") Long userId1,
+            @Param("userId2") Long userId2,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
 

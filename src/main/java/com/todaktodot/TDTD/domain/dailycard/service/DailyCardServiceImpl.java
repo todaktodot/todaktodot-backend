@@ -12,8 +12,10 @@ import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryCardProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.WeeklyCardProjection;
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
@@ -843,6 +845,67 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .forEach(card -> card.softDelete(userId));
 
         return SelectCardTypeResponseDTO.from(selectedCard);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HistoryCardResponseDTO getHistoryCards(Long userId, LocalDate startDate, LocalDate endDate) {
+        // 1. userId → CoupleEntity (coupleId, userId1, userId2 획득)
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        // 2. 네이티브 쿼리 한 방 조회 (카드 마스터 + user1/user2 답변 여부)
+        List<HistoryCardProjection> rows = coupleDailyCardRepository.findHistoryCards(
+                couple.getCoupleId(), couple.getUserId1(), couple.getUserId2(),
+                startDate, endDate);
+
+        // 3. issuedDate별 그룹핑 (LinkedHashMap으로 순서 보장)
+        LinkedHashMap<LocalDate, List<HistoryCardProjection>> dateGroups = new LinkedHashMap<>();
+        for (HistoryCardProjection row : rows) {
+            dateGroups.computeIfAbsent(row.getIssuedDate(), k -> new ArrayList<>()).add(row);
+        }
+
+        // 4. 각 일자별로 선택/미선택 분기하여 DTO 조립
+        List<HistoryCardResponseDTO.HistoryCardItem> historyCards = new ArrayList<>();
+        for (var entry : dateGroups.entrySet()) {
+            List<HistoryCardProjection> dayCards = entry.getValue();
+
+            // selectedYn='Y'인 카드 찾기
+            HistoryCardProjection selectedCard = dayCards.stream()
+                    .filter(c -> "Y".equals(c.getSelectedYn()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (selectedCard != null) {
+                // 선택 완료: 전체 정보 노출
+                historyCards.add(HistoryCardResponseDTO.HistoryCardItem.builder()
+                        .issuedDate(selectedCard.getIssuedDate())
+                        .mode(selectedCard.getMode())
+                        .subject(selectedCard.getSubject())
+                        .selected(true)
+                        .coupleCardId(selectedCard.getCoupleCardId())
+                        .cardId(selectedCard.getCardId())
+                        .type(selectedCard.getType())
+                        .user1Answered(selectedCard.getUser1Answered() != null && selectedCard.getUser1Answered() == 1L)
+                        .user2Answered(selectedCard.getUser2Answered() != null && selectedCard.getUser2Answered() == 1L)
+                        .build());
+            } else {
+                // 미선택: 모드/주제만 노출
+                HistoryCardProjection first = dayCards.get(0);
+                historyCards.add(HistoryCardResponseDTO.HistoryCardItem.builder()
+                        .issuedDate(first.getIssuedDate())
+                        .mode(first.getMode())
+                        .subject(first.getSubject())
+                        .selected(false)
+                        .build());
+            }
+        }
+
+        return HistoryCardResponseDTO.builder()
+                .startDate(startDate)
+                .endDate(endDate)
+                .historyCards(historyCards)
+                .build();
     }
 
     private CardMode advanceMode(CardMode startMode, int offset) {
