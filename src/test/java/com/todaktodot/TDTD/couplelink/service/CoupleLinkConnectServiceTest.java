@@ -2,6 +2,7 @@ package com.todaktodot.TDTD.couplelink.service;
 
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
+import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleType;
 import com.todaktodot.TDTD.domain.couplelink.dto.request.ConnectLinkCodeRequestDTO;
 import com.todaktodot.TDTD.domain.couplelink.dto.response.ConnectLinkCodeResponseDTO;
 import com.todaktodot.TDTD.domain.couplelink.repository.CoupleLinkAuthRepository;
@@ -61,6 +62,7 @@ class CoupleLinkConnectServiceTest {
                 .coupleId(1L)
                 .userId1(issuedUserId)
                 .userId2(inputUserId)
+                .coupleType(CoupleType.CONNECTED)
                 .connectedDt(LocalDateTime.now())
                 .regrId(inputUserId)
                 .updrId(inputUserId)
@@ -68,8 +70,12 @@ class CoupleLinkConnectServiceTest {
 
         when(coupleLinkAuthRepository.findByLinkCode(linkCode))
                 .thenReturn(Optional.of(linkAuthEntity));
-        when(coupleRepository.existsByUserId(issuedUserId)).thenReturn(false);
-        when(coupleRepository.existsByUserId(inputUserId)).thenReturn(false);
+        // [TDTDBE-55] findByUserId로 커플 여부 확인 (둘 다 커플 아님)
+        when(coupleRepository.findByUserId(issuedUserId)).thenReturn(Optional.empty());
+        when(coupleRepository.findByUserId(inputUserId)).thenReturn(Optional.empty());
+        // SOLO 커플 조회 (둘 다 SOLO 아님)
+        when(coupleRepository.findSoloCoupleByUserId(issuedUserId)).thenReturn(Optional.empty());
+        when(coupleRepository.findSoloCoupleByUserId(inputUserId)).thenReturn(Optional.empty());
         when(coupleRepository.save(any(CoupleEntity.class)))
                 .thenReturn(savedCouple);
         when(coupleLinkAuthRepository.save(any(CoupleLinkAuthEntity.class)))
@@ -222,10 +228,21 @@ class CoupleLinkConnectServiceTest {
                 .updrId(issuedUserId)
                 .build();
 
+        // [TDTDBE-55] 발급자가 이미 CONNECTED 커플
+        CoupleEntity connectedCouple = CoupleEntity.builder()
+                .coupleId(99L)
+                .userId1(issuedUserId)
+                .userId2(3L)  // 다른 사람과 이미 커플
+                .coupleType(CoupleType.CONNECTED)
+                .connectedDt(LocalDateTime.now().minusDays(10))
+                .regrId(issuedUserId)
+                .updrId(issuedUserId)
+                .build();
+
         when(coupleLinkAuthRepository.findByLinkCode(linkCode))
                 .thenReturn(Optional.of(linkAuthEntity));
-        when(coupleRepository.existsByUserId(issuedUserId))
-                .thenReturn(true);  // 발급자가 이미 커플
+        when(coupleRepository.findByUserId(issuedUserId))
+                .thenReturn(Optional.of(connectedCouple));  // 발급자가 이미 커플
 
         // When & Then
         assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(inputUserId, request))
@@ -253,11 +270,22 @@ class CoupleLinkConnectServiceTest {
                 .updrId(issuedUserId)
                 .build();
 
+        // [TDTDBE-55] 입력자가 이미 CONNECTED 커플
+        CoupleEntity connectedCouple = CoupleEntity.builder()
+                .coupleId(99L)
+                .userId1(inputUserId)
+                .userId2(3L)  // 다른 사람과 이미 커플
+                .coupleType(CoupleType.CONNECTED)
+                .connectedDt(LocalDateTime.now().minusDays(10))
+                .regrId(inputUserId)
+                .updrId(inputUserId)
+                .build();
+
         when(coupleLinkAuthRepository.findByLinkCode(linkCode))
                 .thenReturn(Optional.of(linkAuthEntity));
-        when(coupleRepository.existsByUserId(issuedUserId)).thenReturn(false);
-        when(coupleRepository.existsByUserId(inputUserId))
-                .thenReturn(true);  // 입력자가 이미 커플
+        when(coupleRepository.findByUserId(issuedUserId)).thenReturn(Optional.empty());  // 발급자는 커플 아님
+        when(coupleRepository.findByUserId(inputUserId))
+                .thenReturn(Optional.of(connectedCouple));  // 입력자가 이미 커플
 
         // When & Then
         assertThatThrownBy(() -> coupleLinkAuthService.connectLinkCode(inputUserId, request))

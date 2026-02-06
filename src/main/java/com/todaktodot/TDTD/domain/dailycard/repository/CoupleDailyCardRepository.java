@@ -97,6 +97,7 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
             @Param("endDate") LocalDate endDate);
 
     // 히스토리 카드 리스트 조회 (카드 마스터 + user1/user2 답변 여부 한 방 조회)
+    // [TDTDBE-55] userId2가 NULL인 경우(SOLO 커플) 처리 추가
     @Query(value = """
         SELECT cdc.COUPLE_CARD_ID AS coupleCardId,
                cdc.ISSUED_DATE AS issuedDate,
@@ -113,7 +114,7 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                        WHERE USER_ID = :userId1 AND DEL_YN = 'N') a1
                 ON a1.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
             LEFT JOIN (SELECT DISTINCT COUPLE_CARD_ID FROM daily_card_user_answer
-                       WHERE USER_ID = :userId2 AND DEL_YN = 'N') a2
+                       WHERE USER_ID = :userId2 AND :userId2 IS NOT NULL AND DEL_YN = 'N') a2
                 ON a2.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
         WHERE cdc.COUPLE_ID = :coupleId
           AND cdc.ISSUED_DATE BETWEEN :startDate AND :endDate
@@ -128,6 +129,7 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
             @Param("endDate") LocalDate endDate);
 
     // 히스토리 카드 상세 리스트 조회 (카드 + 질문 + 선택지 + user1/user2 답변 한 방 조회)
+    // [TDTDBE-55] userId2가 NULL인 경우(SOLO 커플) 처리 추가
     @Query(value = """
         SELECT cdc.COUPLE_CARD_ID AS coupleCardId,
                cdc.ISSUED_DATE AS issuedDate,
@@ -159,6 +161,7 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                 ON a2.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
                AND a2.QUESTION_NO = dq.QUESTION_NO
                AND a2.USER_ID = :userId2
+               AND :userId2 IS NOT NULL
                AND a2.DEL_YN = 'N'
         WHERE cdc.COUPLE_ID = :coupleId
           AND cdc.ISSUED_DATE BETWEEN :startDate AND :endDate

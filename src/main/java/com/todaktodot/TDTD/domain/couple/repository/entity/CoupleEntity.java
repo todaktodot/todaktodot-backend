@@ -30,8 +30,13 @@ public class CoupleEntity {
     @Column(name = "USER_ID_1", nullable = false, columnDefinition = "BIGINT")
     private Long userId1;  // 코드 발급자
 
-    @Column(name = "USER_ID_2", nullable = false, columnDefinition = "BIGINT")
-    private Long userId2;  // 코드 입력자
+    @Column(name = "USER_ID_2", nullable = true, columnDefinition = "BIGINT")
+    private Long userId2;  // 코드 입력자 (NULL = 혼자 둘러보기)
+
+    @Column(name = "COUPLE_TYPE", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private CoupleType coupleType = CoupleType.CONNECTED;  // 커플 유형
 
     @Column(name = "CONNECTED_DT", nullable = false)
     private LocalDateTime connectedDt;  // 커플 연결 일자
@@ -71,6 +76,38 @@ public class CoupleEntity {
     }
 
     public void disconnect(Long updrId) {
+        this.delYn = "Y";
+        this.updrId = updrId;
+    }
+
+    /**
+     * 커플 연결이 완료되었는지 확인 (CONNECTED 상태이고 userId2가 존재)
+     */
+    public boolean isComplete() {
+        return this.userId2 != null && this.coupleType == CoupleType.CONNECTED;
+    }
+
+    /**
+     * 혼자 둘러보기 상태인지 확인
+     */
+    public boolean isSolo() {
+        return this.coupleType == CoupleType.SOLO;
+    }
+
+    /**
+     * 상대방 연결 (SOLO → CONNECTED 전환)
+     */
+    public void connectPartner(Long partnerId, Long updrId) {
+        this.userId2 = partnerId;
+        this.coupleType = CoupleType.CONNECTED;
+        this.connectedDt = LocalDateTime.now();
+        this.updrId = updrId;
+    }
+
+    /**
+     * 소프트 삭제 (disconnect와 동일, 명시적 이름)
+     */
+    public void softDelete(Long updrId) {
         this.delYn = "Y";
         this.updrId = updrId;
     }

@@ -1,6 +1,7 @@
 package com.todaktodot.TDTD.domain.couple.repository;
 
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
+import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,4 +31,23 @@ public interface CoupleRepository extends JpaRepository<CoupleEntity, Long> {
     Page<CoupleEntity> findByDelYn(String delYn, Pageable pageable);
 
     long countByDelYn(String delYn);
+
+    /**
+     * [TDTDBE-55] 사용자의 SOLO 커플 조회 (userId1 기준)
+     * 혼자 둘러보기 상태인 커플만 조회
+     */
+    @Query("SELECT c FROM CoupleEntity c WHERE c.userId1 = :userId AND c.coupleType = 'SOLO' AND c.delYn = 'N'")
+    Optional<CoupleEntity> findSoloCoupleByUserId(@Param("userId") Long userId);
+
+    /**
+     * [TDTDBE-55] 연결된 커플만 조회 (배치용)
+     * CONNECTED 타입이고 삭제되지 않은 커플만 조회
+     */
+    @Query("SELECT c FROM CoupleEntity c WHERE c.coupleType = 'CONNECTED' AND c.delYn = 'N'")
+    List<CoupleEntity> findConnectedCouples();
+
+    /**
+     * [TDTDBE-55] 커플 타입으로 조회
+     */
+    List<CoupleEntity> findByCoupleTypeAndDelYn(CoupleType coupleType, String delYn);
 }

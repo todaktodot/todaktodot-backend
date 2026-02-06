@@ -2,6 +2,7 @@ package com.todaktodot.TDTD.domain.couplelink.service;
 
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
+import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleType;
 import com.todaktodot.TDTD.domain.couplelink.dto.request.ConnectLinkCodeRequestDTO;
 import com.todaktodot.TDTD.domain.couplelink.dto.response.ConnectLinkCodeResponseDTO;
 import com.todaktodot.TDTD.domain.couplelink.dto.response.IssueLinkCodeResponseDTO;
@@ -33,8 +34,9 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
     @Override
     @Transactional
     public IssueLinkCodeResponseDTO issueLinkCode(Long userId) {
-        // 1. 이미 커플인 사용자인지 확인
-        if (coupleRepository.existsByUserId(userId)) {
+        // 1. 이미 CONNECTED 커플인 사용자인지 확인 (SOLO는 코드 발급 가능)
+        Optional<CoupleEntity> existingCouple = coupleRepository.findByUserId(userId);
+        if (existingCouple.isPresent() && existingCouple.get().isComplete()) {
             log.warn("이미 커플인 사용자가 코드 발급 시도: {}", userId);
             throw new IllegalStateException("이미 커플인 유저입니다");
         }
@@ -146,31 +148,63 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
             throw new IllegalArgumentException("자신의 링크 코드는 사용할 수 없습니다");
         }
 
-        // 5. 코드 발급자가 이미 커플 관계인지 확인
-        if (coupleRepository.existsByUserId(issuedUserId)) {
+        // 5. 발급자의 기존 커플 관계 확인 (SOLO 또는 CONNECTED)
+        Optional<CoupleEntity> issuerCouple = coupleRepository.findByUserId(issuedUserId);
+        if (issuerCouple.isPresent() && issuerCouple.get().isComplete()) {
             log.warn("이미 커플 관계인 사용자의 코드 사용 시도: {} (발급자: {})", linkCode, issuedUserId);
             throw new IllegalStateException("코드 발급자가 이미 커플 관계입니다");
         }
 
-        // 6. 코드 입력자가 이미 커플 관계인지 확인
-        if (coupleRepository.existsByUserId(userId)) {
+        // 6. 입력자의 기존 커플 관계 확인 (SOLO 또는 CONNECTED)
+        Optional<CoupleEntity> inputCouple = coupleRepository.findByUserId(userId);
+        if (inputCouple.isPresent() && inputCouple.get().isComplete()) {
             log.warn("이미 커플 관계인 사용자가 코드 입력 시도: {}", userId);
             throw new IllegalStateException("이미 커플 관계입니다");
         }
 
-        // 모든 검증 통과 - 커플 관계 생성
+        // [TDTDBE-55] SOLO 커플 처리
+        // 발급자의 SOLO 커플 조회
+        Optional<CoupleEntity> issuerSoloCouple = coupleRepository.findSoloCoupleByUserId(issuedUserId);
+        // 입력자의 SOLO 커플 조회
+        Optional<CoupleEntity> inputSoloCouple = coupleRepository.findSoloCoupleByUserId(userId);
+
+        CoupleEntity resultCouple;
         LocalDateTime connectedDt = LocalDateTime.now();
 
-        CoupleEntity coupleEntity = CoupleEntity.builder()
-                .userId1(issuedUserId)  // 코드 발급자
-                .userId2(userId)        // 코드 입력자
-                .connectedDt(connectedDt)
-                .regrId(userId)
-                .updrId(userId)
-                .delYn("N")
-                .build();
+        if (issuerSoloCouple.isPresent()) {
+            // 케이스 1, 2: 발급자가 SOLO → 발급자 커플에 입력자 추가 (발급자 데이터 유지)
+            resultCouple = issuerSoloCouple.get();
+            resultCouple.connectPartner(userId, userId);
+            log.info("[TDTDBE-55] 발급자 SOLO 커플에 입력자 추가 - coupleId: {}", resultCouple.getCoupleId());
 
-        CoupleEntity savedCouple = coupleRepository.save(coupleEntity);
+            // 입력자도 SOLO였다면 soft delete
+            if (inputSoloCouple.isPresent()) {
+                CoupleEntity inputSolo = inputSoloCouple.get();
+                inputSolo.softDelete(userId);
+                log.info("[TDTDBE-55] 입력자 SOLO 커플 soft delete - coupleId: {}", inputSolo.getCoupleId());
+            }
+        } else {
+            // 케이스 3, 4: 발급자가 SOLO 아님 → 새 커플 생성 (발급자 기준)
+            CoupleEntity newCouple = CoupleEntity.builder()
+                    .userId1(issuedUserId)  // 코드 발급자
+                    .userId2(userId)        // 코드 입력자
+                    .coupleType(CoupleType.CONNECTED)
+                    .connectedDt(connectedDt)
+                    .regrId(userId)
+                    .updrId(userId)
+                    .delYn("N")
+                    .build();
+
+            resultCouple = coupleRepository.save(newCouple);
+            log.info("[TDTDBE-55] 새 커플 생성 - coupleId: {}", resultCouple.getCoupleId());
+
+            // 입력자가 SOLO였다면 soft delete
+            if (inputSoloCouple.isPresent()) {
+                CoupleEntity inputSolo = inputSoloCouple.get();
+                inputSolo.softDelete(userId);
+                log.info("[TDTDBE-55] 입력자 SOLO 커플 soft delete - coupleId: {}", inputSolo.getCoupleId());
+            }
+        }
 
         // 링크 코드 상태를 LINKED로 변경
         linkAuthEntity.linkCouple(userId, userId);
@@ -178,17 +212,17 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
 
         log.info("========================================");
         log.info("커플 연결 성공!");
-        log.info("커플 ID: {}", savedCouple.getCoupleId());
+        log.info("커플 ID: {}", resultCouple.getCoupleId());
         log.info("사용자 1 (발급자): {}", issuedUserId);
         log.info("사용자 2 (입력자): {}", userId);
-        log.info("연결 일시: {}", connectedDt);
+        log.info("연결 일시: {}", resultCouple.getConnectedDt());
         log.info("========================================");
 
         return ConnectLinkCodeResponseDTO.of(
-                savedCouple.getCoupleId(),
+                resultCouple.getCoupleId(),
                 issuedUserId,
                 userId,
-                connectedDt
+                resultCouple.getConnectedDt()
         );
     }
 }

@@ -92,11 +92,20 @@ public class TestLoginController {
         UserAccount userTestAccount = getOrCreateTestUser(name, providerId, provider);
 
         User testUser = userTestAccount.getUser();
-        boolean isCouple = coupleRepository.existsByUserId(testUser.getId());
+        // [TDTDBE-55] coupleType 추가
+        var coupleOpt = coupleRepository.findByUserId(testUser.getId());
+        boolean isCouple = coupleOpt.map(c -> c.isComplete()).orElse(false);
+        String coupleType = coupleOpt.map(c -> c.getCoupleType().name()).orElse(null);
 
         String accessToken = jwtTokenProvider.createAccessToken(testUser.getId(), testUser.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(testUser.getId());
 
-        return new LoginResponseDTO(accessToken, refreshToken, testUser.getJoinYN().equals("Y"), isCouple);
+        return LoginResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .isJoined(testUser.getJoinYN().equals("Y"))
+                .isCouple(isCouple)
+                .coupleType(coupleType)
+                .build();
     }
 }

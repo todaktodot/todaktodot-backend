@@ -46,6 +46,11 @@ public class ReportServiceImpl implements ReportService {
         Long userId1 = coupleInfo.getUserId1();
         Long userId2 = coupleInfo.getUserId2();
 
+        // [TDTDBE-55] SOLO 커플(userId2가 NULL)은 리포트 생성 불가
+        if (userId2 == null) {
+            throw new IllegalStateException("커플 연결 후 이용 가능한 기능입니다.");
+        }
+
         //생성된적 있는지 확인
         //오늘 날짜
         LocalDate today = LocalDate.now();

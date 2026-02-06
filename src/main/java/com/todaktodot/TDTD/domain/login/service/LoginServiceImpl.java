@@ -68,10 +68,18 @@ public class LoginServiceImpl implements LoginService {
         //4. 리프레쉬 토큰 저장
         userAccount.updateRefreshToken(refreshToken);
 
-        //4. 커플여부 확인
-        boolean isCouple = coupleRepository.existsByUserId(user.getId());
+        //4. 커플여부 확인 [TDTDBE-55] coupleType 추가
+        var coupleOpt = coupleRepository.findByUserId(user.getId());
+        boolean isCouple = coupleOpt.map(c -> c.isComplete()).orElse(false);
+        String coupleType = coupleOpt.map(c -> c.getCoupleType().name()).orElse(null);
 
-        return new LoginResponseDTO(accessToken, refreshToken, user.getJoinYN().equals("Y"), isCouple);
+        return LoginResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .isJoined(user.getJoinYN().equals("Y"))
+                .isCouple(isCouple)
+                .coupleType(coupleType)
+                .build();
     }
 
     /**

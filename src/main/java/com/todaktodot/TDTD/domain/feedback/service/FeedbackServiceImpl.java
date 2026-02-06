@@ -201,6 +201,11 @@ public class FeedbackServiceImpl implements FeedbackService {
         Long userId1 = first.getUserId1();
         Long userId2 = first.getUserId2();
 
+        // [TDTDBE-55] SOLO 커플(userId2가 NULL)은 피드백 생성 불가
+        if (userId2 == null) {
+            throw new IllegalStateException("커플 연결 후 이용 가능한 기능입니다.");
+        }
+
         Map<Integer, List<FeedbackDataProjection>> byQuestion = rows.stream()
                 .collect(Collectors.groupingBy(
                         FeedbackDataProjection::getQuestionNo,

@@ -52,8 +52,10 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
                 .map(value -> coupleRepository.findByDelYn(value, pageable))
                 .orElseGet(() -> coupleRepository.findAll(pageable));
 
+        // [TDTDBE-55] SOLO 커플의 userId2가 null일 수 있으므로 필터링
         List<Long> userIds = couples.getContent().stream()
                 .flatMap(couple -> java.util.stream.Stream.of(couple.getUserId1(), couple.getUserId2()))
+                .filter(id -> id != null)
                 .distinct()
                 .toList();
 
@@ -79,14 +81,21 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
         CoupleEntity couple = coupleRepository.findById(coupleId)
                 .orElseThrow(() -> new IllegalArgumentException("커플 정보를 찾을 수 없습니다: " + coupleId));
 
-        List<User> users = userRepository.findByIdIn(List.of(couple.getUserId1(), couple.getUserId2()));
+        // [TDTDBE-55] SOLO 커플은 userId2가 null이므로 조건부로 조회
+        List<Long> userIdsToFetch = new ArrayList<>();
+        userIdsToFetch.add(couple.getUserId1());
+        if (couple.getUserId2() != null) {
+            userIdsToFetch.add(couple.getUserId2());
+        }
+
+        List<User> users = userRepository.findByIdIn(userIdsToFetch);
         UserSummaryDTO user1 = null;
         UserSummaryDTO user2 = null;
 
         for (User user : users) {
             if (user.getId().equals(couple.getUserId1())) {
                 user1 = UserSummaryDTO.from(user);
-            } else if (user.getId().equals(couple.getUserId2())) {
+            } else if (couple.getUserId2() != null && user.getId().equals(couple.getUserId2())) {
                 user2 = UserSummaryDTO.from(user);
             }
         }
@@ -239,11 +248,17 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
     }
 
     /**
-     * 커플 둘 다 필수 질문에 답변했는지 확인
+     * 커플 둘 다 필수 질문에 답변했는지 확인 (AI 피드백 생성 버튼 노출 여부 결정)
+     * [TDTDBE-55] SOLO 커플은 AI 피드백 대상이 아니므로 항상 false 반환
      */
     private boolean checkBothAnswered(DailyCardEntity dailyCard,
                                        Map<Integer, List<DailyCardUserAnswerEntity>> answersByQuestion,
                                        CoupleEntity couple) {
+        // SOLO 커플은 AI 피드백 대상이 아니므로 항상 false
+        if (couple.getUserId2() == null) {
+            return false;
+        }
+
         for (DailyCardQuestionEntity question : dailyCard.getQuestions()) {
             // 필수 질문만 체크
             if (!"Y".equals(question.getAnswerReqYn())) {
