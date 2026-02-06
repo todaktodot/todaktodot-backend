@@ -392,7 +392,7 @@ public class DailyCardServiceImpl implements DailyCardService {
         var lastAssignment = coupleDailyCardRepository
                 .findTopByCoupleIdAndDelYnOrderByIssuedDateDesc(coupleId, "N");
 
-        CardMode startMode = CardMode.DESSERT;
+        CardMode nextMode = CardMode.DESSERT;
         CardSubject lastSubject = null;
 
         if (lastAssignment.isPresent()) {
@@ -400,7 +400,7 @@ public class DailyCardServiceImpl implements DailyCardService {
             LocalDate lastIssuedDate = lastCard.getIssuedDate();
             if (lastCard.getDailyCard() != null) {
                 CardMode lastMode = lastCard.getDailyCard().getMode();
-                startMode = advanceMode(lastMode, 1);
+                nextMode = advanceMode(lastMode, 1);
 
                 if (lastIssuedDate.equals(startDate) || lastIssuedDate.equals(startDate.minusDays(1))) {
                     lastSubject = lastCard.getDailyCard().getSubject();
@@ -414,6 +414,9 @@ public class DailyCardServiceImpl implements DailyCardService {
                 List<CoupleDailyCardEntity> existingAssignments = coupleDailyCardRepository
                         .findAllByCoupleIdAndIssuedDateAndDelYnOrderByCoupleCardIdAsc(coupleId, targetDate, "N");
                 if (!existingAssignments.isEmpty() && existingAssignments.get(0).getDailyCard() != null) {
+                    // 스킵된 날의 모드를 기준으로 다음 모드 계산 (버그 수정)
+                    CardMode skippedMode = existingAssignments.get(0).getDailyCard().getMode();
+                    nextMode = advanceMode(skippedMode, 1);
                     lastSubject = existingAssignments.get(0).getDailyCard().getSubject();
                 }
                 skippedDateCount++;
@@ -422,7 +425,8 @@ public class DailyCardServiceImpl implements DailyCardService {
                 continue;
             }
 
-            CardMode modeForDate = advanceMode(startMode, dayIndex);
+            CardMode modeForDate = nextMode;
+            nextMode = advanceMode(nextMode, 1);  // 다음 날을 위해 모드 전진
             CardSubject subjectForDate = pickSubject(lastSubject);
 
             DailyCardEntity roleplayCard = pickCard(modeForDate, subjectForDate, CardType.ROLEPLAY, answeredCardIds);
