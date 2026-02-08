@@ -44,6 +44,13 @@
                         </a>
                     </li>
                     <li>
+                        <a th:href="@{/admin/insight}"
+                           th:classappend="${activeMenu == 'insight'} ? 'active' : ''">
+                            <span class="icon">✨</span>
+                            <span>AI 인사이트 관리</span>
+                        </a>
+                    </li>
+                    <li>
                         <a th:href="@{/admin/daily-card}"
                            th:classappend="${activeMenu == 'dailycard'} ? 'active' : ''">
                             <span>데일리카드 관리</span>

@@ -247,6 +247,149 @@
             </div>
         </div>
 
+        <div class="card">
+            <div class="card-header">
+                <h3>커플 AI리포트 이력 (<span th:text="${#lists.size(couple.weekReports)}">0</span>개)</h3>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(couple.weekReports)}" class="empty-state">
+                    <div class="icon">REPORT</div>
+                    <h3>생성된 AI리포트가 없습니다</h3>
+                </div>
+
+                <div th:unless="${#lists.isEmpty(couple.weekReports)}">
+                    <div th:each="report : ${couple.weekReports}" class="question-item" style="border-left-color: #2563eb;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <div>
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                        th:attr="data-target=${'report-detail-' + report.reportId}"
+                                        onclick="toggleReportDetail(this)"
+                                        style="margin-right: 8px;">
+                                    펼치기
+                                </button>
+                                <strong th:text="${#temporals.format(report.startDt, 'yyyy-MM-dd')}">2024-01-01</strong>
+                                <span style="margin-left: 8px; color: #7f8c8d;">~</span>
+                                <strong th:text="${#temporals.format(report.endDt, 'yyyy-MM-dd')}">2024-01-08</strong>
+                                <span style="margin-left: 8px; color: #7f8c8d;">리포트 ID:</span>
+                                <span th:text="${report.reportId}">1</span>
+                            </div>
+                            <div>
+                                <!-- AI 인사이트 상태 배지 -->
+                                <span th:if="${report.insight != null}" class="badge" style="background: #10b981; color: white;">인사이트 완료</span>
+                                <span th:if="${report.insight == null}" class="badge" style="background: #f59e0b; color: white;">생성 가능</span>
+                            </div>
+                        </div>
+
+                        <div th:id="${'report-detail-' + report.reportId}" style="display: none;">
+
+                            <!-- 리포트 상세 -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>생성 시작 일자</label>
+                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                         th:text="${report.startDt != null} ? ${#temporals.format(report.startDt, 'yyyy-MM-dd')} : '-'">-</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>생성 종료 일자</label>
+                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                         th:text="${report.endDt != null} ? ${#temporals.format(report.endDt, 'yyyy-MM-dd')} : '-'">-</div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>전체 싱크로율(%)</label>
+                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                         th:text="${report.totalSyncRate != null} ? ${report.totalSyncRate} : '-'">-</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>경제관 싱크로율(%)</label>
+                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                         th:text="${report.economySyncRate != null} ? ${report.economySyncRate} : '-'">-</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>생활관 싱크로율(%)</label>
+                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                         th:text="${report.lifeSyncRate != null} ? ${report.lifeSyncRate} : '-'">-</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>연애관 싱크로율(%)</label>
+                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                         th:text="${report.loveSyncRate != null} ? ${report.loveSyncRate} : '-'">-</div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>대화 참여율(%)</label>
+                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                         th:text="${report.answerRate != null} ? ${report.answerRate} : '-'">-</div>
+                                </div>
+                                <div class="form-group">
+                                    <label>대화 누적자산</label>
+                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                         th:text="${report.totalAnswerCnt != null} ? ${report.totalAnswerCnt} : '-'">-</div>
+                                </div>
+                            </div>
+
+                            <!-- AI 피드백 섹션 -->
+                            <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; border: 1px solid #bae6fd; margin-top: 16px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <strong style="color: #0369a1;">AI 인사이트</strong>
+                                        <a th:href="@{/admin/insight}" style="font-size: 0.8rem; color: #3498db;">현재 적용중인 프롬프트 보기 →</a>
+                                    </div>
+                                </div>
+
+                                <!-- 케이스 1: 피드백 미생성 -->
+                                <div th:if="${report.insight == null}">
+                                    <p style="color: #7f8c8d; margin-bottom: 12px;"> AI 인사이트를 생성할 수 있습니다.</p>
+                                    <button type="button" class="btn btn-primary"
+                                            th:attr="data-couple-id=${couple.coupleId},
+                                                     data-start-date=${#temporals.format(report.startDt, 'yyyy-MM-dd')},
+                                                     data-end-date=${#temporals.format(report.endDt, 'yyyy-MM-dd')}"
+                                            onclick="generateInsight(this)">
+                                        AI 피드백 생성
+                                    </button>
+                                </div>
+
+                                <!-- 케이스 2: 피드백 존재 -->
+                                <div th:if="${report.insight != null}">
+                                    <div style="margin-bottom: 12px;">
+                                        <label style="font-weight: 600; color: #374151;">요약</label>
+                                        <p th:text="${report.insight.summary}" style="margin-top: 4px; white-space: pre-wrap;">요약 내용</p>
+                                    </div>
+                                    <div style="margin-bottom: 12px;">
+                                        <label style="font-weight: 600; color: #374151;">경제관</label>
+                                        <p th:text="${report.insight.economyPart}" style="margin-top: 4px; white-space: pre-wrap;">경제관 내용</p>
+                                    </div>
+                                    <div style="margin-bottom: 12px;">
+                                        <label style="font-weight: 600; color: #374151;">생활관</label>
+                                        <p th:text="${report.insight.lifestylePart}" style="margin-top: 4px; white-space: pre-wrap;">생활관 내용</p>
+                                    </div>
+                                    <div style="margin-bottom: 12px;">
+                                        <label style="font-weight: 600; color: #374151;">연애관</label>
+                                        <p th:text="${report.insight.lovePart}" style="margin-top: 4px; white-space: pre-wrap;">연애관 질문</p>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <button type="button" class="btn btn-secondary"
+                                                style="font-size: 0.8rem; padding: 4px 12px; background: #e74c3c; border-color: #e74c3c;"
+                                                th:attr="data-couple-id=${couple.coupleId},
+                                                         data-report-id=${report.reportId},
+                                                         data-start-date=${#temporals.format(report.startDt, 'yyyy-MM-dd')},
+                                                         data-end-date=${#temporals.format(report.endDt, 'yyyy-MM-dd')}"
+                                                onclick="deleteInsight(this)">
+                                            인사이트 삭제
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div style="margin-top: 20px; display: flex; gap: 10px;">
             <a th:href="@{/admin/couple}" class="btn btn-secondary">&larr; 목록으로</a>
         </div>
@@ -255,6 +398,18 @@
     <th:block layout:fragment="scripts">
         <script>
             function toggleCardDetail(button) {
+                const targetId = button.getAttribute('data-target');
+                const section = document.getElementById(targetId);
+                if (!section) {
+                    return;
+                }
+
+                const isHidden = section.style.display === 'none' || section.style.display === '';
+                section.style.display = isHidden ? 'block' : 'none';
+                button.textContent = isHidden ? '접기' : '펼치기';
+            }
+
+            function toggleReportDetail(button) {
                 const targetId = button.getAttribute('data-target');
                 const section = document.getElementById(targetId);
                 if (!section) {
@@ -330,6 +485,78 @@
                     }
 
                     alert('AI 피드백이 생성되었습니다.');
+                    location.reload();
+                } catch (error) {
+                    alert('오류: ' + error.message);
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
+            }
+
+            async function generateInsight(button) {
+                if (!confirm('AI 인사이트를 생성하시겠습니까?\n생성에 수 초가 소요될 수 있습니다.')) {
+                    return;
+                }
+
+                const coupleId = button.getAttribute('data-couple-id');
+                const startDt = button.getAttribute('data-start-date');
+                const endDt = button.getAttribute('data-end-date');
+
+                const originalText = button.textContent;
+                button.disabled = true;
+                button.textContent = '생성중...';
+
+                try {
+                    const response = await fetch(`/admin/couple/${coupleId}/insight/generate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            coupleId: parseInt(coupleId),
+                            endDt: endDt
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || '인사이트 생성에 실패했습니다.');
+                    }
+
+                    alert('AI 인사이트가 생성되었습니다.');
+                    location.reload();
+                } catch (error) {
+                    alert('오류: ' + error.message);
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
+            }
+
+            async function deleteInsight(button) {
+                if (!confirm('인사이트를 삭제하시겠습니까?\n삭제 후 다시 생성할 수 있습니다.')) {
+                    return;
+                }
+
+                const coupleId = button.getAttribute('data-couple-id');
+                const reportId = button.getAttribute('data-report-id');
+                const startDt = button.getAttribute('data-start-date');
+                const endDt = button.getAttribute('data-end-date');
+
+                const originalText = button.textContent;
+                button.disabled = true;
+                button.textContent = '삭제중...';
+
+                try {
+                    const response = await fetch(`/admin/couple/${coupleId}/${reportId}/insight?startDt=${startDt}&endDt=${endDt}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || '인사이트 삭제에 실패했습니다.');
+                    }
+
+                    alert('인사이트가 삭제되었습니다.');
                     location.reload();
                 } catch (error) {
                     alert('오류: ' + error.message);

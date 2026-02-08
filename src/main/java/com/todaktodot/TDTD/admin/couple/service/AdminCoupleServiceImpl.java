@@ -1,9 +1,8 @@
 package com.todaktodot.TDTD.admin.couple.service;
 
-import com.todaktodot.TDTD.admin.couple.dto.CoupleDetailDTO;
-import com.todaktodot.TDTD.admin.couple.dto.CoupleListDTO;
-import com.todaktodot.TDTD.admin.couple.dto.FeedbackSummaryDTO;
-import com.todaktodot.TDTD.admin.couple.dto.UserSummaryDTO;
+import com.todaktodot.TDTD.admin.couple.dto.*;
+import com.todaktodot.TDTD.domain.aireport.repository.ReportRepository;
+import com.todaktodot.TDTD.domain.aireport.repository.entity.Report;
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
 import com.todaktodot.TDTD.domain.dailycard.repository.CoupleDailyCardRepository;
@@ -17,8 +16,12 @@ import com.todaktodot.TDTD.domain.feedback.repository.CoupleDailyCardFeedbackRep
 import com.todaktodot.TDTD.domain.feedback.repository.DailyCardFeedbackRepository;
 import com.todaktodot.TDTD.domain.feedback.repository.entity.CoupleDailyCardFeedbackEntity;
 import com.todaktodot.TDTD.domain.feedback.repository.entity.DailyCardFeedbackEntity;
+import com.todaktodot.TDTD.domain.insight.repository.InsightRepository;
+import com.todaktodot.TDTD.domain.insight.repository.entity.Insight;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
+
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +32,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +48,8 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
     private final DailyCardUserAnswerRepository dailyCardUserAnswerRepository;
     private final CoupleDailyCardFeedbackRepository coupleDailyCardFeedbackRepository;
     private final DailyCardFeedbackRepository dailyCardFeedbackRepository;
+    private final ReportRepository reportRepository;
+    private final InsightRepository insightRepository;
 
     @Override
     public Page<CoupleListDTO> getCouples(String delYn, Pageable pageable) {
@@ -119,6 +125,7 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
                     couple.getUpdDt(),
                     user1,
                     user2,
+                    List.of(),
                     List.of()
             );
         }
@@ -231,6 +238,62 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
             ));
         }
 
+        //리포트 목록
+        List<Report> coupleReports = reportRepository.findAllByCoupleEntityAndDelYnOrderByRegDtDesc(couple, "N");
+        //리포트가 없는 경우 리턴
+        if (coupleReports.isEmpty()) {
+            return CoupleDetailDTO.of(
+                    couple.getCoupleId(),
+                    couple.getUserId1(),
+                    couple.getUserId2(),
+                    couple.getFirstMetDt(),
+                    couple.getRelationshipStage() != null ? couple.getRelationshipStage().name() : "-",
+                    couple.getConnectedDt(),
+                    couple.getDelYn(),
+                    couple.getRegDt(),
+                    couple.getUpdDt(),
+                    user1,
+                    user2,
+                    dailyCards,
+                    List.of()
+            );
+        }
+
+        List<CoupleDetailDTO.CoupleWeekReportDTO> weekReports = new ArrayList<>();
+        for (Report report : coupleReports) {
+            InsightSummaryDTO insightSummaryDTO = null;
+            Insight insight = null;
+            if (report.getInsightId() != null) {
+                insight = insightRepository.findById(report.getInsightId())
+                        .orElseThrow(() -> new IllegalStateException("[ID: "+report.getInsightId() + "] 에 해당하는 인사이트가 없습니다."));
+            }
+
+            if (insight != null) {
+                insightSummaryDTO = new InsightSummaryDTO(
+                        insight.getId(),
+                        insight.getSummary(),
+                        insight.getEconomyPart(),
+                        insight.getLifestylePart(),
+                        insight.getLovePart()
+                );
+            }
+
+            weekReports.add(new CoupleDetailDTO.CoupleWeekReportDTO(
+                    report.getId(),
+                    coupleId,
+                    report.getStrtDt(),
+                    report.getEndDt(),
+                    report.getTotalSyncRate(),
+                    report.getEconomySyncRate(),
+                    report.getLifeSyncRate(),
+                    report.getLoveSyncRate(),
+                    report.getAnswerRate(),
+                    report.getTotalAnswerCnt(),
+                    insightSummaryDTO,
+                    report.getDelYn()
+            ));
+        }
+
         return CoupleDetailDTO.of(
                 couple.getCoupleId(),
                 couple.getUserId1(),
@@ -243,7 +306,8 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
                 couple.getUpdDt(),
                 user1,
                 user2,
-                dailyCards
+                dailyCards,
+                weekReports
         );
     }
 
@@ -325,5 +389,18 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
                 .findByCoupleCardIdAndDelYn(coupleCardId, "N")
                 .orElseThrow(() -> new IllegalStateException("삭제할 피드백이 없습니다."));
         mapping.softDelete(ADMIN_USER_ID);
+    }
+
+    @Override
+    @Transactional
+    public void deleteInsight(Long coupleId, Long reportId, LocalDate startDt, LocalDate endDt) {
+        Insight insight = insightRepository
+                .findByCoupleIdAndStartDtAndEndDtAndDelYn(coupleId, startDt, endDt, "N")
+                .orElseThrow(() -> new IllegalStateException("삭제할 인사이트가 없습니다."));
+        insight.softDelete(ADMIN_USER_ID);
+
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new IllegalStateException("[ReportID : " + reportId + " ]에 해당하는 리포트가 없습니다."));
+        report.updateInsight(null);
     }
 }

@@ -47,6 +47,9 @@ public class Report {
     @Column(name = "END_DT", nullable = false)
     private LocalDate endDt;
 
+    @Column(name = "INSIGHT_ID")
+    private Long insightId;
+
     @Column(name = "REG_DT", nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime regDt;
@@ -77,13 +80,14 @@ public class Report {
     private CoupleEntity coupleEntity;
 
     @Builder
-    public Report(String totalSyncRate, String economySyncRate, String lifeSyncRate, String loveSyncRate, String answerRate, String totalAnswerCnt, LocalDate strtDt, LocalDate endDt, Long regrId, Long updrId, String delYn, CoupleEntity coupleEntity) {
+    public Report(String totalSyncRate, String economySyncRate, String lifeSyncRate, String loveSyncRate, String answerRate, String totalAnswerCnt, Long insightId, LocalDate strtDt, LocalDate endDt, Long regrId, Long updrId, String delYn, CoupleEntity coupleEntity) {
         this.totalSyncRate = totalSyncRate;
         this.economySyncRate = economySyncRate;
         this.lifeSyncRate = lifeSyncRate;
         this.loveSyncRate = loveSyncRate;
         this.answerRate = answerRate;
         this.totalAnswerCnt = totalAnswerCnt;
+        this.insightId = insightId;
         this.strtDt = strtDt;
         this.endDt = endDt;
         this.regrId = regrId;
@@ -99,5 +103,10 @@ public class Report {
     public void addDifferentAnswer(List<DiffrentAnswer> diffrentAnswerList) {
         this.differentAnswerList.addAll(diffrentAnswerList);
         diffrentAnswerList.forEach(da -> da.addReport(this));
+    }
+
+    public void updateInsight(Long insightId) {
+        this.insightId = insightId;
+        this.updrId = 0L;
     }
 }
