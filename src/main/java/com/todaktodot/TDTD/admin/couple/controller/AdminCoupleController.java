@@ -6,6 +6,9 @@ import com.todaktodot.TDTD.admin.couple.service.AdminCoupleService;
 import com.todaktodot.TDTD.domain.feedback.dto.reqeust.GenerateFeedbackRequestDTO;
 import com.todaktodot.TDTD.domain.feedback.dto.response.GenerateFeedbackResponseDTO;
 import com.todaktodot.TDTD.domain.feedback.service.FeedbackService;
+import com.todaktodot.TDTD.domain.insight.dto.GenerateInsightRequestDTO;
+import com.todaktodot.TDTD.domain.insight.dto.GenerateInsightResponseDTO;
+import com.todaktodot.TDTD.domain.insight.service.InsightService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -22,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.time.LocalDate;
+
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/admin/couple")
@@ -32,6 +37,7 @@ public class AdminCoupleController {
 
     private final AdminCoupleService adminCoupleService;
     private final FeedbackService feedbackService;
+    private final InsightService insightService;
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "0") int page,
@@ -91,5 +97,37 @@ public class AdminCoupleController {
         adminCoupleService.deleteFeedback(coupleCardId);
         log.info("[Admin] 피드백 삭제 완료: coupleId={}, coupleCardId={}", coupleId, coupleCardId);
         return ResponseEntity.ok(java.util.Map.of("message", "피드백이 삭제되었습니다."));
+    }
+
+    @PostMapping("/{coupleId}/insight/generate")
+    @ResponseBody
+    public ResponseEntity<GenerateInsightResponseDTO> generateInsight(
+            @PathVariable Long coupleId,
+            @RequestBody GenerateInsightRequestDTO requestDTO) {
+
+        log.info("[Admin] 인사이트 생성 요청: coupleId={}, endDt={}", coupleId, requestDTO.getEndDt());
+
+        // 커플 정보 조회하여 userId1 획득 (검증 통과용)
+        CoupleDetailDTO couple = adminCoupleService.getCouple(coupleId);
+        Long userId = couple.getUserId1();
+
+        GenerateInsightResponseDTO response = insightService.generateInsight(userId, requestDTO);
+
+        log.info("[Admin] 인샤이트 생성 완료: coupleId={}, InsightId={}",
+                coupleId, response.getInsightId());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{coupleId}/{reportId}/insight")
+    @ResponseBody
+    public ResponseEntity<?> deleteInsight(@PathVariable Long coupleId,
+                                           @PathVariable Long reportId,
+                                           @RequestParam LocalDate startDt,
+                                           @RequestParam LocalDate endDt) {
+        log.info("[Admin] 인사이트 삭제 요청: coupleId={}, startDt={}, endDt={}", coupleId, startDt, endDt);
+        adminCoupleService.deleteInsight(coupleId, reportId, startDt, endDt);
+        log.info("[Admin] 인사이트 삭제 완료: coupleId={}, startDt={}, endDt={}", coupleId, startDt, endDt);
+        return ResponseEntity.ok(java.util.Map.of("message", "인사이트가 삭제되었습니다."));
     }
 }

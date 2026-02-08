@@ -24,11 +24,12 @@ public class CoupleDetailDTO {
     private final UserSummaryDTO user1;
     private final UserSummaryDTO user2;
     private final List<CoupleDailyCardDTO> dailyCards;
+    private final List<CoupleWeekReportDTO> weekReports;
 
     public CoupleDetailDTO(Long coupleId, Long userId1, Long userId2, LocalDate firstMetDt,
                            String relationshipStage, LocalDateTime connectedDt, String delYn,
                            LocalDateTime regDt, LocalDateTime updDt, UserSummaryDTO user1, UserSummaryDTO user2,
-                           List<CoupleDailyCardDTO> dailyCards) {
+                           List<CoupleDailyCardDTO> dailyCards, List<CoupleWeekReportDTO> weekReports) {
         this.coupleId = coupleId;
         this.userId1 = userId1;
         this.userId2 = userId2;
@@ -41,12 +42,14 @@ public class CoupleDetailDTO {
         this.user1 = user1;
         this.user2 = user2;
         this.dailyCards = dailyCards;
+        this.weekReports = weekReports;
     }
 
     public static CoupleDetailDTO of(Long coupleId, Long userId1, Long userId2, LocalDate firstMetDt,
                                      String relationshipStage, LocalDateTime connectedDt, String delYn,
                                      LocalDateTime regDt, LocalDateTime updDt, UserSummaryDTO user1,
-                                     UserSummaryDTO user2, List<CoupleDailyCardDTO> dailyCards) {
+                                     UserSummaryDTO user2, List<CoupleDailyCardDTO> dailyCards,
+                                     List<CoupleWeekReportDTO> weekReports) {
         return new CoupleDetailDTO(
                 coupleId,
                 userId1,
@@ -59,7 +62,8 @@ public class CoupleDetailDTO {
                 updDt,
                 user1,
                 user2,
-                dailyCards
+                dailyCards,
+                weekReports
         );
     }
 
@@ -130,6 +134,49 @@ public class CoupleDetailDTO {
         public DailyCardOptionDTO(Integer optionNo, String optionCnts) {
             this.optionNo = optionNo;
             this.optionCnts = optionCnts;
+        }
+    }
+
+    @Getter
+    public static class CoupleWeekReportDTO {
+        private final Long reportId;
+        private final Long coupleId;
+        private final LocalDate startDt;
+        private final LocalDate endDt;
+        private final String totalSyncRate;
+        private final String economySyncRate;
+        private final String lifeSyncRate;
+        private final String loveSyncRate;
+        private final String answerRate;
+        private final String totalAnswerCnt;
+        private final InsightSummaryDTO insight;
+        private final String delYn;
+
+        public CoupleWeekReportDTO(Long reportId,
+                                   Long coupleId,
+                                   LocalDate startDt,
+                                   LocalDate endDt,
+                                   String totalSyncRate,
+                                   String economySyncRate,
+                                   String lifeSyncRate,
+                                   String loveSyncRate,
+                                   String answerRate,
+                                   String totalAnswerCnt,
+                                   InsightSummaryDTO insight,
+                                   String delYn
+                                  ) {
+            this.reportId = reportId;
+            this.coupleId = coupleId;
+            this.startDt = startDt;
+            this.endDt = endDt;
+            this.totalSyncRate = totalSyncRate;
+            this.economySyncRate = economySyncRate;
+            this.lifeSyncRate = lifeSyncRate;
+            this.loveSyncRate = loveSyncRate;
+            this.answerRate = answerRate;
+            this.totalAnswerCnt = totalAnswerCnt;
+            this.insight = insight;
+            this.delYn = delYn;
         }
     }
 }
