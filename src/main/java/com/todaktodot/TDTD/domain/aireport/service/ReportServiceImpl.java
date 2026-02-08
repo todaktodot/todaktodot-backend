@@ -13,9 +13,10 @@ import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardSubject;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CoupleDailyCardEntity;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.DailyCardEntity;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.QuestionType;
+import com.todaktodot.TDTD.domain.insight.repository.InsightRepository;
+import com.todaktodot.TDTD.domain.insight.repository.entity.Insight;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -35,6 +36,7 @@ public class ReportServiceImpl implements ReportService {
     private final ReportRepository reportRepository;
     private final DailyCardUserAnswerRepository dailyCardUserAnswerRepository;
     private final CoupleDailyCardRepository coupleDailyCardRepository;
+    private final InsightRepository insightRepository;
 
     /**
      * 지난 한 주 AI 리포트 생성 여부 확인
@@ -42,7 +44,8 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public ReportResponseWrapDTO checkCreatable(Long userId) {
         //커플 찾기 -> 커플이 아니면?
-        CoupleEntity coupleInfo = coupleRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException());
+        CoupleEntity coupleInfo = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("[userId : " + userId+ " ] 에 해당하는 커플 정보가 없습니다."));
         Long userId1 = coupleInfo.getUserId1();
         Long userId2 = coupleInfo.getUserId2();
 
@@ -55,11 +58,11 @@ public class ReportServiceImpl implements ReportService {
         //오늘 날짜
         LocalDate today = LocalDate.now();
         // 시작: 월요일 08:00
-        LocalDateTime startDT = today.with(DayOfWeek.MONDAY).atTime(8, 0);
-        // 종료: 다음 주 월요일 07:59:59.999999999
-        LocalDateTime endDT = startDT.plusWeeks(1).minusNanos(1);
+        LocalDateTime endDT = today.with(DayOfWeek.MONDAY).atTime(8, 0);
+        // 종료: 저번 주 월요일 07:59:59.999999999
+        LocalDateTime startDT = endDT.minusWeeks(1).minusNanos(1);
 
-        Optional<Report> findReport = reportRepository.findByCoupleEntityAndRegDtGreaterThanEqualAndRegDtLessThanAndDelYn(coupleInfo, startDT, endDT, "N");
+        Optional<Report> findReport = reportRepository.findByCoupleEntityAndStrtDtAndEndDtAndDelYn(coupleInfo, startDT.toLocalDate(), endDT.toLocalDate(), "N");
         //해당 주차에 이미 생성된게 있는 경우 -> 조회 후 반환
         if (findReport.isPresent()) {
             //생성 가능 여부 및 초기 진입 여부 정보
@@ -71,6 +74,10 @@ public class ReportServiceImpl implements ReportService {
             //이미 생성된 AI 리포트 상세 정보
             Report report = findReport.get();
             ReportDetailResponseDTO reportDetailResponse = getReportInfo(report, coupleInfo);
+
+            //인사이트 조회
+            String insight = getInsight(report.getInsightId());
+            reportDetailResponse.setInsight(insight);
 
             return new ReportResponseWrapDTO(createStatusResponse, reportDetailResponse);
         }
@@ -90,6 +97,10 @@ public class ReportServiceImpl implements ReportService {
                 //신규 AI 생성
                 Report createdReport = createReport(startDT, endDT, userId1, userId2, coupleInfo);
                 reportDetailResponse = getReportInfo(createdReport, coupleInfo);
+
+                //인사이트 조회
+                String insight = getInsight(createdReport.getInsightId());
+                reportDetailResponse.setInsight(insight);
             }
 
             //생성된 AI리포트 상세 정보
@@ -142,7 +153,12 @@ public class ReportServiceImpl implements ReportService {
             throw new IllegalArgumentException("삭제된 AI리포트입니다.");
         }
 
-        return getReportInfo(findReport, coupleInfo.get());
+        //인사이트 조회
+        String insight = getInsight(findReport.getInsightId());
+
+        ReportDetailResponseDTO reportInfo = getReportInfo(findReport, coupleInfo.get());
+        reportInfo.setInsight(insight);
+        return reportInfo;
     }
 
     /**
@@ -246,6 +262,13 @@ public class ReportServiceImpl implements ReportService {
             }
         });
 
+        //인사이트 매필
+        //시작: 월요일 00:00
+        LocalDate startDTOfInsight = startDt.toLocalDate();
+        //종료: 저번 주 월요일 00:00
+        LocalDate endDTOfInsight= endDt.toLocalDate();
+        Long insightId = mappingInsight(coupleEntity, startDTOfInsight, endDTOfInsight);
+
         //리포트 생성
         Report newReport = Report.builder()
                 .totalSyncRate(totalSyncRate)
@@ -254,6 +277,7 @@ public class ReportServiceImpl implements ReportService {
                 .loveSyncRate(loveSyncRate)
                 .answerRate(participationRate)
                 .totalAnswerCnt(String.valueOf(bothAnswerCnt))
+                .insightId(insightId)
                 .strtDt(startDt.toLocalDate())
                 .endDt(endDt.toLocalDate())
                 .regrId(userId1)
@@ -318,5 +342,37 @@ public class ReportServiceImpl implements ReportService {
                 .similarSubjectList(similarAnswerInfoList)
                 .diffrentSubjectList(diffrentAnswerInfoList)
                 .build();
+    }
+
+    private Long mappingInsight(CoupleEntity couple, LocalDate startDt, LocalDate endDt) {
+        Insight insight = insightRepository.findByCoupleIdAndStartDtAndEndDtAndDelYn(couple.getCoupleId(), startDt, endDt, "N")
+                .orElse(null);
+
+        return insight == null ? null : insight.getId();
+    }
+
+    private String getInsight(Long insightId) {
+        if (insightId == null) {
+            return null;
+        }
+
+        Insight insight = insightRepository.findById(insightId)
+                .orElseThrow(() -> new IllegalStateException("[인사이트ID : " + insightId +" ]에 해당하는 인사이트가 존재하지 않습니다."));
+
+        StringBuilder insightData = new StringBuilder();
+        if (insight != null) {
+            insightData.append(insight.getSummary()).append("\n");
+            if (insight.getEconomyPart() != null) {
+                insightData.append(insight.getEconomyPart()).append("\n");
+            }
+            if (insight.getLifestylePart() != null) {
+                insightData.append(insight.getLifestylePart()).append("\n");
+            }
+            if (insight.getLovePart() != null) {
+                insightData.append(insight.getLovePart());
+            }
+        }
+
+        return insightData.toString();
     }
 }

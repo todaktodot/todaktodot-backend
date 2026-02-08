@@ -35,6 +35,8 @@ public class ReportDetailResponseDTO {
     private String dailycardAnswerRate;
     @Schema(description = "대화 누적 자산", example = "127")
     private String totalDailycardAnswerCnt;
+    @Schema(description = "AI인사이트")
+    private String insight;
     @Schema(description = "비슷했던 주제 목록")
     private List<SimpleDailycardInfoDTO> similarSubjectList;
     @Schema(description = "대화가 더 필요한 주제 목록")
