@@ -18,6 +18,12 @@ public class HistoryDetailResponseDTO {
     @Schema(description = "조회 종료일")
     private LocalDate endDate;
 
+    @Schema(description = "유저1 ID (커플 테이블의 USER_ID_1)")
+    private Long user1Id;
+
+    @Schema(description = "유저2 ID (커플 테이블의 USER_ID_2, 혼자 둘러보기 시 null)")
+    private Long user2Id;
+
     @Schema(description = "히스토리 카드 목록")
     private List<HistoryDetailCardItem> historyCards;
 

@@ -1063,6 +1063,8 @@ public class DailyCardServiceImpl implements DailyCardService {
         return HistoryDetailResponseDTO.builder()
                 .startDate(startDate)
                 .endDate(endDate)
+                .user1Id(couple.getUserId1())
+                .user2Id(couple.getUserId2())
                 .historyCards(historyCards)
                 .build();
     }
