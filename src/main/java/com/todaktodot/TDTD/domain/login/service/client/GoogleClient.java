@@ -1,36 +1,50 @@
 package com.todaktodot.TDTD.domain.login.service.client;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import com.todaktodot.TDTD.domain.login.dto.response.SocialUserResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import java.util.Map;
+import java.util.Collections;
 
 @Component
 @RequiredArgsConstructor
 public class GoogleClient {
-    private final WebClient webClient = WebClient.create();
+    //임시
+    private static final String GOOGLE_CLIENT_ID = "1034525705170-kmpucuffctgnj0rmre9kflolqj8b00fa.apps.googleusercontent.com";
 
-    public SocialUserResponse getUserInfo(String accessToken) {
-        // 구글의 tokeninfo 엔드포인트 사용
-        Map<String, Object> response = webClient.get()
-                .uri("https://openidconnect.googleapis.com/v1/userinfo")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .retrieve()
-                .bodyToMono(Map.class)
-                .block();
+//    @Value("${google.client-id}")
+//    private String googleClientId;
 
-        if (response == null || response.get("sub") == null) {
-            throw new RuntimeException();
-        }
+    public SocialUserResponse getUserInfo(String idTokenStr) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    new NetHttpTransport(),
+                    new GsonFactory()
+            )
+                    .setAudience(Collections.singletonList(GOOGLE_CLIENT_ID))
+                    .build();
 
-        return SocialUserResponse.builder()
-                .id( (String) response.get("sub"))
-                .email((String) response.get("email"))
-                .name((String) response.get("name"))
+            GoogleIdToken idToken = verifier.verify(idTokenStr);
+
+            if (idToken == null) {
+                throw new IllegalStateException("유효하지 않은 IdToken 입니다.");
+            }
+
+            GoogleIdToken.Payload payload = idToken.getPayload();
+
+            return SocialUserResponse.builder()
+                .id( payload.getSubject())
+                .email(payload.getEmail())
+                .name((String) payload.get("name"))
                 .provider("GOOGLE")
                 .build();
+
+        } catch (Exception e) {
+            throw new IllegalStateException("IdToken 검증에 실패했습니다. : " + idTokenStr);
+        }
     }
 }

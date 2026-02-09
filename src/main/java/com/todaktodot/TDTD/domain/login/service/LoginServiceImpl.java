@@ -14,6 +14,7 @@ import com.todaktodot.TDTD.global.jwt.JwtTokenProvider;
 import com.todaktodot.TDTD.global.security.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,7 @@ public class LoginServiceImpl implements LoginService {
      * 로그인
      */
     @Override
+    @Transactional
     public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
         // 1. 소셜 플랫폼에 토큰 검증 요청 및 유저 정보 추출
         SocialUserResponse socialUser = socialUserProvider.getLoginedSocialUser(loginRequestDTO.getProvider(), loginRequestDTO.getToken());
@@ -60,13 +62,14 @@ public class LoginServiceImpl implements LoginService {
 
         // 3. 서비스 전용 JWT 토큰 발급
         User user = userAccount.getUser();
-        if (user == null) throw new IllegalArgumentException("계정과 연결된 유저가 존재하지 않습니다.");
+        if (user == null) throw new IllegalStateException("계정과 연결된 유저가 존재하지 않습니다.");
 
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
         //4. 리프레쉬 토큰 저장
         userAccount.updateRefreshToken(refreshToken);
+        userAccountRepository.save(userAccount);
 
         //4. 커플여부 확인 [TDTDBE-55] coupleType 추가
         var coupleOpt = coupleRepository.findByUserId(user.getId());
@@ -88,10 +91,9 @@ public class LoginServiceImpl implements LoginService {
     @Override
     public TokenReissueResponseDTO reissue(TokenReissueRequestDTO tokenReissueRequestDTO) {
         String refreshToken = tokenReissueRequestDTO.getRefreshToken();
-        //TODO : 예외처리
-        if (refreshToken == null) throw new RuntimeException();
-        //TODO : 예외처리
-        User user = userRepository.findById(tokenReissueRequestDTO.getUserId()).orElseThrow(() -> new RuntimeException());
+        if (refreshToken == null) throw new IllegalStateException("Refresh Token이 존재하지 않습니다.");
+        User user = userRepository.findById(tokenReissueRequestDTO.getUserId())
+                .orElseThrow(() -> new IllegalStateException("[userId : " +tokenReissueRequestDTO.getUserId()+" ]에 해당하는 유저가 없습니다."));
         validate(tokenReissueRequestDTO.getRefreshToken(), user);
 
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
@@ -102,13 +104,12 @@ public class LoginServiceImpl implements LoginService {
     private void validate(String refreshToken, User user) {
         // 1. 유효한 리프레쉬인지
         jwtTokenProvider.validateToken(refreshToken);
-        if (user.getSocialAccounts().isEmpty()) throw new IllegalArgumentException("유저와 연결된 소셜 계정이 없습니다.");
+        if (user.getSocialAccounts().isEmpty()) throw new IllegalStateException("유저와 연결된 소셜 계정이 없습니다.");
 
         // 2. 일치하는 리프레쉬토큰인지
         UserAccount userAccount = user.getSocialAccounts().getFirst();
         if (!userAccount.getRefreshToken().equals(refreshToken)) {
-            //TODO : 보완
-            throw new RuntimeException("유효하지 않은 리프레쉬 토큰 입니다. 재로그인 해주세요.");
+            throw new IllegalStateException("유효하지 않은 리프레쉬 토큰 입니다. 재로그인 해주세요.");
         }
     }
 }
