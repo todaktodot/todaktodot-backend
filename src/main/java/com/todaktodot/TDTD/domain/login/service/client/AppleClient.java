@@ -1,6 +1,5 @@
 package com.todaktodot.TDTD.domain.login.service.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.todaktodot.TDTD.domain.login.dto.response.SocialUserResponse;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
