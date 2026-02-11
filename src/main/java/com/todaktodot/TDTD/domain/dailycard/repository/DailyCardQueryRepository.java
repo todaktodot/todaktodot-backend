@@ -62,6 +62,7 @@ public class DailyCardQueryRepository {
                         card.subject,
                         card.type,
                         card.cardTitle,
+                        card.situation,
                         ExpressionUtils.as(questionCountSubQuery, "questionCount"),
                         card.useYn,
                         card.regDt,

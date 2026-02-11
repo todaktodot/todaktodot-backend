@@ -11,6 +11,7 @@ public interface HistoryDetailProjection {
     String getMode();
     String getSubject();
     String getType();
+    String getSituation();
     Integer getQuestionNo();
     String getQuestionType();
     String getQuestionCnts();

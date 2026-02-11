@@ -75,6 +75,7 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                dc.MODE AS mode,
                dc.SUBJECT AS subject,
                dc.TYPE AS type,
+               dc.SITUATION AS situation,
                dq.QUESTION_NO AS questionNo,
                dq.QUESTION_TYPE AS questionType,
                dq.QUESTION_CNTS AS questionCnts,
@@ -106,6 +107,7 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                dc.MODE AS mode,
                dc.SUBJECT AS subject,
                dc.TYPE AS type,
+               dc.SITUATION AS situation,
                CASE WHEN a1.COUPLE_CARD_ID IS NOT NULL THEN true ELSE false END AS user1Answered,
                CASE WHEN a2.COUPLE_CARD_ID IS NOT NULL THEN true ELSE false END AS user2Answered
         FROM couple_daily_card cdc
@@ -139,6 +141,7 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                dc.MODE AS mode,
                dc.SUBJECT AS subject,
                dc.TYPE AS type,
+               dc.SITUATION AS situation,
                dq.QUESTION_NO AS questionNo,
                dq.QUESTION_TYPE AS questionType,
                dq.QUESTION_CNTS AS questionCnts,

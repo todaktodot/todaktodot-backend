@@ -65,6 +65,7 @@ public class AdminDailyCardServiceImpl implements AdminDailyCardService {
                 updateDTO.getSubject(),
                 updateDTO.getType(),
                 updateDTO.getCardTitle(),
+                updateDTO.getSituation(),
                 updateDTO.getUseYn(),
                 ADMIN_USER_ID
         );
@@ -130,6 +131,7 @@ public class AdminDailyCardServiceImpl implements AdminDailyCardService {
                 card.getSubject(),
                 card.getType(),
                 card.getCardTitle(),
+                card.getSituation(),
                 "N",
                 ADMIN_USER_ID
         );

@@ -10,6 +10,7 @@ public interface HistoryCardProjection {
     String getMode();
     String getSubject();
     String getType();
+    String getSituation();
     Long getUser1Answered();
     Long getUser2Answered();
 }

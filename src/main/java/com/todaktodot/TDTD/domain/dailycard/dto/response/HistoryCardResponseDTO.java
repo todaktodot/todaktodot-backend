@@ -25,6 +25,7 @@ public class HistoryCardResponseDTO {
         private Long coupleCardId;
         private Long cardId;
         private String type;
+        private String situation;
         private Boolean user1Answered;
         private Boolean user2Answered;
     }

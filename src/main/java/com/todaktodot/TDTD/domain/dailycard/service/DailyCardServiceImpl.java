@@ -138,6 +138,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .subject(subject)
                 .type(type)
                 .cardTitle(aiResponse.getCardTitle())
+                .situation(aiResult.situationCategory())
                 .regrId(SYSTEM_USER)
                 .updrId(SYSTEM_USER)
                 .build();
@@ -809,6 +810,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                     .mode(first.getMode())
                     .subject(first.getSubject())
                     .type(first.getType())
+                    .situation(first.getSituation())
                     .questions(questions)
                     .build());
         }
@@ -898,6 +900,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                         .coupleCardId(selectedCard.getCoupleCardId())
                         .cardId(selectedCard.getCardId())
                         .type(selectedCard.getType())
+                        .situation(selectedCard.getSituation())
                         .user1Answered(selectedCard.getUser1Answered() != null && selectedCard.getUser1Answered() == 1L)
                         .user2Answered(selectedCard.getUser2Answered() != null && selectedCard.getUser2Answered() == 1L)
                         .build());
@@ -1043,6 +1046,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                         .cardId(first.getCardId())
                         .cardTitle(first.getCardTitle())
                         .type(first.getType())
+                        .situation(first.getSituation())
                         .user1Answered(user1HasAnswer)
                         .user2Answered(user2HasAnswer)
                         .questions(questions)

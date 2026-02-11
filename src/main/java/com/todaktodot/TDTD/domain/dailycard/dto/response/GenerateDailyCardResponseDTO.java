@@ -29,6 +29,9 @@ public class GenerateDailyCardResponseDTO {
     @Schema(description = "메인 질문/상황 설명")
     private String cardTitle;
 
+    @Schema(description = "상황 카테고리 (예: 기념일/이벤트)")
+    private String situation;
+
     @Schema(description = "질문 목록")
     private List<QuestionDTO> questions;
 
@@ -56,6 +59,7 @@ public class GenerateDailyCardResponseDTO {
                 .subject(entity.getSubject())
                 .type(entity.getType())
                 .cardTitle(entity.getCardTitle())
+                .situation(entity.getSituation())
                 .questions(entity.getQuestions().stream()
                         .map(q -> QuestionDTO.builder()
                                 .questionNo(q.getQuestionNo())
@@ -80,6 +84,7 @@ public class GenerateDailyCardResponseDTO {
                 .subject(entity.getSubject())
                 .type(entity.getType())
                 .cardTitle(aiResponse.getCardTitle())
+                .situation(entity.getSituation())
                 .questions(aiResponse.getQuestions().stream()
                         .map(q -> QuestionDTO.builder()
                                 .questionNo(q.getQuestionNo())

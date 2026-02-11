@@ -55,6 +55,9 @@ public class HistoryDetailResponseDTO {
         @Schema(description = "유형 (선택 완료 시)")
         private String type;
 
+        @Schema(description = "상황 (선택 완료 시)")
+        private String situation;
+
         @Schema(description = "유저1 답변 여부 (선택 완료 시)")
         private Boolean user1Answered;
 

@@ -20,6 +20,7 @@ public class DailyCardListDTO {
     private CardSubject subject;
     private CardType type;
     private String cardTitle;
+    private String situation;
     private Long questionCount;
     private String useYn;
     private LocalDateTime regDt;
@@ -34,7 +35,7 @@ public class DailyCardListDTO {
      * QueryDSL Projections.constructor 용 생성자
      */
     public DailyCardListDTO(Long cardId, CardMode mode, CardSubject subject, CardType type,
-                            String cardTitle, Long questionCount, String useYn,
+                            String cardTitle, String situation, Long questionCount, String useYn,
                             LocalDateTime regDt, Long regrId, String regrNm,
                             LocalDateTime updDt, Long updrId, String updrNm,
                             Integer optionCount) {
@@ -43,6 +44,7 @@ public class DailyCardListDTO {
         this.subject = subject;
         this.type = type;
         this.cardTitle = cardTitle;
+        this.situation = situation;
         this.questionCount = questionCount != null ? questionCount : 0L;
         this.useYn = useYn;
         this.regDt = regDt;
@@ -65,6 +67,7 @@ public class DailyCardListDTO {
                 .subject(entity.getSubject())
                 .type(entity.getType())
                 .cardTitle(entity.getCardTitle())
+                .situation(entity.getSituation())
                 .questionCount((long) entity.getQuestions().size())
                 .useYn(entity.getUseYn())
                 .regDt(entity.getRegDt())

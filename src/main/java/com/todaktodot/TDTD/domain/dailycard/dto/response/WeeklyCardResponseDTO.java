@@ -39,6 +39,8 @@ public class WeeklyCardResponseDTO {
         private String subject;
         @Schema(description = "유형")
         private String type;
+        @Schema(description = "상황")
+        private String situation;
         @Schema(description = "질문 목록")
         private List<QuestionItem> questions;
     }

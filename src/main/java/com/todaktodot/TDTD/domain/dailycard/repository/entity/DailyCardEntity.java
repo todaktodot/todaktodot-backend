@@ -38,6 +38,9 @@ public class DailyCardEntity {
     @Column(name = "CARD_TITLE", length = 500, nullable = false)
     private String cardTitle;
 
+    @Column(name = "SITUATION", length = 100)
+    private String situation;
+
     @Column(name = "USE_YN", length = 1, columnDefinition = "CHAR(1) DEFAULT 'Y'")
     private String useYn = "Y";
 
@@ -64,11 +67,12 @@ public class DailyCardEntity {
 
     @Builder
     public DailyCardEntity(CardMode mode, CardSubject subject, CardType type,
-                           String cardTitle, Long regrId, Long updrId) {
+                           String cardTitle, String situation, Long regrId, Long updrId) {
         this.mode = mode;
         this.subject = subject;
         this.type = type;
         this.cardTitle = cardTitle;
+        this.situation = situation;
         this.useYn = "Y";
         this.regrId = regrId;
         this.updrId = updrId;
@@ -81,11 +85,12 @@ public class DailyCardEntity {
     }
 
     public void update(CardMode mode, CardSubject subject, CardType type,
-                       String cardTitle, String useYn, Long updrId) {
+                       String cardTitle, String situation, String useYn, Long updrId) {
         this.mode = mode;
         this.subject = subject;
         this.type = type;
         this.cardTitle = cardTitle;
+        this.situation = situation;
         this.useYn = useYn;
         this.updrId = updrId;
     }

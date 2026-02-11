@@ -30,6 +30,8 @@ public class DailyCardUpdateDTO {
     @NotBlank(message = "카드 제목은 필수입니다")
     private String cardTitle;
 
+    private String situation;
+
     private String useYn = "Y";
 
     private List<QuestionUpdateDTO> questions;

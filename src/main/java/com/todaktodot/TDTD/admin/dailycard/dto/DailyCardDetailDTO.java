@@ -17,6 +17,7 @@ public class DailyCardDetailDTO {
     private CardSubject subject;
     private CardType type;
     private String cardTitle;
+    private String situation;
     private String useYn;
     private LocalDateTime regDt;
     private LocalDateTime updDt;
@@ -29,6 +30,7 @@ public class DailyCardDetailDTO {
                 .subject(entity.getSubject())
                 .type(entity.getType())
                 .cardTitle(entity.getCardTitle())
+                .situation(entity.getSituation())
                 .useYn(entity.getUseYn())
                 .regDt(entity.getRegDt())
                 .updDt(entity.getUpdDt())
