@@ -28,11 +28,25 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @Column(name = "ALARM_YN")
-    private String alarmYN;
+    @Column(name = "INFO_ALARM_YN", length = 1, nullable = false)
+    @Builder.Default
+    private String infoAlarmYN = "N";
 
-    @Column(name = "JOIN_YN")
-    private String joinYN;
+    @Column(name = "AD_ALARM_YN", length = 1, nullable = false)
+    @Builder.Default
+    private String adAlarmYN = "N";
+
+    @Column(name = "MARKETING_ALARM_YN", length = 1, nullable = false)
+    @Builder.Default
+    private String marketingAlarmYN = "N";
+
+//    @Column(name = "JOIN_YN", nullable = false, length = 1)
+//    @Builder.Default
+//    private String joinYN = "N";
+
+    @Column(name = "TERM_YN", nullable = false, length = 1)
+    @Builder.Default
+    private String termYN = "N";
 
     @Column(name = "REG_DT", nullable = false, updatable = false)
     @CreationTimestamp
@@ -68,14 +82,20 @@ public class User {
     }
 
     /**
-     * 푸시알림 변경
+     * 알림 정보 변경
      */
-    public void updateAlarmYN(String alarmYN, Long userId) {
-        if (alarmYN.equals("Y")) {
-            this.alarmYN = "Y";
+    public void updateAlarmYN(String infoAlarmYN, String adAlarmYN, String marketingAlarmYN, Long userId) {
+        //정보성 알림
+        if (infoAlarmYN != null) {
+            this.infoAlarmYN = infoAlarmYN.equals("Y") ? "Y" : "N";
         }
-        else {
-            this.alarmYN = "N";
+        //광고성 알림
+        if (adAlarmYN != null) {
+            this.adAlarmYN = adAlarmYN.equals("Y") ? "Y" : "N";
+        }
+        //마케팅 알림
+        if (marketingAlarmYN != null) {
+            this.marketingAlarmYN = marketingAlarmYN.equals("Y") ? "Y" : "N";
         }
         this.updrId = userId;
     }
@@ -83,13 +103,8 @@ public class User {
     /**
      * 가입여부 변경
      */
-    public void updateJoinYN(String joinYN, Long userId) {
-        if (joinYN.equals("Y")) {
-            this.joinYN = "Y";
-        }
-        else {
-            this.joinYN = "N";
-        }
+    public void updateTermYN(String termYN, Long userId) {
+        this.termYN = termYN.equals("Y") ? "Y" : "N";
         this.updrId = userId;
     }
 }

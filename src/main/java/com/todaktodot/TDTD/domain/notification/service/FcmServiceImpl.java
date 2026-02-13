@@ -176,7 +176,7 @@ public class FcmServiceImpl implements FcmService {
         }
 
         // alarmYN이 null이거나 "Y"이면 알림 허용 (기본값은 허용)
-        boolean enabled = user.getAlarmYN() == null || "Y".equals(user.getAlarmYN());
+        boolean enabled = user.getInfoAlarmYN() == null || "Y".equals(user.getInfoAlarmYN());
         if (!enabled) {
             log.debug("알림이 비활성화된 사용자입니다 - userId: {}", userId);
         }
@@ -186,7 +186,7 @@ public class FcmServiceImpl implements FcmService {
     private List<Long> filterNotificationEnabledUsers(List<Long> userIds) {
         List<User> users = userRepository.findByIdIn(userIds);
         return users.stream()
-                .filter(user -> user.getAlarmYN() == null || "Y".equals(user.getAlarmYN()))
+                .filter(user -> user.getInfoAlarmYN() == null || "Y".equals(user.getInfoAlarmYN()))
                 .map(User::getId)
                 .toList();
     }

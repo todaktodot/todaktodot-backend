@@ -48,8 +48,6 @@ public class LoginServiceImpl implements LoginService {
                         .build();
 
                     User newUser = User.builder()
-                            .alarmYN("Y")
-                            .joinYN("N")
                             .role(Role.USER)
                             .socialAccounts(new ArrayList<>(List.of(newUserAccount)))
                             .build();
@@ -79,7 +77,7 @@ public class LoginServiceImpl implements LoginService {
         return LoginResponseDTO.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .isJoined(user.getJoinYN().equals("Y"))
+                .isJoined(user.getTermYN().equals("Y"))
                 .isCouple(isCouple)
                 .coupleType(coupleType)
                 .build();

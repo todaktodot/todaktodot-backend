@@ -36,7 +36,7 @@ public class UserSummaryDTO {
                 user.getNickname(),
                 userAccount.getEmail(),
                 userAccount.getProvider(),
-                user.getJoinYN(),
+                user.getTermYN(),
                 user.getRegDt()
         );
     }
