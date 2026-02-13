@@ -8,5 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
+
+    Optional<User> findByIdAndDelYn(Long userId, String delYN);
     List<User> findByIdIn(Collection<Long> ids);
 }

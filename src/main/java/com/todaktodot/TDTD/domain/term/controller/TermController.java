@@ -29,8 +29,7 @@ public class TermController {
      * 약관 동의 저장 API
      */
     @Operation(description = "약관동의 저장 API")
-    @ApiResponse(responseCode = "200", description = "약관 동의 저장 성공",
-            content = @Content(schema = @Schema(implementation = TermRequestDTO.class)))
+    @ApiResponse(responseCode = "200", description = "약관 동의 저장 성공")
     @PostMapping
     public ResponseEntity<HttpStatus> saveTerm(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody TermRequestDTO termRequestDTO) {
         termRequestDTO.setUserId(userPrincipal.getId());

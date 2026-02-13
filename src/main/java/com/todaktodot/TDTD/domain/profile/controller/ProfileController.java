@@ -3,6 +3,7 @@ package com.todaktodot.TDTD.domain.profile.controller;
 import com.todaktodot.TDTD.domain.login.respository.entity.UserPrincipal;
 import com.todaktodot.TDTD.domain.profile.dto.request.SetNicknameRequestDTO;
 import com.todaktodot.TDTD.domain.profile.dto.response.SetNicknameResponseDTO;
+import com.todaktodot.TDTD.domain.profile.dto.response.UserDetailResponseDTO;
 import com.todaktodot.TDTD.domain.profile.service.ProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -31,4 +32,15 @@ public class ProfileController {
         SetNicknameResponseDTO response = profileService.setNickname(userPrincipal.getId(), requestDTO);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "회원정보 조회", description = "로그인한 회원의 정보를 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "회원 정보 조회 성공")
+    @GetMapping("/detail")
+    public ResponseEntity<UserDetailResponseDTO> getDetail(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        long userId = userPrincipal.getId();
+        UserDetailResponseDTO response = profileService.getDetail(userId);
+        return ResponseEntity.ok(response);
+    }
+
+
 }
