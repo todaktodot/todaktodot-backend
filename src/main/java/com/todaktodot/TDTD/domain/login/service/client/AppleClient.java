@@ -1,7 +1,10 @@
 package com.todaktodot.TDTD.domain.login.service.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.todaktodot.TDTD.domain.login.dto.response.SocialUserResponse;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.RequiredArgsConstructor;
@@ -11,15 +14,21 @@ import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.math.BigInteger;
+import java.security.KeyFactory;
 import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.RSAPublicKeySpec;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -29,35 +38,42 @@ import java.util.*;
 @RequiredArgsConstructor
 public class AppleClient {
     private final WebClient webClient = WebClient.create();
+    private final ObjectMapper objectMapper;
 
     @Value("${oauth.apple.url.auth}")
     private String authUrl;
     @Value("${oauth.apple.client-id}")
     private String clientId;
-    @Value("${oauth.apple.login-key}")
+    @Value("${oauth.apple.key-id}")
     private String keyId;
     @Value("${oauth.apple.team-id}")
     private String teamId;
     @Value("${oauth.apple.key-path}")
     private String keyPath;
 
-    public SocialUserResponse getUserInfo(String idToken) {
+    public SocialUserResponse getUserInfo(String authorizationCode) {
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("code", idToken);
+        body.add("code", authorizationCode);
         body.add("grant_type", "authorization_code");
         body.add("client_id", clientId);
         body.add("client_secret", generateClientSecret());
 
         Map response;
         try {
+            //authorization_code 로 요청
             response = webClient.post()
                     .uri(authUrl)
                     .header("Content-Type", "application/x-www-form-urlencoded")
                     .body(BodyInserters.fromFormData(body))
                     .retrieve()
+                    .onStatus(HttpStatusCode::isError, clientResponse ->
+                            clientResponse.bodyToMono(String.class)
+                                    .flatMap(errorBody -> Mono.error(new RuntimeException(errorBody)))
+                    )
                     .bodyToMono(Map.class)
-                    .block(); // 동기 처리를 위해 block 사용 (Reactive 환경이면 Mono 반환 권장)
+                    .block();
+
         } catch (Exception e) {
             throw new RuntimeException("애플 토큰 요청 실패: " + e.getMessage());
         }
@@ -66,25 +82,128 @@ public class AppleClient {
             throw new RuntimeException("애플 응답에 id_token이 없습니다.");
         }
 
-        String[] splitToken = ((String) response.get("id_token")).split("\\.");
-        String unsignedToken = splitToken[0] + "." + splitToken[1] + ".";
+//        String[] splitToken = ((String) response.get("id_token")).split("\\.");
+//        String unsignedToken = splitToken[0] + "." + splitToken[1] + ".";
+//
+//        Claims claims = Jwts.parser()
+//                .build()
+//                .parseClaimsJwt(unsignedToken) // 서명이 없는 상태로 파싱
+//                .getBody();
 
-        Claims claims = Jwts.parser()
-                .build()
-                .parseClaimsJwt(unsignedToken) // 서명이 없는 상태로 파싱
-                .getBody();
+        Claims claims = verifyIdToken(response.get("id_token").toString());
 
         String sub = claims.getSubject();
         String email = claims.get("email", String.class);
 
         return new SocialUserResponse(
-                (String) response.get(sub),
-                (String) response.get(email),
+                sub,
+                email,
                 "AppleUser",
                 "APPLE"
         );
     }
 
+    /**
+     * IdToken 검증
+     */
+    public Claims verifyIdToken(String idToken) {
+
+        Map<String, Object> header = parseHeader(idToken);
+        String kid = (String) header.get("kid");
+
+        Map<String, Object> keyResponse = getApplePublicKeys();
+        List<Map<String, String>> keys =
+                (List<Map<String, String>>) keyResponse.get("keys");
+
+        Map<String, String> matchedKey = keys.stream()
+                .filter(k -> kid.equals(k.get("kid")))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("일치하는 Apple 공개키가 없습니다."));
+
+        try {
+            PublicKey publicKey = generatePublicKey(matchedKey);
+
+            Jws<Claims> jws = Jwts.parser()
+                    .verifyWith(publicKey)
+                    .build()
+                    .parseSignedClaims(idToken);
+
+            Claims claims = jws.getPayload();
+
+            validateClaims(claims);
+
+            return claims;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Apple id_token 검증 실패", e);
+        }
+    }
+
+    /**
+     * 토큰 헤더 파싱
+     */
+    private Map<String, Object> parseHeader(String token) {
+        try {
+            String header = token.split("\\.")[0];
+            String decoded = new String(Base64.getUrlDecoder().decode(header));
+            return objectMapper.readValue(decoded, Map.class);
+        }
+        catch (JsonProcessingException e) {
+            throw new IllegalStateException("Json Parsing Error");
+        }
+    }
+
+    /**
+     * Public Key 생성
+     */
+    private PublicKey generatePublicKey(Map<String, String> jwk) throws Exception {
+
+        byte[] nBytes = Base64.getUrlDecoder().decode(jwk.get("n"));
+        byte[] eBytes = Base64.getUrlDecoder().decode(jwk.get("e"));
+
+        BigInteger n = new BigInteger(1, nBytes);
+        BigInteger e = new BigInteger(1, eBytes);
+
+        RSAPublicKeySpec keySpec = new RSAPublicKeySpec(n, e);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+
+        return keyFactory.generatePublic(keySpec);
+    }
+
+    /**
+     * Claim 검증
+     */
+    private void validateClaims(Claims claims) {
+        // 1. 발급자 검증
+        if (!"https://appleid.apple.com".equals(claims.getIssuer())) {
+            throw new IllegalStateException("유효하지 않은 issuer 입니다.");
+        }
+
+        // 2. audience 검증
+        if (!clientId.equals(claims.getAudience())) {
+            throw new IllegalStateException("유효하지 않은 audience 입니다.");
+        }
+
+        // 3. 만료시간 검증
+        if (claims.getExpiration().before(new Date())) {
+            throw new IllegalStateException("IdToken의 기한이 만료되었습니다.");
+        }
+    }
+
+    /**
+     * Apple 공개키 조회
+     */
+    private Map<String, Object> getApplePublicKeys() {
+        return webClient.get()
+                .uri("https://appleid.apple.com/auth/keys")
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+    }
+
+    /**
+     * client_secret 생성
+     */
     private String generateClientSecret() {
         Map<String, Object> jwtHeader = new HashMap<>();
         jwtHeader.put("kid", keyId);
@@ -93,14 +212,17 @@ public class AppleClient {
         return Jwts.builder()
                 .setHeaderParams(jwtHeader)
                 .issuer(teamId)
-                .audience().add("https://appleid.apple.com").and()
+                .claim("aud", "https://appleid.apple.com")
                 .subject(clientId)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(Date.from(LocalDateTime.now().plusDays(30).atZone(ZoneId.systemDefault()).toInstant()))
+                .expiration(Date.from(LocalDateTime.now().plusDays(60).atZone(ZoneId.systemDefault()).toInstant()))
                 .signWith(getPrivateKey(), SignatureAlgorithm.ES256)
                 .compact();
     }
 
+    /**
+     * private 생성
+     */
     private PrivateKey getPrivateKey() {
         ClassPathResource resource = new ClassPathResource(keyPath);
         try {
@@ -117,5 +239,4 @@ public class AppleClient {
             throw new RuntimeException(message, e);
         }
     }
-
 }

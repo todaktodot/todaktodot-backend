@@ -10,25 +10,31 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class GoogleClient {
     //임시
-    private static final String IOS_GOOGLE_CLIENT_ID = "1034525705170-kmpucuffctgnj0rmre9kflolqj8b00fa.apps.googleusercontent.com";
-    private static final String AOS_GOOGLE_CLIENT_ID = "1034525705170-glmg4nqee474ru5br4iam1qac8i26r4i.apps.googleusercontent.com";
-    private static final String WEB_GOOGLE_CLIENT_ID = "1034525705170-v3nmvs14sgm5pg106meajjken9ah5vvn.apps.googleusercontent.com";
+//    private static final String IOS_GOOGLE_CLIENT_ID = "1034525705170-kmpucuffctgnj0rmre9kflolqj8b00fa.apps.googleusercontent.com";
+//    private static final String AOS_GOOGLE_CLIENT_ID = "1034525705170-glmg4nqee474ru5br4iam1qac8i26r4i.apps.googleusercontent.com";
+//    private static final String WEB_GOOGLE_CLIENT_ID = "1034525705170-v3nmvs14sgm5pg106meajjken9ah5vvn.apps.googleusercontent.com";
 
-//    @Value("${google.client-id}")
-//    private String googleClientId;
+    @Value("${oauth.google.ios-client-id}")
+    private String iosClientId;
+
+    @Value("${oauth.google.aos-client-id}")
+    private String aosClientId;    
+
+    @Value("${oauth.google.web-client-id}")
+    private String webClientId;
 
     public SocialUserResponse getUserInfo(String idTokenStr) {
         List<String> clientIds = new ArrayList<>();
-        clientIds.add(IOS_GOOGLE_CLIENT_ID);
-        clientIds.add(AOS_GOOGLE_CLIENT_ID);
-        clientIds.add(WEB_GOOGLE_CLIENT_ID);
+        clientIds.add(iosClientId);
+        clientIds.add(aosClientId);
+        clientIds.add(webClientId);
 
         try {
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
