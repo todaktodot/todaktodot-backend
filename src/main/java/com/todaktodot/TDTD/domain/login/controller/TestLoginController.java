@@ -91,9 +91,9 @@ public class TestLoginController {
 
         User testUser = userTestAccount.getUser();
         // [TDTDBE-55] coupleType 추가
-        var coupleOpt = coupleRepository.findByUserId(testUser.getId());
-        boolean isCouple = coupleOpt.map(c -> c.isComplete()).orElse(false);
-        String coupleType = coupleOpt.map(c -> c.getCoupleType().name()).orElse(null);
+//        var coupleOpt = coupleRepository.findByUserId(testUser.getId());
+//        boolean isCouple = coupleOpt.map(c -> c.isComplete()).orElse(false);
+//        String coupleType = coupleOpt.map(c -> c.getCoupleType().name()).orElse(null);
 
         String accessToken = jwtTokenProvider.createAccessToken(testUser.getId(), testUser.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(testUser.getId());
@@ -101,9 +101,6 @@ public class TestLoginController {
         return LoginResponseDTO.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .isJoined(testUser.getTermYN().equals("Y"))
-                .isCouple(isCouple)
-                .coupleType(coupleType)
                 .build();
     }
 }

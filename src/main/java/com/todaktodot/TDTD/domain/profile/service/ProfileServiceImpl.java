@@ -48,10 +48,9 @@ public class ProfileServiceImpl implements ProfileService {
             Long userId1 = couple.getUserId1();
             Long userId2 = couple.getUserId2();
 
-            User anotherUser = null;
-
             //커플인 경우
-            if (userId2 != null) {
+            if (couple.isComplete()) {
+                User anotherUser;
                 if (userId1 == userId) {
                     anotherUser = userRepository.findByIdAndDelYn(userId2, "N")
                             .orElseThrow(() -> new IllegalArgumentException("[userID : " + userId + " ] 사용자를 찾을 수 없습니다"));
@@ -59,10 +58,7 @@ public class ProfileServiceImpl implements ProfileService {
                     anotherUser = userRepository.findByIdAndDelYn(userId1, "N")
                             .orElseThrow(() -> new IllegalArgumentException("[userID : " + userId + " ] 사용자를 찾을 수 없습니다"));
                 }
-            }
 
-            //커플인 경우
-            if (anotherUser != null) {
                 //우리가 만난 기간 계산
                 String sinceMetDt = getString(couple.getFirstMetDt());
 
