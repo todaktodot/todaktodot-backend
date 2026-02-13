@@ -74,8 +74,6 @@ public class TestLoginController {
                             .build();
 
                     User newUser = User.builder()
-                            .alarmYN("Y")
-                            .joinYN("N")
                             .role(Role.USER)
                             .socialAccounts(new ArrayList<>(List.of(newUserAccount)))
                             .build();
@@ -103,7 +101,7 @@ public class TestLoginController {
         return LoginResponseDTO.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .isJoined(testUser.getJoinYN().equals("Y"))
+                .isJoined(testUser.getTermYN().equals("Y"))
                 .isCouple(isCouple)
                 .coupleType(coupleType)
                 .build();
