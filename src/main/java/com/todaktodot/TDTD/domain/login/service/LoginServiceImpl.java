@@ -70,16 +70,13 @@ public class LoginServiceImpl implements LoginService {
         userAccountRepository.save(userAccount);
 
         //4. 커플여부 확인 [TDTDBE-55] coupleType 추가
-        var coupleOpt = coupleRepository.findByUserId(user.getId());
-        boolean isCouple = coupleOpt.map(c -> c.isComplete()).orElse(false);
-        String coupleType = coupleOpt.map(c -> c.getCoupleType().name()).orElse(null);
+//        var coupleOpt = coupleRepository.findByUserId(user.getId());
+//        boolean isCouple = coupleOpt.map(c -> c.isComplete()).orElse(false);
+//        String coupleType = coupleOpt.map(c -> c.getCoupleType().name()).orElse(null);
 
         return LoginResponseDTO.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .isJoined(user.getTermYN().equals("Y"))
-                .isCouple(isCouple)
-                .coupleType(coupleType)
                 .build();
     }
 
