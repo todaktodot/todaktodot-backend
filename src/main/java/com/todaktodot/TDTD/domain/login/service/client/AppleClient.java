@@ -82,14 +82,6 @@ public class AppleClient {
             throw new RuntimeException("애플 응답에 id_token이 없습니다.");
         }
 
-//        String[] splitToken = ((String) response.get("id_token")).split("\\.");
-//        String unsignedToken = splitToken[0] + "." + splitToken[1] + ".";
-//
-//        Claims claims = Jwts.parser()
-//                .build()
-//                .parseClaimsJwt(unsignedToken) // 서명이 없는 상태로 파싱
-//                .getBody();
-
         Claims claims = verifyIdToken(response.get("id_token").toString());
 
         String sub = claims.getSubject();
@@ -98,7 +90,7 @@ public class AppleClient {
         return new SocialUserResponse(
                 sub,
                 email,
-                "AppleUser",
+                "APPLE USER",
                 "APPLE"
         );
     }
@@ -180,7 +172,7 @@ public class AppleClient {
         }
 
         // 2. audience 검증
-        if (!clientId.equals(claims.getAudience())) {
+        if (!claims.getAudience().contains(clientId)) {
             throw new IllegalStateException("유효하지 않은 audience 입니다.");
         }
 
