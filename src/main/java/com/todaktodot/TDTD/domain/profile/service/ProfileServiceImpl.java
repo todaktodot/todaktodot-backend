@@ -60,7 +60,10 @@ public class ProfileServiceImpl implements ProfileService {
                 }
 
                 //우리가 만난 기간 계산
-                String sinceMetDt = getString(couple.getFirstMetDt());
+                String sinceMetDt = null;
+                if (couple.getFirstMetDt() != null) {
+                    sinceMetDt = getString(couple.getFirstMetDt());
+                }
 
                 //1. 커플정보 생성
                 UserDetailResponseDTO.CoupleDetail coupleDetail = UserDetailResponseDTO.CoupleDetail.builder()
@@ -71,7 +74,7 @@ public class ProfileServiceImpl implements ProfileService {
                         .anotherNickname(anotherUser.getNickname())
                         .firstMetDt(couple.getFirstMetDt())
                         .sinceMetDt(sinceMetDt)
-                        .relationshipStage(couple.getRelationshipStage().name())
+                        .relationshipStage(couple.getRelationshipStage() == null ? null : couple.getRelationshipStage().name())
                         .connectedDt(couple.getConnectedDt())
                         .delYn(couple.getDelYn())
                         .build();
