@@ -17,6 +17,7 @@ import com.todaktodot.TDTD.domain.insight.repository.InsightRepository;
 import com.todaktodot.TDTD.domain.insight.repository.entity.Insight;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -42,6 +43,7 @@ public class ReportServiceImpl implements ReportService {
      * 지난 한 주 AI 리포트 생성 여부 확인
      */
     @Override
+    @Transactional
     public ReportResponseWrapDTO checkCreatable(Long userId) {
         //커플 찾기 -> 커플이 아니면?
         CoupleEntity coupleInfo = coupleRepository.findByUserId(userId)
@@ -112,6 +114,7 @@ public class ReportServiceImpl implements ReportService {
      * AI리포트 히스토리 조회
      */
     @Override
+    @Transactional(readOnly = true)
     public List<ReportListResponseDTO> getReportList(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException();
@@ -137,6 +140,7 @@ public class ReportServiceImpl implements ReportService {
      * AI 리포트 상세 조회
      */
     @Override
+    @Transactional(readOnly = true)
     public ReportDetailResponseDTO getReportDetail(Long userId, Long reportId) {
         if (reportId == null || userId == null) {
             throw new IllegalArgumentException();
@@ -164,6 +168,7 @@ public class ReportServiceImpl implements ReportService {
     /**
      * AI 리포트 생성
      */
+    @Transactional
     public Report createReport(LocalDateTime startDt, LocalDateTime endDt, Long userId1, Long userId2, CoupleEntity coupleEntity) {
         //주간 일자
         //모두 응답한 데일리 카드 중 경제관인 것

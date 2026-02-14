@@ -9,4 +9,6 @@ public interface ProfileService {
     SetNicknameResponseDTO setNickname(Long userId, SetNicknameRequestDTO requestDTO);
 
     UserDetailResponseDTO getDetail(long userId);
+
+    void withdraw(long userId);
 }

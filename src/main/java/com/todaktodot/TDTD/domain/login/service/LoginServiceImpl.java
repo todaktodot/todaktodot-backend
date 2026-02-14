@@ -10,6 +10,8 @@ import com.todaktodot.TDTD.domain.login.respository.UserAccountRepository;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
 import com.todaktodot.TDTD.domain.login.respository.entity.UserAccount;
+import com.todaktodot.TDTD.domain.notification.repository.DeviceTokenRepository;
+import com.todaktodot.TDTD.domain.notification.repository.entity.DeviceTokenEntity;
 import com.todaktodot.TDTD.global.jwt.JwtTokenProvider;
 import com.todaktodot.TDTD.global.security.Role;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +29,7 @@ public class LoginServiceImpl implements LoginService {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
     private final UserAccountRepository userAccountRepository;
-    private final CoupleRepository coupleRepository;
+    private final DeviceTokenRepository deviceTokenRepository;
 
     /**
      * 로그인
@@ -84,16 +87,40 @@ public class LoginServiceImpl implements LoginService {
      * 토큰 재발급
      */
     @Override
+    @Transactional
     public TokenReissueResponseDTO reissue(TokenReissueRequestDTO tokenReissueRequestDTO) {
         String refreshToken = tokenReissueRequestDTO.getRefreshToken();
         if (refreshToken == null) throw new IllegalStateException("Refresh Token이 존재하지 않습니다.");
-        User user = userRepository.findById(tokenReissueRequestDTO.getUserId())
+        User user = userRepository.findByIdAndDelYn(tokenReissueRequestDTO.getUserId(), "N")
                 .orElseThrow(() -> new IllegalStateException("[userId : " +tokenReissueRequestDTO.getUserId()+" ]에 해당하는 유저가 없습니다."));
         validate(tokenReissueRequestDTO.getRefreshToken(), user);
 
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
 
         return new TokenReissueResponseDTO(accessToken, refreshToken);
+    }
+
+    /**
+     * 로그아웃
+     */
+    @Override
+    @Transactional
+    public void logout(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("UserID는 필수입니다.");
+        }
+
+        UserAccount userAccount = userAccountRepository.findByUserIdAndDelYn(userId, "N")
+                .orElseThrow(() -> new IllegalStateException("[UserID :" + userId + " ] 일치하는 계정이 없습니다."));
+
+        //리프레쉬 초기화
+        userAccount.updateRefreshToken(null);
+
+        //디바이스 토큰 비활성화
+        List<DeviceTokenEntity> activeTokensByUserId = deviceTokenRepository.findActiveTokensByUserId(userId);
+        activeTokensByUserId.forEach(at -> {
+            at.deactivate(userId);
+        });
     }
 
     private void validate(String refreshToken, User user) {

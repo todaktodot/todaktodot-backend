@@ -9,4 +9,6 @@ public interface LoginService {
     LoginResponseDTO login(LoginRequestDTO loginRequestDTO);
 
     TokenReissueResponseDTO reissue(TokenReissueRequestDTO tokenReissueRequestDTO);
+
+    void logout(Long userId);
 }

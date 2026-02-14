@@ -30,7 +30,7 @@ public class TermServiceImpl implements TermService {
         String marketingAlarmYN = termRequestDTO.getMarketingAlarmYN();
 
         //1. 유저 푸시알림 상태 업데이트
-        User user = userRepository.findById(termRequestDTO.getUserId())
+        User user = userRepository.findByIdAndDelYn(termRequestDTO.getUserId(), "N")
                 .orElseThrow(() -> new IllegalStateException("[userID : " + userId + " ] 와 일치하는 유저가 없습니다."));
 
         user.updateAlarmYN(infoAlarmYN, adAlarmYN, marketingAlarmYN, userId);

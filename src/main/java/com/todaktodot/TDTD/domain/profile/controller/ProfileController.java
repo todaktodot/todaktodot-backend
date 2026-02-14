@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -46,5 +47,13 @@ public class ProfileController {
         return ResponseEntity.ok(response);
     }
 
-
+    @Operation(summary = "회원탈퇴", description = "로그인한 사용자를 회원탈퇴 합니다")
+    @ApiResponse(responseCode = "200", description = "회원탈퇴 성공")
+    @PostMapping("/withdraw")
+    public ResponseEntity<HttpStatus> withdraw(
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        long userId = userPrincipal.getId();
+        profileService.withdraw(userId);
+        return new ResponseEntity(HttpStatus.OK);
+    }
 }
