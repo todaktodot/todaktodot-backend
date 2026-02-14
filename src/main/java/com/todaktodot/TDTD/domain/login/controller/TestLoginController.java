@@ -30,7 +30,7 @@ import java.util.List;
 public class TestLoginController {
 
     private final UserAccountRepository userAccountRepository;
-    private final UserRepository userRepository;
+    private final  UserRepository userRepository;
     private final CoupleRepository coupleRepository;
     private final JwtTokenProvider jwtTokenProvider;
 

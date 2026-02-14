@@ -91,4 +91,10 @@ public class DeviceTokenEntity {
         this.isActive = true;
         this.updrId = updrId;
     }
+
+    //soft삭제
+    public void softDelete(long userId) {
+        this.delYn = "Y";
+        this.updrId = userId;
+    }
 }

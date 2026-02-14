@@ -61,4 +61,9 @@ public class UserAccount {
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
+
+    //회원탈퇴
+    public void softDelete(long userId) {
+        this.delYn = "Y";
+    }
 }

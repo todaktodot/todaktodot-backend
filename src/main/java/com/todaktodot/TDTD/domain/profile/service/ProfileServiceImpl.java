@@ -5,6 +5,9 @@ import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleType;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
+import com.todaktodot.TDTD.domain.login.respository.entity.UserAccount;
+import com.todaktodot.TDTD.domain.notification.repository.DeviceTokenRepository;
+import com.todaktodot.TDTD.domain.notification.repository.entity.DeviceTokenEntity;
 import com.todaktodot.TDTD.domain.profile.dto.request.SetNicknameRequestDTO;
 import com.todaktodot.TDTD.domain.profile.dto.response.SetNicknameResponseDTO;
 import com.todaktodot.TDTD.domain.profile.dto.response.UserDetailResponseDTO;
@@ -14,18 +17,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ProfileServiceImpl implements ProfileService {
 
     private final UserRepository userRepository;
+    private final DeviceTokenRepository deviceTokenRepository;
     private final CoupleRepository coupleRepository;
 
     @Override
     @Transactional
     public SetNicknameResponseDTO setNickname(Long userId, SetNicknameRequestDTO requestDTO) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdAndDelYn(userId, "N")
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 
         user.updateNickname(requestDTO.getNickname());
@@ -37,6 +42,7 @@ public class ProfileServiceImpl implements ProfileService {
      * 회원정보 조회
      */
     @Override
+    @Transactional(readOnly = true)
     public UserDetailResponseDTO getDetail(long userId) {
         User loginUser = userRepository.findByIdAndDelYn(userId, "N")
                 .orElseThrow(() -> new IllegalArgumentException("[userID : " + userId +" ] 사용자를 찾을 수 없습니다"));
@@ -100,6 +106,32 @@ public class ProfileServiceImpl implements ProfileService {
             userDetailResponseDTO.setIsCouple("N");
             return userDetailResponseDTO;
         }
+    }
+
+    /**
+     * 회원탈퇴
+     */
+    @Override
+    @Transactional
+    public void withdraw(long userId) {
+        User loginUser = userRepository.findByIdAndDelYn(userId, "N")
+                .orElseThrow(() -> new IllegalArgumentException("[userID : " + userId +" ] 사용자를 찾을 수 없습니다"));
+
+        //계쩡 정보 삭제
+        List<UserAccount> socialAccounts = loginUser.getSocialAccounts();
+        socialAccounts.forEach(acc -> {
+            acc.softDelete(userId);
+        });
+
+        //회원 정보 삭제
+        loginUser.softDelete(userId);
+
+        //디바이스 토큰 삭제
+        List<DeviceTokenEntity> allToken = deviceTokenRepository.findAllByUserId(userId);
+        allToken.forEach(at -> {
+            at.softDelete(userId);
+        });
+
     }
 
     /**

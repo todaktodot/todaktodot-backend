@@ -4,6 +4,7 @@ import com.todaktodot.TDTD.domain.login.dto.request.LoginRequestDTO;
 import com.todaktodot.TDTD.domain.login.dto.request.TokenReissueRequestDTO;
 import com.todaktodot.TDTD.domain.login.dto.response.LoginResponseDTO;
 import com.todaktodot.TDTD.domain.login.dto.response.TokenReissueResponseDTO;
+import com.todaktodot.TDTD.domain.login.respository.entity.UserPrincipal;
 import com.todaktodot.TDTD.domain.login.service.LoginService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,7 +13,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/login")
+@RequestMapping("/api")
 @Tag(name="로그인", description = "로그인 API")
 public class LoginController {
 
@@ -32,7 +35,7 @@ public class LoginController {
     @Operation(description = "소셜 로그인 API")
     @ApiResponse(responseCode = "200", description = "로그인 성공",
             content = @Content(schema = @Schema(implementation = LoginRequestDTO.class)))
-    @PostMapping
+    @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
         LoginResponseDTO response = loginService.login(loginRequestDTO);
         return ResponseEntity.ok(response);
@@ -48,4 +51,17 @@ public class LoginController {
         TokenReissueResponseDTO response = loginService.reissue(tokenReissueRequestDTO);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * 로그아웃
+     */
+    @Operation(description = "로그아웃 API")
+    @ApiResponse(responseCode = "200", description = "로그아웃 성공")
+    @PostMapping("/logout")
+    public ResponseEntity<HttpStatus> login(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        Long userId = userPrincipal.getId();
+        loginService.logout(userId);
+        return new  ResponseEntity(HttpStatus.OK);
+    }
+
 }

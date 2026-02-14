@@ -107,4 +107,12 @@ public class User {
         this.termYN = termYN.equals("Y") ? "Y" : "N";
         this.updrId = userId;
     }
+
+    /**
+     * 회원탈퇴
+     */
+    public void softDelete(long userId) {
+        this.delYn = "Y";
+        this.updrId = userId;
+    }
 }
