@@ -16,24 +16,28 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class GoogleClient {
-    //임시
-//    private static final String IOS_GOOGLE_CLIENT_ID = "1034525705170-kmpucuffctgnj0rmre9kflolqj8b00fa.apps.googleusercontent.com";
-//    private static final String AOS_GOOGLE_CLIENT_ID = "1034525705170-glmg4nqee474ru5br4iam1qac8i26r4i.apps.googleusercontent.com";
-//    private static final String WEB_GOOGLE_CLIENT_ID = "1034525705170-v3nmvs14sgm5pg106meajjken9ah5vvn.apps.googleusercontent.com";
 
-    @Value("${oauth.google.ios-client-id}")
-    private String iosClientId;
+    @Value("${oauth.google.ios-client-id-dev}")
+    private String iosClientIdDev;
 
-    @Value("${oauth.google.aos-client-id}")
-    private String aosClientId;    
+    @Value("${oauth.google.ios-client-id-prod}")
+    private String iosClientIdProd;
+
+    @Value("${oauth.google.aos-client-id-dev}")
+    private String aosClientIdDev;
+
+    @Value("${oauth.google.aos-client-id-prod}")
+    private String aosClientIdProd;
 
     @Value("${oauth.google.web-client-id}")
     private String webClientId;
 
     public SocialUserResponse getUserInfo(String idTokenStr) {
         List<String> clientIds = new ArrayList<>();
-        clientIds.add(iosClientId);
-        clientIds.add(aosClientId);
+        clientIds.add(iosClientIdDev);
+        clientIds.add(iosClientIdProd);
+        clientIds.add(aosClientIdDev);
+        clientIds.add(aosClientIdProd);
         clientIds.add(webClientId);
 
         try {
