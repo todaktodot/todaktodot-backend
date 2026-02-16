@@ -90,7 +90,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("api/login", "/login/test*", "api/reissue").permitAll()
+                        .requestMatchers("api/login", "/login/test*", "api/reissue", "api/guide").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/image/**").permitAll()
                         .anyRequest().authenticated()
                 )
