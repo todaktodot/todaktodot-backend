@@ -2,10 +2,7 @@ package com.todaktodot.TDTD.domain.aireport.repository.entity;
 
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -13,6 +10,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DiffrentAnswer {
 
@@ -26,8 +25,11 @@ public class DiffrentAnswer {
     @Column(name = "ANSWER_ID_2")
     private Long answerId2;
 
-    @Column(name = "CARD_ID", nullable = false)
-    private Long cardId;
+    @Column(name = "COUPLE_CARD_ID", nullable = false)
+    private Long coupleCardId;
+//
+//    @Column(name = "CARD_ID", nullable = false)
+//    private Long cardId;
 
     @Column(name = "REG_DT", nullable = false, updatable = false)
     @CreationTimestamp
@@ -44,7 +46,7 @@ public class DiffrentAnswer {
     private Long updrId;
 
     @Column(name = "DEL_YN", nullable = false, length = 1)
-    //@Builder.Default
+    @Builder.Default
     private String delYn = "N";
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -52,10 +54,10 @@ public class DiffrentAnswer {
     private Report report;
 
     @Builder
-    public DiffrentAnswer(Long answerId1, Long answerId2, Long cardId, Long regrId, Long updrId, String delYn) {
+    public DiffrentAnswer(Long answerId1, Long answerId2, Long coupleCardId, Long regrId, Long updrId, String delYn) {
         this.answerId1 = answerId1;
         this.answerId2 = answerId2;
-        this.cardId = cardId;
+        this.coupleCardId = coupleCardId;
         this.regrId = regrId;
         this.updrId = updrId;
         this.delYn = delYn;

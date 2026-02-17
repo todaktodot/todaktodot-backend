@@ -78,8 +78,10 @@ public class ReportServiceImpl implements ReportService {
             ReportDetailResponseDTO reportDetailResponse = getReportInfo(report, coupleInfo);
 
             //인사이트 조회
-            String insight = getInsight(report.getInsightId());
-            reportDetailResponse.setInsight(insight);
+            Long insightId = report.getInsightId();
+            String insightContent = getInsight(insightId);
+            ReportDetailResponseDTO.InsightInfo insightInfo = ReportDetailResponseDTO.InsightInfo.from(insightId, insightContent);
+            reportDetailResponse.setInsightInfo(insightInfo);
 
             return new ReportResponseWrapDTO(createStatusResponse, reportDetailResponse);
         }
@@ -101,8 +103,10 @@ public class ReportServiceImpl implements ReportService {
                 reportDetailResponse = getReportInfo(createdReport, coupleInfo);
 
                 //인사이트 조회
-                String insight = getInsight(createdReport.getInsightId());
-                reportDetailResponse.setInsight(insight);
+                Long insightId = createdReport.getInsightId();
+                String insightContent = getInsight(insightId);
+                ReportDetailResponseDTO.InsightInfo insightInfo = ReportDetailResponseDTO.InsightInfo.from(insightId, insightContent);
+                reportDetailResponse.setInsightInfo(insightInfo);
             }
 
             //생성된 AI리포트 상세 정보
@@ -158,10 +162,12 @@ public class ReportServiceImpl implements ReportService {
         }
 
         //인사이트 조회
-        String insight = getInsight(findReport.getInsightId());
+        Long insightId = findReport.getInsightId();
+        String insightContent = getInsight(insightId);
 
         ReportDetailResponseDTO reportInfo = getReportInfo(findReport, coupleInfo.get());
-        reportInfo.setInsight(insight);
+        ReportDetailResponseDTO.InsightInfo insightInfo = ReportDetailResponseDTO.InsightInfo.from(insightId, insightContent);
+        reportInfo.setInsightInfo(insightInfo);
         return reportInfo;
     }
 
@@ -246,7 +252,7 @@ public class ReportServiceImpl implements ReportService {
             //Similar Answer Entity 생성
             if(ea.answerContent1().equals(ea.answerContent2())) {
                 similarAnswerList.add(SimilarAnswer.builder()
-                        .cardId(ea.cardId())
+                        .coupleCardId(ea.coupleCardId())
                         .answerId1(ea.answerId1())
                         .answerId2(ea.answerId2())
                         .delYn("N")
@@ -257,7 +263,7 @@ public class ReportServiceImpl implements ReportService {
             else {
                 //Diffrent Answer Entity 생성
                 diffrentAnswerList.add(DiffrentAnswer.builder()
-                        .cardId(ea.cardId())
+                        .coupleCardId(ea.coupleCardId())
                         .answerId1(ea.answerId1())
                         .answerId2(ea.answerId2())
                         .delYn("N")
@@ -305,14 +311,14 @@ public class ReportServiceImpl implements ReportService {
         //비슷했던 주제 목록
         List<ReportDetailResponseDTO.SimpleDailycardInfoDTO> similarAnswerInfoList = report.getSimilarAnswerList().stream()
                 .map(answer -> {
-                    CoupleDailyCardEntity coupleDailyCard = coupleDailyCardRepository.findByCardIdAndCoupleId(answer.getCardId(), coupleEntity.getCoupleId()).orElseThrow(() -> new IllegalArgumentException("커플에게 배정되지 않은 데일리카드입니다."));
+                    CoupleDailyCardEntity coupleDailyCard = coupleDailyCardRepository.findByCoupleIdAndCoupleCardIdAndDelYn(coupleEntity.getCoupleId(), answer.getCoupleCardId(), "N").orElseThrow(() -> new IllegalArgumentException("커플에게 배정되지 않은 데일리카드입니다."));
                     DailyCardEntity dailyCard = coupleDailyCard.getDailyCard();
 
                     return ReportDetailResponseDTO.SimpleDailycardInfoDTO.builder()
-                            .answerId1(answer.getAnswerId1())
-                            .answerId2(answer.getAnswerId2())
-                            .cardId(answer.getCardId())
-                            .answerDt(coupleDailyCard.getIssuedDate())
+//                            .answerId1(answer.getAnswerId1())
+//                            .answerId2(answer.getAnswerId2())
+                            .coupleCardId(answer.getCoupleCardId())
+                            .issuedDt(coupleDailyCard.getIssuedDate())
                             .mode(dailyCard.getMode().getDisplayName())
                             .subject(dailyCard.getSubject().getDisplayName())
                             .build();
@@ -321,14 +327,14 @@ public class ReportServiceImpl implements ReportService {
         //대화가 더 필요한 주제 목록
         List<ReportDetailResponseDTO.SimpleDailycardInfoDTO> diffrentAnswerInfoList = report.getDifferentAnswerList().stream()
                 .map(answer -> {
-                    CoupleDailyCardEntity coupleDailyCard = coupleDailyCardRepository.findByCardIdAndCoupleId(answer.getCardId(), coupleEntity.getCoupleId()).orElseThrow(() -> new IllegalArgumentException("커플에게 배정되지 않은 데일리카드입니다."));
+                    CoupleDailyCardEntity coupleDailyCard = coupleDailyCardRepository.findByCoupleIdAndCoupleCardIdAndDelYn(coupleEntity.getCoupleId(), answer.getCoupleCardId(), "N").orElseThrow(() -> new IllegalArgumentException("커플에게 배정되지 않은 데일리카드입니다."));
                     DailyCardEntity dailyCard = coupleDailyCard.getDailyCard();
 
                     return ReportDetailResponseDTO.SimpleDailycardInfoDTO.builder()
-                            .answerId1(answer.getAnswerId1())
-                            .answerId2(answer.getAnswerId2())
-                            .cardId(answer.getCardId())
-                            .answerDt(coupleDailyCard.getIssuedDate())
+//                            .answerId1(answer.getAnswerId1())
+//                            .answerId2(answer.getAnswerId2())
+                            .coupleCardId(answer.getCoupleCardId())
+                            .issuedDt(coupleDailyCard.getIssuedDate())
                             .mode(dailyCard.getMode().getDisplayName())
                             .subject(dailyCard.getSubject().getDisplayName())
                             .build();

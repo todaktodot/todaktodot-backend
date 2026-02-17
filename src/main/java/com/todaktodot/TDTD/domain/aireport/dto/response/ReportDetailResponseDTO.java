@@ -36,7 +36,7 @@ public class ReportDetailResponseDTO {
     @Schema(description = "대화 누적 자산", example = "127")
     private String totalDailycardAnswerCnt;
     @Schema(description = "AI인사이트")
-    private String insight;
+    private InsightInfo insightInfo;
     @Schema(description = "비슷했던 주제 목록")
     private List<SimpleDailycardInfoDTO> similarSubjectList;
     @Schema(description = "대화가 더 필요한 주제 목록")
@@ -46,18 +46,28 @@ public class ReportDetailResponseDTO {
     @Builder
     @Getter
     static public class SimpleDailycardInfoDTO {
-        @Schema(description = "첫번째 응답ID")
-        private Long answerId1;
-        @Schema(description = "두번째 응답ID")
-        private Long answerId2;
-        @Schema(description = "데일리카드 ID")
-        private Long cardId;
+//        @Schema(description = "첫번째 응답ID")
+//        private Long answerId1;
+//        @Schema(description = "두번째 응답ID")
+//        private Long answerId2;
+        @Schema(description = "커플 데일리카드 ID")
+        private Long coupleCardId;
         @Schema(description = "응답 날짜 (발급날짜)")
-        private LocalDate answerDt;
+        private LocalDate issuedDt;
         @Schema(description = "데일리카드 모드", example = "위스키모드")
         private String mode;
         @Schema(description = "데일리카드 주제", example = "경제관")
         private String subject;
     }
 
+    @Getter
+    @AllArgsConstructor
+    public static class InsightInfo {
+        private Long insightId;
+        private String content;
+
+        public static InsightInfo from(Long insightId, String content) {
+            return new InsightInfo(insightId, content);
+        }
+    }
 }

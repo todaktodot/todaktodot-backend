@@ -44,7 +44,7 @@ public interface DailyCardUserAnswerRepository extends JpaRepository<DailyCardUs
                                               @Param("delYn") String delYn);
 
     //한주 동안 응답한 데일리카드 중 주제에 따른 카드 수 및 응답
-    @Query("SELECT dc.cardId AS cardId, d1.answerId AS answerId1, d2.answerId AS answerId2, d1.answerContent AS answerContent1, d2.answerContent AS answerContent2 FROM DailyCardUserAnswerEntity d1 " +
+    @Query("SELECT dc.cardId AS cardId, d1.coupleCardId AS coupleCardId, d1.answerId AS answerId1, d2.answerId AS answerId2, d1.answerContent AS answerContent1, d2.answerContent AS answerContent2 FROM DailyCardUserAnswerEntity d1 " +
             "JOIN DailyCardUserAnswerEntity d2 ON d1.cardId = d2.cardId " +
             "AND d1.userId = :userId1 AND d2.userId = :userId2  AND d1.questionNo = d2.questionNo " +
             "JOIN DailyCardEntity dc ON d1.cardId = dc.cardId " +
