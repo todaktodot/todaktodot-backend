@@ -44,7 +44,7 @@ public class ReportServiceImpl implements ReportService {
      */
     @Override
     @Transactional
-    public ReportResponseWrapDTO checkCreatable(Long userId) {
+    public ReportCreateStatusResponseDTO checkCreatable(Long userId) {
         //커플 찾기 -> 커플이 아니면?
         CoupleEntity coupleInfo = coupleRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("[userId : " + userId+ " ] 에 해당하는 커플 정보가 없습니다."));
@@ -67,23 +67,15 @@ public class ReportServiceImpl implements ReportService {
         Optional<Report> findReport = reportRepository.findByCoupleEntityAndStrtDtAndEndDtAndDelYn(coupleInfo, startDT.toLocalDate(), endDT.toLocalDate(), "N");
         //해당 주차에 이미 생성된게 있는 경우 -> 조회 후 반환
         if (findReport.isPresent()) {
+            Report mappingReport = findReport.get();
             //생성 가능 여부 및 초기 진입 여부 정보
             ReportCreateStatusResponseDTO createStatusResponse = ReportCreateStatusResponseDTO.builder()
                     .isCreatable(false)
                     .isInitalize(false)
+                    .reportId(mappingReport.getId())
                     .build();
 
-            //이미 생성된 AI 리포트 상세 정보
-            Report report = findReport.get();
-            ReportDetailResponseDTO reportDetailResponse = getReportInfo(report, coupleInfo);
-
-            //인사이트 조회
-            Long insightId = report.getInsightId();
-            String insightContent = getInsight(insightId);
-            ReportDetailResponseDTO.InsightInfo insightInfo = ReportDetailResponseDTO.InsightInfo.from(insightId, insightContent);
-            reportDetailResponse.setInsightInfo(insightInfo);
-
-            return new ReportResponseWrapDTO(createStatusResponse, reportDetailResponse);
+            return createStatusResponse;
         }
         //생성된게 없는 경우
         else {
@@ -94,23 +86,15 @@ public class ReportServiceImpl implements ReportService {
                     .isInitalize(true)
                     .build();
 
-            // AI리포트 생성 불가능한 경우
-            ReportDetailResponseDTO reportDetailResponse = null;
             // AI리포트 생성 가능한 경우
             if (isCreatable) {
-                //신규 AI 생성
+                //신규 리포트 생성
                 Report createdReport = createReport(startDT, endDT, userId1, userId2, coupleInfo);
-                reportDetailResponse = getReportInfo(createdReport, coupleInfo);
-
-                //인사이트 조회
-                Long insightId = createdReport.getInsightId();
-                String insightContent = getInsight(insightId);
-                ReportDetailResponseDTO.InsightInfo insightInfo = ReportDetailResponseDTO.InsightInfo.from(insightId, insightContent);
-                reportDetailResponse.setInsightInfo(insightInfo);
+                createStatusResponse.setReportId(createdReport.getId());
             }
 
             //생성된 AI리포트 상세 정보
-            return new ReportResponseWrapDTO(createStatusResponse, reportDetailResponse);
+            return createStatusResponse;
         }
     }
 
@@ -163,7 +147,7 @@ public class ReportServiceImpl implements ReportService {
 
         //인사이트 조회
         Long insightId = findReport.getInsightId();
-        String insightContent = getInsight(insightId);
+        String insightContent = formatInsight(insightId);
 
         ReportDetailResponseDTO reportInfo = getReportInfo(findReport, coupleInfo.get());
         ReportDetailResponseDTO.InsightInfo insightInfo = ReportDetailResponseDTO.InsightInfo.from(insightId, insightContent);
@@ -174,8 +158,7 @@ public class ReportServiceImpl implements ReportService {
     /**
      * AI 리포트 생성
      */
-    @Transactional
-    public Report createReport(LocalDateTime startDt, LocalDateTime endDt, Long userId1, Long userId2, CoupleEntity coupleEntity) {
+    private Report createReport(LocalDateTime startDt, LocalDateTime endDt, Long userId1, Long userId2, CoupleEntity coupleEntity) {
         //주간 일자
         //모두 응답한 데일리 카드 중 경제관인 것
         List<SyncAnswerDTO> economyCardAnswerList = dailyCardUserAnswerRepository.findDailyCardAnswerBySubject(CardSubject.ECONOMY, userId1, userId2,QuestionType.MULTIPLE_CHOICE, startDt, endDt, "N");
@@ -278,7 +261,8 @@ public class ReportServiceImpl implements ReportService {
         LocalDate startDTOfInsight = startDt.toLocalDate();
         //종료: 저번 주 월요일 00:00
         LocalDate endDTOfInsight= endDt.toLocalDate();
-        Long insightId = mappingInsight(coupleEntity, startDTOfInsight, endDTOfInsight);
+        Insight insight = insightRepository.findByCoupleIdAndStartDtAndEndDtAndDelYn(coupleEntity.getCoupleId(), startDTOfInsight, endDTOfInsight, "N")
+                .orElse(null);
 
         //리포트 생성
         Report newReport = Report.builder()
@@ -288,7 +272,7 @@ public class ReportServiceImpl implements ReportService {
                 .loveSyncRate(loveSyncRate)
                 .answerRate(participationRate)
                 .totalAnswerCnt(String.valueOf(bothAnswerCnt))
-                .insightId(insightId)
+                .insightId(insight == null ? null : insight.getId())
                 .strtDt(startDt.toLocalDate())
                 .endDt(endDt.toLocalDate())
                 .regrId(userId1)
@@ -307,7 +291,7 @@ public class ReportServiceImpl implements ReportService {
     /**
      * AI 리포트 응답 DTO 생성
      */
-    public ReportDetailResponseDTO getReportInfo(Report report, CoupleEntity coupleEntity) {
+    private ReportDetailResponseDTO getReportInfo(Report report, CoupleEntity coupleEntity) {
         //비슷했던 주제 목록
         List<ReportDetailResponseDTO.SimpleDailycardInfoDTO> similarAnswerInfoList = report.getSimilarAnswerList().stream()
                 .map(answer -> {
@@ -315,8 +299,6 @@ public class ReportServiceImpl implements ReportService {
                     DailyCardEntity dailyCard = coupleDailyCard.getDailyCard();
 
                     return ReportDetailResponseDTO.SimpleDailycardInfoDTO.builder()
-//                            .answerId1(answer.getAnswerId1())
-//                            .answerId2(answer.getAnswerId2())
                             .coupleCardId(answer.getCoupleCardId())
                             .issuedDt(coupleDailyCard.getIssuedDate())
                             .mode(dailyCard.getMode().getDisplayName())
@@ -331,8 +313,6 @@ public class ReportServiceImpl implements ReportService {
                     DailyCardEntity dailyCard = coupleDailyCard.getDailyCard();
 
                     return ReportDetailResponseDTO.SimpleDailycardInfoDTO.builder()
-//                            .answerId1(answer.getAnswerId1())
-//                            .answerId2(answer.getAnswerId2())
                             .coupleCardId(answer.getCoupleCardId())
                             .issuedDt(coupleDailyCard.getIssuedDate())
                             .mode(dailyCard.getMode().getDisplayName())
@@ -355,14 +335,10 @@ public class ReportServiceImpl implements ReportService {
                 .build();
     }
 
-    private Long mappingInsight(CoupleEntity couple, LocalDate startDt, LocalDate endDt) {
-        Insight insight = insightRepository.findByCoupleIdAndStartDtAndEndDtAndDelYn(couple.getCoupleId(), startDt, endDt, "N")
-                .orElse(null);
-
-        return insight == null ? null : insight.getId();
-    }
-
-    private String getInsight(Long insightId) {
+    /**
+     * 인사이트 내용 조립
+     */
+    private String formatInsight(Long insightId) {
         if (insightId == null) {
             return null;
         }

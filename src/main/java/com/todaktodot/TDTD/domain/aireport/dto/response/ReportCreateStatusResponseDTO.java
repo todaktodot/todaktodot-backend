@@ -19,4 +19,7 @@ public class ReportCreateStatusResponseDTO {
 
     @Schema(description = "현재 주 AI 리포트 최초 진입 여부 - True: 리포트 최초 진입, False: 최초 진입 아님", example = "false")
     private boolean isInitalize;
+
+    @Schema(description = "AI 리포트ID")
+    private long reportId;
 }
