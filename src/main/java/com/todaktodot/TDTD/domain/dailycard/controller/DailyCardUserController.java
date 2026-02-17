@@ -125,4 +125,16 @@ public class DailyCardUserController {
         HistoryDetailResponseDTO response = dailyCardService.getHistoryDetailCards(userId, startDate, endDate);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "히스토리 카드 상세 단건 조회",
+               description = "배정된 커플 데일리카드ID로 상세를 조회합니다. ")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/history/detail")
+    public ResponseEntity<HistoryDetailResponseDTO> getHistoryDetailCard(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(name = "coupleCardId") Long coupleCardId) {
+        Long userId = userPrincipal.getId();
+        HistoryDetailResponseDTO response = dailyCardService.getHistoryDetailCard(userId, coupleCardId);
+        return ResponseEntity.ok(response);
+    }
 }

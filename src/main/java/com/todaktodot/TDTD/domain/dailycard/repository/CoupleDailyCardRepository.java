@@ -185,4 +185,46 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
            "ORDER BY c.regDt DESC, c.issuedDate DESC " +
            "LIMIT :limit")
     List<CoupleDailyCardEntity> findRecentAssignments(@Param("limit") int limit);
+
+    //데일리카드 + 응답 데이터 단건 조회
+    @Query(value = """
+        SELECT cdc.COUPLE_CARD_ID AS coupleCardId,
+               cdc.ISSUED_DATE AS issuedDate,
+               cdc.SELECTED_YN AS selectedYn,
+               dc.CARD_ID AS cardId,
+               dc.CARD_TITLE AS cardTitle,
+               dc.MODE AS mode,
+               dc.SUBJECT AS subject,
+               dc.TYPE AS type,
+               dc.SITUATION AS situation,
+               dq.QUESTION_NO AS questionNo,
+               dq.QUESTION_TYPE AS questionType,
+               dq.QUESTION_CNTS AS questionCnts,
+               do2.OPTION_NO AS optionNo,
+               do2.OPTION_CNTS AS optionCnts,
+               a1.ANSWER_CONTENT AS user1Answer,
+               a2.ANSWER_CONTENT AS user2Answer
+        FROM couple_daily_card cdc
+            JOIN daily_card dc ON dc.CARD_ID = cdc.CARD_ID AND dc.DEL_YN = 'N'
+            JOIN daily_card_question dq ON dq.CARD_ID = dc.CARD_ID AND dq.DEL_YN = 'N'
+            LEFT JOIN daily_card_option do2
+                ON do2.CARD_ID = dq.CARD_ID AND do2.QUESTION_NO = dq.QUESTION_NO AND do2.DEL_YN = 'N'
+            LEFT JOIN daily_card_user_answer a1
+                ON a1.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
+               AND a1.QUESTION_NO = dq.QUESTION_NO
+               AND a1.USER_ID = :userId1
+               AND a1.DEL_YN = 'N'
+            LEFT JOIN daily_card_user_answer a2
+                ON a2.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
+               AND a2.QUESTION_NO = dq.QUESTION_NO
+               AND a2.USER_ID = :userId2
+               AND :userId2 IS NOT NULL
+               AND a2.DEL_YN = 'N'
+        WHERE cdc.couple_card_id  = :coupleCardId
+          AND cdc.DEL_YN = 'N'
+        ORDER BY dq.QUESTION_NO, do2.OPTION_NO
+        """, nativeQuery = true)
+    List<HistoryDetailProjection> findByCoupleCardId(@Param("coupleCardId") Long coupleCardId,
+                                                         @Param("userId1") Long userId1,
+                                                         @Param("userId2") Long userId2);
 }
