@@ -1073,6 +1073,118 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .build();
     }
 
+    /**
+     * 히스토리 데일리카드 단건 조회
+     */
+    @Override
+    public HistoryDetailResponseDTO getHistoryDetailCard(Long userId, Long coupleCardId) {
+        // 1. 커플 조회 (coupleId, userId1, userId2)
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        if (couple.getUserId2() == null) {
+            throw new IllegalStateException("커플이 아닙니다.");
+        }
+
+        List<HistoryDetailProjection> historyData = coupleDailyCardRepository.findByCoupleCardId(
+                            coupleCardId, couple.getUserId1(), couple.getUserId2());
+
+        // 2. 피드백 배치 조회
+        Map<Long, HistoryDetailResponseDTO.FeedbackItem> feedbackMap = new LinkedHashMap<>();
+        List<Long> selectedCoupleCardIds = new ArrayList<>();
+        selectedCoupleCardIds.add(coupleCardId);
+
+        List<CoupleDailyCardFeedbackEntity> feedbackMappings =
+                coupleDailyCardFeedbackRepository.findAllByCoupleCardIdInAndDelYn(selectedCoupleCardIds, "N");
+
+        if (!feedbackMappings.isEmpty()) {
+            List<Long> feedbackIds = feedbackMappings.stream()
+                    .map(CoupleDailyCardFeedbackEntity::getFeedbackId)
+                    .distinct()
+                    .toList();
+            Map<Long, DailyCardFeedbackEntity> feedbackEntities = new LinkedHashMap<>();
+            dailyCardFeedbackRepository.findAllById(feedbackIds)
+                    .forEach(fb -> feedbackEntities.put(fb.getFeedbackId(), fb));
+
+            for (CoupleDailyCardFeedbackEntity mapping : feedbackMappings) {
+                DailyCardFeedbackEntity fb = feedbackEntities.get(mapping.getFeedbackId());
+                if (fb != null && "N".equals(fb.getDelYn())) {
+                    feedbackMap.put(mapping.getCoupleCardId(),
+                            HistoryDetailResponseDTO.FeedbackItem.builder()
+                                    .feedbackId(fb.getFeedbackId())
+                                    .summary(fb.getSummary())
+                                    .matchPoints(fb.getMatchPoints())
+                                    .differences(fb.getDifferences())
+                                    .conversationStarter(fb.getConversationStarter())
+                                    .build());
+                }
+            }
+        }
+
+        // 3. 각 일자별로 DTO 조립
+        List<HistoryDetailResponseDTO.HistoryDetailCardItem> historyCards = new ArrayList<>();
+
+        // 첫번째 행 조회
+        HistoryDetailProjection first = historyData.get(0);
+
+        // questionNo로 그룹핑
+        LinkedHashMap<Integer, List<HistoryDetailProjection>> questionGroups = new LinkedHashMap<>();
+        for (HistoryDetailProjection row : historyData) {
+            questionGroups.computeIfAbsent(row.getQuestionNo(), k -> new ArrayList<>()).add(row);
+        }
+
+        List<HistoryDetailResponseDTO.QuestionItem> questions = new ArrayList<>();
+
+        for (var qEntry : questionGroups.entrySet()) {
+            List<HistoryDetailProjection> qRows = qEntry.getValue();
+            HistoryDetailProjection firstRow = qRows.getFirst();
+
+            // 옵션 수집
+            List<HistoryDetailResponseDTO.OptionItem> options = new ArrayList<>();
+            for (HistoryDetailProjection qRow : qRows) {
+                if (qRow.getOptionNo() != null) {
+                    options.add(HistoryDetailResponseDTO.OptionItem.builder()
+                            .optionNo(qRow.getOptionNo())
+                            .optionContent(qRow.getOptionCnts())
+                            .build());
+                }
+            }
+
+            questions.add(HistoryDetailResponseDTO.QuestionItem.builder()
+                    .questionNo(firstRow.getQuestionNo())
+                    .questionType(firstRow.getQuestionType())
+                    .questionContent(firstRow.getQuestionCnts())
+                    .answerRequired("Y".equals(firstRow.getAnswerReqYn()))
+                    .options(options)
+                    .user1Answer(firstRow.getUser1Answer())
+                    .user2Answer(firstRow.getUser2Answer())
+                    .build());
+        }
+
+        historyCards.add(HistoryDetailResponseDTO.HistoryDetailCardItem.builder()
+                .issuedDate(first.getIssuedDate())
+                .mode(first.getMode())
+                .subject(first.getSubject())
+                .selected(true)
+                .coupleCardId(first.getCoupleCardId())
+                .cardId(first.getCardId())
+                .cardTitle(first.getCardTitle())
+                .type(first.getType())
+                .situation(first.getSituation())
+                .user1Answered(true)
+                .user2Answered(true)
+                .questions(questions)
+                .feedback(feedbackMap.get(first.getCoupleCardId()))
+                .build());
+
+
+        return HistoryDetailResponseDTO.builder()
+                .user1Id(couple.getUserId1())
+                .user2Id(couple.getUserId2())
+                .historyCards(historyCards)
+                .build();
+    }
+
     private CardMode advanceMode(CardMode startMode, int offset) {
         CardMode[] modes = CardMode.values();
         int startIndex = startMode.ordinal();

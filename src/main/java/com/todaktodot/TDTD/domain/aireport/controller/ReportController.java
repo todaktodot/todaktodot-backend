@@ -1,5 +1,6 @@
 package com.todaktodot.TDTD.domain.aireport.controller;
 
+import com.todaktodot.TDTD.domain.aireport.dto.response.ReportCreateStatusResponseDTO;
 import com.todaktodot.TDTD.domain.aireport.dto.response.ReportDetailResponseDTO;
 import com.todaktodot.TDTD.domain.aireport.dto.response.ReportListResponseDTO;
 import com.todaktodot.TDTD.domain.aireport.dto.response.ReportResponseWrapDTO;
@@ -30,10 +31,10 @@ public class ReportController {
      */
     @Operation(description = "지난 한주 AI 리포트 생성 여부 조회 API")
     @ApiResponse(responseCode = "200", description = "지난 한주 AI 리포트 생성 여부 조회 성공",
-            content = @Content(schema = @Schema(implementation = ReportResponseWrapDTO.class)))
-    @GetMapping
-    public ResponseEntity<ReportResponseWrapDTO> checkCreatable(@AuthenticationPrincipal UserPrincipal userPrincipal) {
-        ReportResponseWrapDTO result =  reportService.checkCreatable(userPrincipal.getId());
+            content = @Content(schema = @Schema(implementation = ReportCreateStatusResponseDTO.class)))
+    @PostMapping
+    public ResponseEntity<ReportCreateStatusResponseDTO> checkCreatable(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        ReportCreateStatusResponseDTO result =  reportService.checkCreatable(userPrincipal.getId());
         return ResponseEntity.ok(result);
     }
 

@@ -131,4 +131,6 @@ public interface DailyCardService {
      * @return 히스토리 카드 상세 리스트
      */
     HistoryDetailResponseDTO getHistoryDetailCards(Long userId, LocalDate startDate, LocalDate endDate);
+
+    HistoryDetailResponseDTO getHistoryDetailCard(Long userId, Long coupleCardId);
 }
