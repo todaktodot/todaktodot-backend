@@ -100,287 +100,300 @@
 
         <div class="card">
             <div class="card-header">
-                <h3>커플 데일리카드 이력 (<span th:text="${#lists.size(couple.dailyCards)}">0</span>개)</h3>
-            </div>
-            <div class="card-body">
-                <div th:if="${#lists.isEmpty(couple.dailyCards)}" class="empty-state">
-                    <div class="icon">CARD</div>
-                    <h3>배정된 데일리카드가 없습니다</h3>
+                <h3>커플 이력 관리</h3>
+
+                <!-- 탭 버튼 -->
+                <div class="tab-menu">
+                    <button type="button"
+                            class="tab-btn active"
+                            onclick="showTab('dailyTab', this)">
+                        데일리카드
+                    </button>
+
+                    <button type="button"
+                            class="tab-btn"
+                            onclick="showTab('reportTab', this)">
+                        AI리포트
+                    </button>
                 </div>
+            </div>
 
-                <div th:unless="${#lists.isEmpty(couple.dailyCards)}">
-                    <div th:each="card : ${couple.dailyCards}" class="question-item" style="border-left-color: #2563eb;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <div>
-                                <button type="button" class="btn btn-secondary btn-sm"
-                                        th:attr="data-target=${'card-detail-' + card.coupleCardId}"
-                                        onclick="toggleCardDetail(this)"
-                                        style="margin-right: 8px;">
-                                    펼치기
-                                </button>
-                                <strong th:text="${#temporals.format(card.issuedDate, 'yyyy-MM-dd')}">2024-01-01</strong>
-                                <span style="margin-left: 8px; color: #7f8c8d;">카드 ID:</span>
-                                <span th:text="${card.cardId}">1</span>
-                                <span style="margin-left: 8px; color: #7f8c8d;">커플 카드 ID:</span>
-                                <span th:text="${card.coupleCardId}">1</span>
+            <div class="card-body">
+                <!-- 데일리 카드 탭 -->
+                <div id="dailyTab" class="tab-content active">
+                    <div th:if="${#lists.isEmpty(couple.dailyCards)}" class="empty-state">
+                        <div class="icon">CARD</div>
+                        <h3>배정된 데일리카드가 없습니다</h3>
+                    </div>
+                    <div th:unless="${#lists.isEmpty(couple.dailyCards)}">
+                        <div th:each="card : ${couple.dailyCards}" class="question-item" style="border-left-color: #2563eb;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div>
+                                    <button type="button" class="btn btn-secondary btn-sm"
+                                            th:attr="data-target=${'card-detail-' + card.coupleCardId}"
+                                            onclick="toggleCardDetail(this)"
+                                            style="margin-right: 8px;">
+                                        펼치기
+                                    </button>
+                                    <strong th:text="${#temporals.format(card.issuedDate, 'yyyy-MM-dd')}">2024-01-01</strong>
+                                    <span style="margin-left: 8px; color: #7f8c8d;">카드 ID:</span>
+                                    <span th:text="${card.cardId}">1</span>
+                                    <span style="margin-left: 8px; color: #7f8c8d;">커플 카드 ID:</span>
+                                    <span th:text="${card.coupleCardId}">1</span>
+                                </div>
+                                <div>
+                                    <span class="badge"
+                                          th:classappend="'badge-' + ${card.mode.name().toLowerCase()}"
+                                          th:text="${card.mode.displayName}">디저트</span>
+                                    <span class="badge"
+                                          th:classappend="'badge-' + ${card.subject.name().toLowerCase()}"
+                                          th:text="${card.subject.displayName}">연애관</span>
+                                    <span class="badge"
+                                          th:classappend="'badge-' + ${card.type.name().toLowerCase()}"
+                                          th:text="${card.type.displayName}">상황극</span>
+                                    <span class="badge"
+                                          th:classappend="${card.selectedYn == 'Y'} ? 'badge-active' : 'badge-inactive'"
+                                          th:text="${card.selectedYn == 'Y'} ? '선택됨' : '미선택'">선택됨</span>
+                                    <!-- AI 피드백 상태 배지 -->
+                                    <span th:if="${card.feedback != null}" class="badge" style="background: #10b981; color: white;">피드백 완료</span>
+                                    <span th:if="${card.bothAnswered && card.feedback == null}" class="badge" style="background: #f59e0b; color: white;">생성 가능</span>
+                                    <span th:if="${!card.bothAnswered}" class="badge badge-inactive">답변 대기</span>
+                                </div>
                             </div>
-                            <div>
-                                <span class="badge"
-                                      th:classappend="'badge-' + ${card.mode.name().toLowerCase()}"
-                                      th:text="${card.mode.displayName}">디저트</span>
-                                <span class="badge"
-                                      th:classappend="'badge-' + ${card.subject.name().toLowerCase()}"
-                                      th:text="${card.subject.displayName}">연애관</span>
-                                <span class="badge"
-                                      th:classappend="'badge-' + ${card.type.name().toLowerCase()}"
-                                      th:text="${card.type.displayName}">상황극</span>
-                                <span class="badge"
-                                      th:classappend="${card.selectedYn == 'Y'} ? 'badge-active' : 'badge-inactive'"
-                                      th:text="${card.selectedYn == 'Y'} ? '선택됨' : '미선택'">선택됨</span>
-                                <!-- AI 피드백 상태 배지 -->
-                                <span th:if="${card.feedback != null}" class="badge" style="background: #10b981; color: white;">피드백 완료</span>
-                                <span th:if="${card.bothAnswered && card.feedback == null}" class="badge" style="background: #f59e0b; color: white;">생성 가능</span>
-                                <span th:if="${!card.bothAnswered}" class="badge badge-inactive">답변 대기</span>
-                            </div>
-                        </div>
 
-                        <div th:id="${'card-detail-' + card.coupleCardId}" style="display: none;">
-                            <div style="background: #fff; padding: 12px 16px; border-radius: 8px; border: 1px solid #e1e8ed; margin-bottom: 16px;">
-                                <strong>카드 내용</strong>
-                                <p th:text="${card.cardTitle}" style="margin-top: 6px; white-space: pre-wrap;">카드 제목</p>
-                            </div>
+                            <div th:id="${'card-detail-' + card.coupleCardId}" style="display: none;">
+                                <div style="background: #fff; padding: 12px 16px; border-radius: 8px; border: 1px solid #e1e8ed; margin-bottom: 16px;">
+                                    <strong>카드 내용</strong>
+                                    <p th:text="${card.cardTitle}" style="margin-top: 6px; white-space: pre-wrap;">카드 제목</p>
+                                </div>
 
-                            <div th:each="question, iterStat : ${card.questions}" style="margin-bottom: 16px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <strong>질문 [[${iterStat.count}]]</strong>
-                                        <span class="badge" style="margin-left: 8px;"
-                                              th:classappend="${question.questionType.name() == 'MULTIPLE_CHOICE'} ? 'badge-roleplay' : 'badge-balance'"
-                                              th:text="${question.questionTypeDisplayName}">객관식</span>
+                                <div th:each="question, iterStat : ${card.questions}" style="margin-bottom: 16px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <strong>질문 [[${iterStat.count}]]</strong>
+                                            <span class="badge" style="margin-left: 8px;"
+                                                  th:classappend="${question.questionType.name() == 'MULTIPLE_CHOICE'} ? 'badge-roleplay' : 'badge-balance'"
+                                                  th:text="${question.questionTypeDisplayName}">객관식</span>
+                                        </div>
+                                    </div>
+                                    <p th:text="${question.questionCnts}" style="margin: 8px 0 12px 0;">질문 내용</p>
+
+                                    <div th:if="${!#lists.isEmpty(question.options)}" style="margin-bottom: 12px;">
+                                        <ul class="option-list">
+                                            <li th:each="option : ${question.options}" class="option-item">
+                                                <span class="option-number" th:text="${option.optionNo}">1</span>
+                                                <span th:text="${option.optionCnts}">선택지 내용</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>유저 1 답변</label>
+                                            <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                                 th:text="${question.user1Answer != null} ? ${question.user1Answer} : '-'">-</div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>유저 2 답변</label>
+                                            <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                                 th:text="${question.user2Answer != null} ? ${question.user2Answer} : '-'">-</div>
+                                        </div>
                                     </div>
                                 </div>
-                                <p th:text="${question.questionCnts}" style="margin: 8px 0 12px 0;">질문 내용</p>
 
-                                <div th:if="${!#lists.isEmpty(question.options)}" style="margin-bottom: 12px;">
-                                    <ul class="option-list">
-                                        <li th:each="option : ${question.options}" class="option-item">
-                                            <span class="option-number" th:text="${option.optionNo}">1</span>
-                                            <span th:text="${option.optionCnts}">선택지 내용</span>
-                                        </li>
-                                    </ul>
+                                <!-- AI 피드백 섹션 -->
+                                <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; border: 1px solid #bae6fd; margin-top: 16px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <strong style="color: #0369a1;">AI 피드백</strong>
+                                            <a th:href="@{/admin/feedback}" style="font-size: 0.8rem; color: #3498db;">현재 적용중인 프롬프트 보기 →</a>
+                                        </div>
+                                        <span th:if="${!card.bothAnswered}" class="badge badge-inactive">답변 대기중</span>
+                                    </div>
+
+                                    <!-- 케이스 1: 둘 다 답변 완료 + 피드백 미생성 -->
+                                    <div th:if="${card.bothAnswered && card.feedback == null}">
+                                        <p style="color: #7f8c8d; margin-bottom: 12px;">커플 두 명 모두 답변을 완료했습니다. AI 피드백을 생성할 수 있습니다.</p>
+                                        <button type="button" class="btn btn-primary"
+                                                th:attr="data-couple-id=${couple.coupleId},
+                                                         data-couple-card-id=${card.coupleCardId},
+                                                         data-card-id=${card.cardId},
+                                                         data-issued-date=${#temporals.format(card.issuedDate, 'yyyy-MM-dd')}"
+                                                onclick="generateFeedback(this)">
+                                            AI 피드백 생성
+                                        </button>
+                                    </div>
+
+                                    <!-- 케이스 2: 피드백 존재 -->
+                                    <div th:if="${card.feedback != null}">
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: 600; color: #374151;">요약</label>
+                                            <p th:text="${card.feedback.summary}" style="margin-top: 4px; white-space: pre-wrap;">요약 내용</p>
+                                        </div>
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: 600; color: #374151;">공통점</label>
+                                            <p th:text="${card.feedback.matchPoints}" style="margin-top: 4px; white-space: pre-wrap;">공통점 내용</p>
+                                        </div>
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: 600; color: #374151;">차이점</label>
+                                            <p th:text="${card.feedback.differences}" style="margin-top: 4px; white-space: pre-wrap;">차이점 내용</p>
+                                        </div>
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: 600; color: #374151;">대화 시작 질문</label>
+                                            <p th:text="${card.feedback.conversationStarter}" style="margin-top: 4px; white-space: pre-wrap;">대화 시작 질문</p>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <button type="button" class="btn btn-secondary"
+                                                    style="font-size: 0.8rem; padding: 4px 12px; background: #e74c3c; border-color: #e74c3c;"
+                                                    th:attr="data-couple-id=${couple.coupleId},
+                                                             data-couple-card-id=${card.coupleCardId}"
+                                                    onclick="deleteFeedback(this)">
+                                                피드백 삭제
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- 케이스 3: 둘 다 답변 안함 -->
+                                    <div th:if="${!card.bothAnswered && card.feedback == null}">
+                                        <p style="color: #7f8c8d;">커플 두 명 모두 답변을 완료해야 AI 피드백을 생성할 수 있습니다.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="reportTab" class="tab-content">
+                    <div th:if="${#lists.isEmpty(couple.weekReports)}" class="empty-state">
+                        <div class="icon">REPORT</div>
+                        <h3>생성된 AI리포트가 없습니다</h3>
+                    </div>
+
+                    <div th:unless="${#lists.isEmpty(couple.weekReports)}">
+                        <div th:each="report : ${couple.weekReports}" class="question-item" style="border-left-color: #2563eb;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div>
+                                    <button type="button" class="btn btn-secondary btn-sm"
+                                            th:attr="data-target=${'report-detail-' + report.reportId}"
+                                            onclick="toggleReportDetail(this)"
+                                            style="margin-right: 8px;">
+                                        펼치기
+                                    </button>
+                                    <strong th:text="${#temporals.format(report.startDt, 'yyyy-MM-dd')}">2024-01-01</strong>
+                                    <span style="margin-left: 8px; color: #7f8c8d;">~</span>
+                                    <strong th:text="${#temporals.format(report.endDt, 'yyyy-MM-dd')}">2024-01-08</strong>
+                                    <span style="margin-left: 8px; color: #7f8c8d;">리포트 ID:</span>
+                                    <span th:text="${report.reportId}">1</span>
+                                </div>
+                                <div>
+                                    <!-- AI 인사이트 상태 배지 -->
+                                    <span th:if="${report.insight != null}" class="badge" style="background: #10b981; color: white;">인사이트 완료</span>
+                                    <span th:if="${report.insight == null}" class="badge" style="background: #f59e0b; color: white;">생성 가능</span>
+                                </div>
+                            </div>
+
+                            <div th:id="${'report-detail-' + report.reportId}" style="display: none;">
+
+                                <!-- 리포트 상세 -->
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>생성 시작 일자</label>
+                                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                             th:text="${report.startDt != null} ? ${#temporals.format(report.startDt, 'yyyy-MM-dd')} : '-'">-</div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>생성 종료 일자</label>
+                                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                             th:text="${report.endDt != null} ? ${#temporals.format(report.endDt, 'yyyy-MM-dd')} : '-'">-</div>
+                                    </div>
                                 </div>
 
                                 <div class="form-row">
                                     <div class="form-group">
-                                        <label>유저 1 답변</label>
+                                        <label>전체 싱크로율(%)</label>
                                         <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
-                                             th:text="${question.user1Answer != null} ? ${question.user1Answer} : '-'">-</div>
+                                             th:text="${report.totalSyncRate != null} ? ${report.totalSyncRate} : '-'">-</div>
                                     </div>
                                     <div class="form-group">
-                                        <label>유저 2 답변</label>
+                                        <label>경제관 싱크로율(%)</label>
                                         <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
-                                             th:text="${question.user2Answer != null} ? ${question.user2Answer} : '-'">-</div>
+                                             th:text="${report.economySyncRate != null} ? ${report.economySyncRate} : '-'">-</div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>생활관 싱크로율(%)</label>
+                                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                             th:text="${report.lifeSyncRate != null} ? ${report.lifeSyncRate} : '-'">-</div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>연애관 싱크로율(%)</label>
+                                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                             th:text="${report.loveSyncRate != null} ? ${report.loveSyncRate} : '-'">-</div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- AI 피드백 섹션 -->
-                            <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; border: 1px solid #bae6fd; margin-top: 16px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                    <div style="display: flex; align-items: center; gap: 12px;">
-                                        <strong style="color: #0369a1;">AI 피드백</strong>
-                                        <a th:href="@{/admin/feedback}" style="font-size: 0.8rem; color: #3498db;">현재 적용중인 프롬프트 보기 →</a>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>대화 참여율(%)</label>
+                                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                             th:text="${report.answerRate != null} ? ${report.answerRate} : '-'">-</div>
                                     </div>
-                                    <span th:if="${!card.bothAnswered}" class="badge badge-inactive">답변 대기중</span>
+                                    <div class="form-group">
+                                        <label>대화 누적자산</label>
+                                        <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
+                                             th:text="${report.totalAnswerCnt != null} ? ${report.totalAnswerCnt} : '-'">-</div>
+                                    </div>
                                 </div>
 
-                                <!-- 케이스 1: 둘 다 답변 완료 + 피드백 미생성 -->
-                                <div th:if="${card.bothAnswered && card.feedback == null}">
-                                    <p style="color: #7f8c8d; margin-bottom: 12px;">커플 두 명 모두 답변을 완료했습니다. AI 피드백을 생성할 수 있습니다.</p>
-                                    <button type="button" class="btn btn-primary"
-                                            th:attr="data-couple-id=${couple.coupleId},
-                                                     data-couple-card-id=${card.coupleCardId},
-                                                     data-card-id=${card.cardId},
-                                                     data-issued-date=${#temporals.format(card.issuedDate, 'yyyy-MM-dd')}"
-                                            onclick="generateFeedback(this)">
-                                        AI 피드백 생성
-                                    </button>
-                                </div>
+                                <!-- AI 피드백 섹션 -->
+                                <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; border: 1px solid #bae6fd; margin-top: 16px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <strong style="color: #0369a1;">AI 인사이트</strong>
+                                            <a th:href="@{/admin/insight}" style="font-size: 0.8rem; color: #3498db;">현재 적용중인 프롬프트 보기 →</a>
+                                        </div>
+                                    </div>
 
-                                <!-- 케이스 2: 피드백 존재 -->
-                                <div th:if="${card.feedback != null}">
-                                    <div style="margin-bottom: 12px;">
-                                        <label style="font-weight: 600; color: #374151;">요약</label>
-                                        <p th:text="${card.feedback.summary}" style="margin-top: 4px; white-space: pre-wrap;">요약 내용</p>
-                                    </div>
-                                    <div style="margin-bottom: 12px;">
-                                        <label style="font-weight: 600; color: #374151;">공통점</label>
-                                        <p th:text="${card.feedback.matchPoints}" style="margin-top: 4px; white-space: pre-wrap;">공통점 내용</p>
-                                    </div>
-                                    <div style="margin-bottom: 12px;">
-                                        <label style="font-weight: 600; color: #374151;">차이점</label>
-                                        <p th:text="${card.feedback.differences}" style="margin-top: 4px; white-space: pre-wrap;">차이점 내용</p>
-                                    </div>
-                                    <div style="margin-bottom: 12px;">
-                                        <label style="font-weight: 600; color: #374151;">대화 시작 질문</label>
-                                        <p th:text="${card.feedback.conversationStarter}" style="margin-top: 4px; white-space: pre-wrap;">대화 시작 질문</p>
-                                    </div>
-                                    <div style="text-align: right;">
-                                        <button type="button" class="btn btn-secondary"
-                                                style="font-size: 0.8rem; padding: 4px 12px; background: #e74c3c; border-color: #e74c3c;"
+                                    <!-- 케이스 1: 피드백 미생성 -->
+                                    <div th:if="${report.insight == null}">
+                                        <p style="color: #7f8c8d; margin-bottom: 12px;"> AI 인사이트를 생성할 수 있습니다.</p>
+                                        <button type="button" class="btn btn-primary"
                                                 th:attr="data-couple-id=${couple.coupleId},
-                                                         data-couple-card-id=${card.coupleCardId}"
-                                                onclick="deleteFeedback(this)">
-                                            피드백 삭제
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- 케이스 3: 둘 다 답변 안함 -->
-                                <div th:if="${!card.bothAnswered && card.feedback == null}">
-                                    <p style="color: #7f8c8d;">커플 두 명 모두 답변을 완료해야 AI 피드백을 생성할 수 있습니다.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h3>커플 AI리포트 이력 (<span th:text="${#lists.size(couple.weekReports)}">0</span>개)</h3>
-            </div>
-            <div class="card-body">
-                <div th:if="${#lists.isEmpty(couple.weekReports)}" class="empty-state">
-                    <div class="icon">REPORT</div>
-                    <h3>생성된 AI리포트가 없습니다</h3>
-                </div>
-
-                <div th:unless="${#lists.isEmpty(couple.weekReports)}">
-                    <div th:each="report : ${couple.weekReports}" class="question-item" style="border-left-color: #2563eb;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <div>
-                                <button type="button" class="btn btn-secondary btn-sm"
-                                        th:attr="data-target=${'report-detail-' + report.reportId}"
-                                        onclick="toggleReportDetail(this)"
-                                        style="margin-right: 8px;">
-                                    펼치기
-                                </button>
-                                <strong th:text="${#temporals.format(report.startDt, 'yyyy-MM-dd')}">2024-01-01</strong>
-                                <span style="margin-left: 8px; color: #7f8c8d;">~</span>
-                                <strong th:text="${#temporals.format(report.endDt, 'yyyy-MM-dd')}">2024-01-08</strong>
-                                <span style="margin-left: 8px; color: #7f8c8d;">리포트 ID:</span>
-                                <span th:text="${report.reportId}">1</span>
-                            </div>
-                            <div>
-                                <!-- AI 인사이트 상태 배지 -->
-                                <span th:if="${report.insight != null}" class="badge" style="background: #10b981; color: white;">인사이트 완료</span>
-                                <span th:if="${report.insight == null}" class="badge" style="background: #f59e0b; color: white;">생성 가능</span>
-                            </div>
-                        </div>
-
-                        <div th:id="${'report-detail-' + report.reportId}" style="display: none;">
-
-                            <!-- 리포트 상세 -->
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>생성 시작 일자</label>
-                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
-                                         th:text="${report.startDt != null} ? ${#temporals.format(report.startDt, 'yyyy-MM-dd')} : '-'">-</div>
-                                </div>
-                                <div class="form-group">
-                                    <label>생성 종료 일자</label>
-                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
-                                         th:text="${report.endDt != null} ? ${#temporals.format(report.endDt, 'yyyy-MM-dd')} : '-'">-</div>
-                                </div>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>전체 싱크로율(%)</label>
-                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
-                                         th:text="${report.totalSyncRate != null} ? ${report.totalSyncRate} : '-'">-</div>
-                                </div>
-                                <div class="form-group">
-                                    <label>경제관 싱크로율(%)</label>
-                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
-                                         th:text="${report.economySyncRate != null} ? ${report.economySyncRate} : '-'">-</div>
-                                </div>
-                                <div class="form-group">
-                                    <label>생활관 싱크로율(%)</label>
-                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
-                                         th:text="${report.lifeSyncRate != null} ? ${report.lifeSyncRate} : '-'">-</div>
-                                </div>
-                                <div class="form-group">
-                                    <label>연애관 싱크로율(%)</label>
-                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
-                                         th:text="${report.loveSyncRate != null} ? ${report.loveSyncRate} : '-'">-</div>
-                                </div>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>대화 참여율(%)</label>
-                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
-                                         th:text="${report.answerRate != null} ? ${report.answerRate} : '-'">-</div>
-                                </div>
-                                <div class="form-group">
-                                    <label>대화 누적자산</label>
-                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e1e8ed;"
-                                         th:text="${report.totalAnswerCnt != null} ? ${report.totalAnswerCnt} : '-'">-</div>
-                                </div>
-                            </div>
-
-                            <!-- AI 피드백 섹션 -->
-                            <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; border: 1px solid #bae6fd; margin-top: 16px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                    <div style="display: flex; align-items: center; gap: 12px;">
-                                        <strong style="color: #0369a1;">AI 인사이트</strong>
-                                        <a th:href="@{/admin/insight}" style="font-size: 0.8rem; color: #3498db;">현재 적용중인 프롬프트 보기 →</a>
-                                    </div>
-                                </div>
-
-                                <!-- 케이스 1: 피드백 미생성 -->
-                                <div th:if="${report.insight == null}">
-                                    <p style="color: #7f8c8d; margin-bottom: 12px;"> AI 인사이트를 생성할 수 있습니다.</p>
-                                    <button type="button" class="btn btn-primary"
-                                            th:attr="data-couple-id=${couple.coupleId},
-                                                     data-start-date=${#temporals.format(report.startDt, 'yyyy-MM-dd')},
-                                                     data-end-date=${#temporals.format(report.endDt, 'yyyy-MM-dd')}"
-                                            onclick="generateInsight(this)">
-                                        AI 피드백 생성
-                                    </button>
-                                </div>
-
-                                <!-- 케이스 2: 피드백 존재 -->
-                                <div th:if="${report.insight != null}">
-                                    <div style="margin-bottom: 12px;">
-                                        <label style="font-weight: 600; color: #374151;">요약</label>
-                                        <p th:text="${report.insight.summary}" style="margin-top: 4px; white-space: pre-wrap;">요약 내용</p>
-                                    </div>
-                                    <div style="margin-bottom: 12px;">
-                                        <label style="font-weight: 600; color: #374151;">경제관</label>
-                                        <p th:text="${report.insight.economyPart}" style="margin-top: 4px; white-space: pre-wrap;">경제관 내용</p>
-                                    </div>
-                                    <div style="margin-bottom: 12px;">
-                                        <label style="font-weight: 600; color: #374151;">생활관</label>
-                                        <p th:text="${report.insight.lifestylePart}" style="margin-top: 4px; white-space: pre-wrap;">생활관 내용</p>
-                                    </div>
-                                    <div style="margin-bottom: 12px;">
-                                        <label style="font-weight: 600; color: #374151;">연애관</label>
-                                        <p th:text="${report.insight.lovePart}" style="margin-top: 4px; white-space: pre-wrap;">연애관 질문</p>
-                                    </div>
-                                    <div style="text-align: right;">
-                                        <button type="button" class="btn btn-secondary"
-                                                style="font-size: 0.8rem; padding: 4px 12px; background: #e74c3c; border-color: #e74c3c;"
-                                                th:attr="data-couple-id=${couple.coupleId},
-                                                         data-report-id=${report.reportId},
                                                          data-start-date=${#temporals.format(report.startDt, 'yyyy-MM-dd')},
                                                          data-end-date=${#temporals.format(report.endDt, 'yyyy-MM-dd')}"
-                                                onclick="deleteInsight(this)">
-                                            인사이트 삭제
+                                                onclick="generateInsight(this)">
+                                            AI 피드백 생성
                                         </button>
+                                    </div>
+
+                                    <!-- 케이스 2: 피드백 존재 -->
+                                    <div th:if="${report.insight != null}">
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: 600; color: #374151;">요약</label>
+                                            <p th:text="${report.insight.summary}" style="margin-top: 4px; white-space: pre-wrap;">요약 내용</p>
+                                        </div>
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: 600; color: #374151;">경제관</label>
+                                            <p th:text="${report.insight.economyPart}" style="margin-top: 4px; white-space: pre-wrap;">경제관 내용</p>
+                                        </div>
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: 600; color: #374151;">생활관</label>
+                                            <p th:text="${report.insight.lifestylePart}" style="margin-top: 4px; white-space: pre-wrap;">생활관 내용</p>
+                                        </div>
+                                        <div style="margin-bottom: 12px;">
+                                            <label style="font-weight: 600; color: #374151;">연애관</label>
+                                            <p th:text="${report.insight.lovePart}" style="margin-top: 4px; white-space: pre-wrap;">연애관 질문</p>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <button type="button" class="btn btn-secondary"
+                                                    style="font-size: 0.8rem; padding: 4px 12px; background: #e74c3c; border-color: #e74c3c;"
+                                                    th:attr="data-couple-id=${couple.coupleId},
+                                                             data-report-id=${report.reportId},
+                                                             data-start-date=${#temporals.format(report.startDt, 'yyyy-MM-dd')},
+                                                             data-end-date=${#temporals.format(report.endDt, 'yyyy-MM-dd')}"
+                                                    onclick="deleteInsight(this)">
+                                                인사이트 삭제
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -389,6 +402,7 @@
                 </div>
             </div>
         </div>
+
 
         <div style="margin-top: 20px; display: flex; gap: 10px;">
             <a th:href="@{/admin/couple}" class="btn btn-secondary">&larr; 목록으로</a>
@@ -563,6 +577,24 @@
                     button.disabled = false;
                     button.textContent = originalText;
                 }
+            }
+
+            function showTab(tabId, btn) {
+
+                // 모든 탭 숨기기
+                document.querySelectorAll('.tab-content')
+                    .forEach(el => el.classList.remove('active'));
+
+                // 모든 버튼 비활성화
+                document.querySelectorAll('.tab-btn')
+                    .forEach(el => el.classList.remove('active'));
+
+                // 선택한 탭 표시
+                document.getElementById(tabId)
+                    .classList.add('active');
+
+                // 선택 버튼 활성화
+                btn.classList.add('active');
             }
         </script>
     </th:block>
