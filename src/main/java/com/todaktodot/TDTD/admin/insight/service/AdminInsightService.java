@@ -15,4 +15,6 @@ public interface AdminInsightService {
     List<AiPromptDTO> getSelectableInsightPrompts();
 
     Optional<AiPromptDTO> getActivePrompt();
+
+    List<InsightConfigDTO> getConfigHistory();
 }

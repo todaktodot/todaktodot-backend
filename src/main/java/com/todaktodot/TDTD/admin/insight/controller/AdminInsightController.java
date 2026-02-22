@@ -34,10 +34,12 @@ public class AdminInsightController {
         var currentConfig = adminInsightService.getCurrentConfig().orElse(null);
         var activePrompt = adminInsightService.getActivePrompt().orElse(null);
         var selectablePrompts = adminInsightService.getSelectableInsightPrompts();
+        var configHistory = adminInsightService.getConfigHistory();
 
         model.addAttribute("config", currentConfig);
         model.addAttribute("activePrompt", activePrompt);
         model.addAttribute("prompts", selectablePrompts);
+        model.addAttribute("configHistory", configHistory);
         model.addAttribute("aiModels", AI_MODELS);
         model.addAttribute("activeMenu", "insight");
 

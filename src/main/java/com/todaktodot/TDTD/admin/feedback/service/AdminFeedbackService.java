@@ -1,6 +1,7 @@
 package com.todaktodot.TDTD.admin.feedback.service;
 
 import com.todaktodot.TDTD.admin.feedback.dto.FeedbackConfigDTO;
+import com.todaktodot.TDTD.admin.insight.dto.InsightConfigDTO;
 import com.todaktodot.TDTD.admin.prompt.dto.AiPromptDTO;
 
 import java.util.List;
@@ -15,4 +16,6 @@ public interface AdminFeedbackService {
     List<AiPromptDTO> getSelectableFeedbackPrompts();
 
     Optional<AiPromptDTO> getActivePrompt();
+
+    List<FeedbackConfigDTO> getConfigHistory();
 }

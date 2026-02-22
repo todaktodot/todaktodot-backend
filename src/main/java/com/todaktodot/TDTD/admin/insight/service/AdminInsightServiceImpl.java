@@ -10,9 +10,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static com.todaktodot.TDTD.domain.insight.repository.entity.QInsightConfig.insightConfig;
 
 @Service
 @RequiredArgsConstructor
@@ -75,5 +78,19 @@ public class AdminInsightServiceImpl implements AdminInsightService {
                 .filter(config -> config.getPromptId() != null)
                 .flatMap(config -> aiPromptRepository.findById(config.getPromptId()))
                 .map(AiPromptDTO::from);
+    }
+
+    /**
+     * 선택한 프롬프트 설정 이력 조회
+     */
+    @Override
+    public List<InsightConfigDTO> getConfigHistory() {
+        return getCurrentConfig()
+                .map(InsightConfigDTO::getPromptId)
+                .map(insightConfigRepository::findAllByPromptIdOrderByConfigIdDesc)
+                .map(configHistory -> configHistory.stream()
+                        .map(InsightConfigDTO::from)
+                        .toList())
+                .orElseGet(Collections::emptyList);
     }
 }
