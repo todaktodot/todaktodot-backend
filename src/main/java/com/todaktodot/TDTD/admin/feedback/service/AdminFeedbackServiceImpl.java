@@ -1,6 +1,7 @@
 package com.todaktodot.TDTD.admin.feedback.service;
 
 import com.todaktodot.TDTD.admin.feedback.dto.FeedbackConfigDTO;
+import com.todaktodot.TDTD.admin.insight.dto.InsightConfigDTO;
 import com.todaktodot.TDTD.admin.prompt.dto.AiPromptDTO;
 import com.todaktodot.TDTD.admin.prompt.repository.AiPromptRepository;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -64,5 +66,16 @@ public class AdminFeedbackServiceImpl implements AdminFeedbackService {
                 .filter(config -> config.getPromptId() != null)
                 .flatMap(config -> aiPromptRepository.findById(config.getPromptId()))
                 .map(AiPromptDTO::from);
+    }
+
+    @Override
+    public List<FeedbackConfigDTO> getConfigHistory() {
+        return getCurrentConfig()
+                .map(FeedbackConfigDTO::getPromptId)
+                .map(feedbackConfigRepository::findAllByPromptIdOrderByConfigIdDesc)
+                .map(configHistory -> configHistory.stream()
+                        .map(FeedbackConfigDTO::from)
+                        .toList())
+                .orElseGet(Collections::emptyList);
     }
 }

@@ -32,10 +32,12 @@ public class AdminFeedbackController {
         var currentConfig = adminFeedbackService.getCurrentConfig().orElse(null);
         var activePrompt = adminFeedbackService.getActivePrompt().orElse(null);
         var selectablePrompts = adminFeedbackService.getSelectableFeedbackPrompts();
+        var configHistory = adminFeedbackService.getConfigHistory();
 
         model.addAttribute("config", currentConfig);
         model.addAttribute("activePrompt", activePrompt);
         model.addAttribute("prompts", selectablePrompts);
+        model.addAttribute("configHistory", configHistory);
         model.addAttribute("aiModels", AI_MODELS);
         model.addAttribute("activeMenu", "feedback");
 

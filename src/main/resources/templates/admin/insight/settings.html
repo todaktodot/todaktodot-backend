@@ -128,9 +128,35 @@
                 <small style="color: #7f8c8d;">최근 설정 변경 기록 (자동 보존)</small>
             </div>
             <div class="card-body">
-                <p style="color: #7f8c8d; text-align: center; padding: 20px;">
-                    설정을 변경하면 이전 설정이 이력으로 자동 보존됩니다.
-                </p>
+                <div th:if="${#lists.isEmpty(configHistory)}" class="empty-state">
+                    <div class="icon">✨</div>
+                    <h3>등록된 설정 이력이 없습니다.</h3>
+                </div>
+
+                <div th:unless="${#lists.isEmpty(configHistory)}" class="table-container">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>프롬프트 ID</th>
+                            <th>AI 모델</th>
+                            <th>Temperature</th>
+                            <th>등록일</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="config : ${configHistory}">
+                                <td th:text="${config.configId}">1</td>
+                                <td th:text="${config.promptId}">1</td>
+                                <td>
+                                    <span class="badge badge-coffee" th:text="${config.aiModel}">AI 모델</span>
+                                </td>
+                                <td th:text="${config.temperature}">1</td>
+                                <td th:text="${#temporals.format(config.regDt, 'yyyy-MM-dd')}">2024-01-01</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
