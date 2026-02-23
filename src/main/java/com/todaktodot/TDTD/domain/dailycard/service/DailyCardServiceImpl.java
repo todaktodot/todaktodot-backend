@@ -40,7 +40,6 @@ import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.SituationCategoryEntity;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.time.temporal.ChronoUnit;
@@ -797,7 +796,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                         .questionNo(qFirst.getQuestionNo())
                         .questionType(qFirst.getQuestionType())
                         .questionCnts(qFirst.getQuestionCnts())
-                        .answerReqYn(qFirst.getAnswerReqYn())
+                        .answerRequired(qFirst.getAnswerReqYn())
                         .options(options)
                         .build());
             }

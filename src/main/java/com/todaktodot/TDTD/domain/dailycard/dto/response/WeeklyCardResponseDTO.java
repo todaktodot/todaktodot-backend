@@ -56,7 +56,7 @@ public class WeeklyCardResponseDTO {
         @Schema(description = "질문 내용")
         private String questionCnts;
         @Schema(description = "답변 필수 여부 (Y/N)")
-        private String answerReqYn;
+        private String answerRequired;
         @Schema(description = "선택지 목록 (주관식이면 빈 배열)")
         private List<OptionItem> options;
     }
