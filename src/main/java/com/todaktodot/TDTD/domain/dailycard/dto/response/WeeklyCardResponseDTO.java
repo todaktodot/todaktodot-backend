@@ -54,9 +54,9 @@ public class WeeklyCardResponseDTO {
         @Schema(description = "질문 유형 (MULTIPLE_CHOICE / SUBJECTIVE)")
         private String questionType;
         @Schema(description = "질문 내용")
-        private String questionCnts;
+        private String questionContent;
         @Schema(description = "답변 필수 여부 (Y/N)")
-        private String answerRequired;
+        private boolean answerRequired;
         @Schema(description = "선택지 목록 (주관식이면 빈 배열)")
         private List<OptionItem> options;
     }
@@ -68,6 +68,6 @@ public class WeeklyCardResponseDTO {
         @Schema(description = "선택지 번호")
         private Integer optionNo;
         @Schema(description = "선택지 내용")
-        private String optionCnts;
+        private String optionContent;
     }
 }

@@ -787,7 +787,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                     if (qRow.getOptionNo() != null) {
                         options.add(WeeklyCardResponseDTO.OptionItem.builder()
                                 .optionNo(qRow.getOptionNo())
-                                .optionCnts(qRow.getOptionCnts())
+                                .optionContent(qRow.getOptionCnts())
                                 .build());
                     }
                 }
@@ -795,8 +795,8 @@ public class DailyCardServiceImpl implements DailyCardService {
                 questions.add(WeeklyCardResponseDTO.QuestionItem.builder()
                         .questionNo(qFirst.getQuestionNo())
                         .questionType(qFirst.getQuestionType())
-                        .questionCnts(qFirst.getQuestionCnts())
-                        .answerRequired(qFirst.getAnswerReqYn())
+                        .questionContent(qFirst.getQuestionCnts())
+                        .answerRequired(qFirst.getAnswerReqYn().equals("Y"))
                         .options(options)
                         .build());
             }
