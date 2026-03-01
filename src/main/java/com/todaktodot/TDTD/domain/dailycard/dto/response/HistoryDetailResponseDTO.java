@@ -69,6 +69,9 @@ public class HistoryDetailResponseDTO {
 
         @Schema(description = "AI 피드백 (미생성 시 null)")
         private FeedbackItem feedback;
+
+        @Schema(description = "콕 찌르기 여부 (이미 찌른경우 true)")
+        private boolean isPocked;
     }
 
     @Getter

@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -136,5 +137,17 @@ public class DailyCardUserController {
         Long userId = userPrincipal.getId();
         HistoryDetailResponseDTO response = dailyCardService.getHistoryDetailCard(userId, coupleCardId);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "데일리카드 콕찌르기",
+               description = "데일리카드를 콕찌르기 합니다.")
+    @ApiResponse(responseCode = "200", description = "콕찌르기 성공")
+    @PostMapping("/poke")
+    public ResponseEntity<HttpStatus> pokeCoupleDailyCard(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam(name = "coupleCardId") Long coupleCardId) {
+        Long userId = userPrincipal.getId();
+        dailyCardService.pokeCoupleDailyCard(userId, coupleCardId);
+        return new ResponseEntity(HttpStatus.OK);
     }
 }
