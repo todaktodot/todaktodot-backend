@@ -7,16 +7,22 @@ import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
 import com.todaktodot.TDTD.domain.notification.dto.PushMessage;
+import com.todaktodot.TDTD.domain.notification.dto.reqeust.NotificationSaveRequest;
 import com.todaktodot.TDTD.domain.notification.repository.DeviceTokenRepository;
 import com.todaktodot.TDTD.domain.notification.repository.entity.DeviceTokenEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @Slf4j
 @Service
@@ -24,6 +30,7 @@ import java.util.Map;
 public class FcmServiceImpl implements FcmService {
 
     private final DeviceTokenRepository deviceTokenRepository;
+    private final NotificationService notificationService;
     private final CoupleRepository coupleRepository;
     private final UserRepository userRepository;
 
@@ -36,7 +43,7 @@ public class FcmServiceImpl implements FcmService {
         List<String> fcmTokens = getActiveTokens(userId);
         if (fcmTokens.isEmpty()) return;
 
-        sendMulticast(fcmTokens, title, body, Map.of(), userId);
+        sendMulticast(fcmTokens, title, body, Map.of(), userId, null);
     }
 
     @Override
@@ -49,8 +56,13 @@ public class FcmServiceImpl implements FcmService {
         List<String> fcmTokens = getActiveTokens(userId);
         if (fcmTokens.isEmpty()) return;
 
+        List<NotificationSaveRequest> saveRequestList = new ArrayList<>();
+        for (String fcmToken : fcmTokens) {
+            saveRequestList.add(mappingToSaveRequest(fcmToken, userId, message));
+        }
+
         String title = buildTitle(message);
-        sendMulticast(fcmTokens, title, message.getBody(), message.getData(), userId);
+        sendMulticast(fcmTokens, title, message.getBody(), message.getData(), userId, saveRequestList);
     }
 
     @Override
@@ -61,10 +73,14 @@ public class FcmServiceImpl implements FcmService {
         List<Long> enabledUserIds = filterNotificationEnabledUsers(userIds);
         if (enabledUserIds.isEmpty()) return;
 
-        List<String> fcmTokens = getActiveTokens(enabledUserIds);
-        if (fcmTokens.isEmpty()) return;
+        Map<Long, List<String>> fcmTokensMap = getActiveTokens(enabledUserIds);
+        if (fcmTokensMap.isEmpty()) return;
 
-        sendMulticast(fcmTokens, title, body, Map.of(), null);
+        List<String> fcmTokens = fcmTokensMap.values().stream()
+                .flatMap(List::stream)    // 여러 개의 List<String>을 하나의 Stream<String>으로 평탄화
+                .collect(Collectors.toList());
+
+        sendMulticast(fcmTokens, title, body, Map.of(), null, null);
     }
 
     @Override
@@ -84,11 +100,27 @@ public class FcmServiceImpl implements FcmService {
             }
         }
 
-        List<String> fcmTokens = getActiveTokens(enabledUserIds);
-        if (fcmTokens.isEmpty()) return;
+        List<String> allFcmTokens = new ArrayList<>();
+        List<NotificationSaveRequest> saveRequestList = new ArrayList<>();
+        Map<Long, List<String>> fcmTokensMap = getActiveTokens(enabledUserIds);
+        if (fcmTokensMap.isEmpty()) return;
+
+        for (Long enableUserId : enabledUserIds) {
+            List<String> fcmTokens = fcmTokensMap.getOrDefault(enableUserId, List.of());
+
+            if (fcmTokens.isEmpty()) continue;
+
+            //광고성이 아닌 경우
+            if (!message.getPushType().isAdvertising()) {
+                for (String fcmToken : fcmTokens) {
+                    saveRequestList.add(mappingToSaveRequest(fcmToken, enableUserId, message));
+                }
+            }
+            allFcmTokens.addAll(fcmTokens);
+        }
 
         String title = buildTitle(message);
-        sendMulticast(fcmTokens, title, message.getBody(), message.getData(), null);
+        sendMulticast(allFcmTokens, title, message.getBody(), message.getData(), null, saveRequestList);
     }
 
     @Override
@@ -159,13 +191,17 @@ public class FcmServiceImpl implements FcmService {
         return tokens.stream().map(DeviceTokenEntity::getFcmToken).toList();
     }
 
-    private List<String> getActiveTokens(List<Long> userIds) {
+    private Map<Long, List<String>> getActiveTokens(List<Long> userIds) {
         List<DeviceTokenEntity> tokens = deviceTokenRepository.findActiveTokensByUserIds(userIds);
         if (tokens.isEmpty()) {
             log.debug("활성화된 토큰이 없습니다 - userIds: {}", userIds);
-            return List.of();
+            return Map.of();
         }
-        return tokens.stream().map(DeviceTokenEntity::getFcmToken).toList();
+        //return tokens.stream().map(DeviceTokenEntity::getFcmToken).toList();
+        return tokens.stream().collect(Collectors.groupingBy(
+                d -> d.getUser().getId(),
+                Collectors.mapping(DeviceTokenEntity::getFcmToken, Collectors.toList())
+        ));
     }
 
     private boolean isNotificationEnabled(Long userId) {
@@ -230,7 +266,8 @@ public class FcmServiceImpl implements FcmService {
     }
 
     private void sendMulticast(List<String> fcmTokens, String title, String body,
-                               Map<String, String> data, Long userId) {
+                               Map<String, String> data, Long userId, List<NotificationSaveRequest> saveRequest) {
+
         MulticastMessage.Builder builder = MulticastMessage.builder()
                 .addAllTokens(fcmTokens)
                 .setNotification(Notification.builder()
@@ -250,18 +287,22 @@ public class FcmServiceImpl implements FcmService {
                     response.getSuccessCount(), response.getFailureCount());
 
             if (response.getFailureCount() > 0) {
-                handleFailedTokens(fcmTokens, response);
+                handleFailedTokens(fcmTokens, response, saveRequest);
             }
+            savePushAlarm(saveRequest);
         } catch (FirebaseMessagingException e) {
             log.error("푸시 멀티캐스트 발송 실패 - userId: {}, error: {}", userId, e.getMessage());
         }
     }
 
-    private void handleFailedTokens(List<String> tokens, BatchResponse response) {
+    private void handleFailedTokens(List<String> tokens, BatchResponse response, List<NotificationSaveRequest> saveRequestList) {
         List<SendResponse> responses = response.getResponses();
         for (int i = 0; i < responses.size(); i++) {
             if (!responses.get(i).isSuccessful()) {
                 String failedToken = tokens.get(i);
+                if (saveRequestList != null) {
+                    saveRequestList.get(i).setSuccessYn("N");
+                }
                 FirebaseMessagingException exception = responses.get(i).getException();
                 handleFailedToken(failedToken, exception);
             }
@@ -286,5 +327,19 @@ public class FcmServiceImpl implements FcmService {
             return false;
         }
         return true;
+    }
+
+
+    private NotificationSaveRequest mappingToSaveRequest(String fcmToken, Long userId, PushMessage pushMessage) {
+        return NotificationSaveRequest.builder()
+                .fcmToken(fcmToken)
+                .receiveUser(userId)
+                .pushMessage(pushMessage)
+                .successYn("Y")
+                .build();
+    }
+    private void savePushAlarm(List<NotificationSaveRequest> saveRequestList) {
+        if (saveRequestList == null || saveRequestList.isEmpty()) return;
+        notificationService.saveNotification(saveRequestList);
     }
 }

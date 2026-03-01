@@ -40,15 +40,17 @@ import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.SituationCategoryEntity;
 
 import java.time.LocalDate;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+
+import com.todaktodot.TDTD.domain.login.respository.UserRepository;
+import com.todaktodot.TDTD.domain.login.respository.entity.User;
+import com.todaktodot.TDTD.domain.notification.dto.PushMessage;
+import com.todaktodot.TDTD.domain.notification.repository.NotificationRepository;
+import com.todaktodot.TDTD.domain.notification.repository.entity.NotificationEntity;
+import com.todaktodot.TDTD.domain.notification.repository.entity.PushType;
+import com.todaktodot.TDTD.domain.notification.service.FcmService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -73,6 +75,9 @@ public class DailyCardServiceImpl implements DailyCardService {
     private final AiCardGenerationInfoRepository aiCardGenerationInfoRepository;
     private final CoupleDailyCardFeedbackRepository coupleDailyCardFeedbackRepository;
     private final DailyCardFeedbackRepository dailyCardFeedbackRepository;
+    private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
+    private final FcmService fcmService;
     private final ObjectMapper objectMapper;
 
     private static final Long SYSTEM_USER = 0L;
@@ -268,6 +273,9 @@ public class DailyCardServiceImpl implements DailyCardService {
         }
 
         log.info("데일리카드 답변 저장 완료: coupleCardId={}, userId={}, 저장된 답변 수={}", coupleCardId, userId, savedAnswers.size());
+
+        //푸시알림 전송
+        submitAnswerPushAlarm(coupleCardId, userId, couple);
 
         return SubmitAnswerResponseDTO.of(coupleCardId, cardId, userId, savedAnswers);
     }
@@ -991,7 +999,12 @@ public class DailyCardServiceImpl implements DailyCardService {
                     .filter(c -> "Y".equals(c.getSelectedYn()))
                     .toList();
 
+
             if (!selectedRows.isEmpty()) {
+                //콕 찌르기 여부
+                NotificationEntity notification = notificationRepository.findByCoupleDailyCardIdAndPushTypeAndSuccessYn(selectedRows.get(0).getCoupleCardId(), PushType.POKE, "Y")
+                        .orElse(null);
+
                 // 선택 완료: 전체 상세 정보 조립
                 HistoryDetailProjection first = selectedRows.get(0);
 
@@ -1050,6 +1063,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                         .user2Answered(user2HasAnswer)
                         .questions(questions)
                         .feedback(feedbackMap.get(first.getCoupleCardId()))
+                        .isPocked(notification != null)
                         .build());
             } else {
                 // 미선택: 모드/주제만 노출
@@ -1059,6 +1073,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                         .mode(first.getMode())
                         .subject(first.getSubject())
                         .selected(false)
+                        .isPocked(false)
                         .build());
             }
         }
@@ -1184,10 +1199,55 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .build();
     }
 
+    /**
+     * 데일리카드 콕찌르기
+     */
+    @Override
+    public void pokeCoupleDailyCard(Long userId, Long coupleCardId) {
+        //커플 조회
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        //커플이 아닌 경우
+        if (couple.getUserId2() == null) throw new IllegalStateException("혼자 둘러보기의 경우 콕찌르기가 불가합니다.");
+
+        NotificationEntity notification = notificationRepository.findByCoupleDailyCardIdAndPushTypeAndSuccessYn(coupleCardId, PushType.POKE, "Y")
+                .orElse(null);
+
+        //이미 콕찌르기 한 경우
+        if (notification != null) throw new IllegalStateException("이미 콕찌르기한 데일리카드입니다.");
+
+        User user = userRepository.findByIdAndDelYn(userId, "N").orElse(null);
+
+        if (user == null) return;
+        //TODO : 알림 전송
+        PushMessage pokePushMessage = PushMessage.poke(user.getNickname(), coupleCardId);
+        fcmService.sendToUser(Objects.equals(couple.getUserId1(), userId) ? couple.getUserId2() : couple.getUserId1(), pokePushMessage);
+    }
+
     private CardMode advanceMode(CardMode startMode, int offset) {
         CardMode[] modes = CardMode.values();
         int startIndex = startMode.ordinal();
         int nextIndex = (startIndex + offset) % modes.length;
         return modes[nextIndex];
     }
+
+    private void submitAnswerPushAlarm(Long coupleCardId, Long userId, CoupleEntity couple) {
+        Long receiveUserId = couple.getUserId1() == userId ? couple.getUserId2() : couple.getUserId1();
+        Long coupleId = couple.getCoupleId();
+        // 파트너가 이미 답변했는지 확인
+        boolean isAnswered = dailyCardUserAnswerRepository.existsByCoupleCardIdAndUserIdAndDelYn(coupleCardId, receiveUserId, "N");
+
+        //모두 답변한 경우
+        if (isAnswered) {
+            PushMessage pushMessage = PushMessage.bothAnswer(coupleId, coupleCardId);
+            fcmService.sendToCouple(coupleId, pushMessage);
+        }
+        //파트너만 답변 안한 경우
+        else {
+            PushMessage pushMessage = PushMessage.partnerAnswer(couple.getCoupleId(), coupleCardId);
+            fcmService.sendToUser(receiveUserId, pushMessage);
+        }
+    }
+
 }

@@ -133,4 +133,11 @@ public interface DailyCardService {
     HistoryDetailResponseDTO getHistoryDetailCards(Long userId, LocalDate startDate, LocalDate endDate);
 
     HistoryDetailResponseDTO getHistoryDetailCard(Long userId, Long coupleCardId);
+
+    /**
+     * 데일리카드 콕 찌르기
+     * @param userId 요청 사용자 ID
+     * @param coupleCardId 커플 데일리카드 ID
+     */
+    void pokeCoupleDailyCard(Long userId, Long coupleCardId);
 }

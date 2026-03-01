@@ -13,7 +13,9 @@ public enum PushType {
     DAILY_CARD("DAILY_CARD", "데일리카드 도착", INFORMATIONAL),
     POKE("POKE", "콕 찌르기", INFORMATIONAL),
     PARTNER_ANSWER("PARTNER_ANSWER", "파트너 답변 완료", INFORMATIONAL),
+    BOTH_ANSWER("BOTH_ANSWER", "모두 답변 완료", INFORMATIONAL),
     AI_FEEDBACK("AI_FEEDBACK", "AI 피드백 도착", INFORMATIONAL),
+    AI_REPORT("AI_REPORT", "AI 리포트 도착", INFORMATIONAL),
 
     // 광고성 알림 (마케팅 동의 필요)
     EVENT("EVENT", "이벤트 알림", ADVERTISING),

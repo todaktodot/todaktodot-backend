@@ -37,13 +37,14 @@ public class PushMessage {
     /**
      * 콕 찌르기 알림 생성
      */
-    public static PushMessage poke(String senderNickname) {
+    public static PushMessage poke(String senderNickname, Long coupleDailyCardId) {
         return PushMessage.builder()
                 .title("콕! 👆")
                 .body(senderNickname + "님이 찔렀어요!")
                 .pushType(PushType.POKE)
                 .data(Map.of(
-                        "type", PushType.POKE.getCode()
+                        "type", PushType.POKE.getCode(),
+                        "coupleDailyCardId", String.valueOf(coupleDailyCardId)
                 ))
                 .build();
     }
@@ -65,6 +66,22 @@ public class PushMessage {
     }
 
     /**
+     * 모두 답변 완료 알림 생성
+     */
+    public static PushMessage bothAnswer(Long coupleId, Long coupleDailyCardId) {
+        return PushMessage.builder()
+                .title("💜두 사람 모두 답변을 완료했어요!")
+                .body("서로의 마음을 확인해보세요.")
+                .pushType(PushType.BOTH_ANSWER)
+                .data(Map.of(
+                        "type", PushType.BOTH_ANSWER.getCode(),
+                        "coupleId", String.valueOf(coupleId),
+                        "coupleDailyCardId", String.valueOf(coupleDailyCardId)
+                ))
+                .build();
+    }
+
+    /**
      * AI 피드백 도착 알림 생성
      */
     public static PushMessage aiFeedback(Long coupleId, Long feedbackId) {
@@ -76,6 +93,22 @@ public class PushMessage {
                         "type", PushType.AI_FEEDBACK.getCode(),
                         "coupleId", String.valueOf(coupleId),
                         "feedbackId", String.valueOf(feedbackId)
+                ))
+                .build();
+    }
+
+    /**
+     * AI 리포트 도착 알림 생성
+     */
+    public static PushMessage aiReport(Long coupleId, Long reportId) {
+        return PushMessage.builder()
+                .title("AI 리포트가 발행되었어요! 🤖")
+                .body("우리의 일주일을 지금 바로 확인해보세요.")
+                .pushType(PushType.AI_REPORT)
+                .data(Map.of(
+                        "type", PushType.AI_REPORT.getCode(),
+                        "coupleId", String.valueOf(coupleId),
+                        "reportId", String.valueOf(reportId)
                 ))
                 .build();
     }
