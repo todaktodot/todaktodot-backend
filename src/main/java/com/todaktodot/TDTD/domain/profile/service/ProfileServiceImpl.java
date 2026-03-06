@@ -44,9 +44,11 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional(readOnly = true)
     public UserDetailResponseDTO getDetail(long userId) {
+        //로그인한 사용자
         User loginUser = userRepository.findByIdAndDelYn(userId, "N")
                 .orElseThrow(() -> new IllegalArgumentException("[userID : " + userId +" ] 사용자를 찾을 수 없습니다"));
 
+        //커플정보 존재 시
         if (coupleRepository.existsByUserId(userId)) {
             CoupleEntity couple = coupleRepository.findByUserId(userId)
                     .orElseThrow(() -> new IllegalArgumentException("[userID : " + userId +" ] 커플정보를 찾을 수 없습니다"));
@@ -59,10 +61,10 @@ public class ProfileServiceImpl implements ProfileService {
                 User anotherUser;
                 if (userId1 == userId) {
                     anotherUser = userRepository.findByIdAndDelYn(userId2, "N")
-                            .orElseThrow(() -> new IllegalArgumentException("[userID : " + userId + " ] 사용자를 찾을 수 없습니다"));
+                            .orElseThrow(() -> new IllegalArgumentException("[userID : " + userId2 + " ] 사용자를 찾을 수 없습니다"));
                 } else {
                     anotherUser = userRepository.findByIdAndDelYn(userId1, "N")
-                            .orElseThrow(() -> new IllegalArgumentException("[userID : " + userId + " ] 사용자를 찾을 수 없습니다"));
+                            .orElseThrow(() -> new IllegalArgumentException("[userID : " + userId1 + " ] 사용자를 찾을 수 없습니다"));
                 }
 
                 //우리가 만난 기간 계산
@@ -132,6 +134,13 @@ public class ProfileServiceImpl implements ProfileService {
             at.softDelete(userId);
         });
 
+        //커플 해지
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 관계가 존재하지 않습니다"));
+
+        // DEL_YN = 'Y' 처리
+        couple.disconnect(userId);
+        coupleRepository.save(couple);
     }
 
     /**

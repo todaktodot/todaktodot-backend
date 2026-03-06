@@ -32,7 +32,7 @@ public class InsightController {
             @Valid @RequestBody GenerateInsightRequestDTO requestDTO) {
 
         Long userId = userPrincipal.getId();
-        GenerateInsightResponseDTO response = insightService.generateInsight(userId, requestDTO);
+        GenerateInsightResponseDTO response = insightService.generateInsight(requestDTO);
         return ResponseEntity.ok(response);
     }
 }
