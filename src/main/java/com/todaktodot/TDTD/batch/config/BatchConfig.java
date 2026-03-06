@@ -28,30 +28,30 @@ public class BatchConfig {
 
     //데일리카드 도착 알림
     @Bean
-    public Job dailyCardAssignJob(JobRepository jobRepository, Step dailyCardAssignStep) {
-        return new JobBuilder("dailyCardAssignJob", jobRepository)
-                .start(dailyCardAssignStep)
+    public Job dailyCardAssignAlarmJob(JobRepository jobRepository, Step dailyCardAssignAlarmStep) {
+        return new JobBuilder("dailyCardAssignAlarmJob", jobRepository)
+                .start(dailyCardAssignAlarmStep)
                 .build();
     }
 
     @Bean
-    public Step dailyCardAssignStep(JobRepository jopRepository, PlatformTransactionManager transactionManager) {
-        return new StepBuilder("dailyCardAssignStep", jopRepository)
+    public Step dailyCardAssignAlarmStep(JobRepository jopRepository, PlatformTransactionManager transactionManager) {
+        return new StepBuilder("dailyCardAssignAlarmStep", jopRepository)
                 .tasklet(dailyCardAssignTasklet, transactionManager)
                 .build();
     }
 
     //AI 리포트 도착 알림
     @Bean
-    public Job aiReportAssignJob(JobRepository jobRepository, Step aiReportAssignStep) {
-        return new JobBuilder("aiReportAssignJob", jobRepository)
-                .start(aiReportAssignStep)
+    public Job aiReportAssignAlarmJob(JobRepository jobRepository, Step aiReportAssignAlarmStep) {
+        return new JobBuilder("aiReportAssignAlarmJob", jobRepository)
+                .start(aiReportAssignAlarmStep)
                 .build();
     }
 
     @Bean
-    public Step aiReportAssignStep(JobRepository jopRepository, PlatformTransactionManager transactionManager) {
-        return new StepBuilder("aiReportAssignStep", jopRepository)
+    public Step aiReportAssignAlarmStep(JobRepository jopRepository, PlatformTransactionManager transactionManager) {
+        return new StepBuilder("aiReportAssignAlarmStep", jopRepository)
                 .tasklet(aiReportAssignTasklet, transactionManager)
                 .build();
     }

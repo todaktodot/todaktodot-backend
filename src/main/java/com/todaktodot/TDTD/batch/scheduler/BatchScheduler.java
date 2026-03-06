@@ -16,19 +16,19 @@ import java.time.LocalDate;
 public class BatchScheduler {
 
     private final JobLauncher jobLauncher;
-    private final Job dailyCardAssignJob;
-    private final Job aiReportAssignJob;
+    private final Job dailyCardAssignAlarmJob;
+    private final Job aiReportAssignAlarmJob;
     private final Job aiReportCreateJob;
 
     // 매일 오전 8시에 한 번만 실행됨
     @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Seoul")
     public void runJobs() throws Exception{
         // 1. 매일 실행되는 잡 먼저 무조건 실행
-        runJob(dailyCardAssignJob);
+        runJob(dailyCardAssignAlarmJob);
 
         // 2. 오늘이 월요일인지 체크해서 맞다면 이어서 실행
         if (LocalDate.now().getDayOfWeek() == DayOfWeek.MONDAY) {
-            runJob(aiReportAssignJob);
+            runJob(aiReportAssignAlarmJob);
         }
     }
 
