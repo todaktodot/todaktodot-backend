@@ -10,5 +10,5 @@ public interface InsightService {
     /**
      * AI 인사이트 생성
      */
-    GenerateInsightResponseDTO generateInsight(Long userId, GenerateInsightRequestDTO requestDTO);
+    GenerateInsightResponseDTO generateInsight(GenerateInsightRequestDTO requestDTO);
 }

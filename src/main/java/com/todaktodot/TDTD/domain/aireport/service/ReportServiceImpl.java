@@ -17,6 +17,7 @@ import com.todaktodot.TDTD.domain.insight.repository.InsightRepository;
 import com.todaktodot.TDTD.domain.insight.repository.entity.Insight;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -56,44 +57,39 @@ public class ReportServiceImpl implements ReportService {
             throw new IllegalStateException("커플 연결 후 이용 가능한 기능입니다.");
         }
 
-        //생성된적 있는지 확인
         //오늘 날짜
         LocalDate today = LocalDate.now();
-        // 시작: 월요일 08:00
-        LocalDateTime endDT = today.with(DayOfWeek.MONDAY).atTime(8, 0);
-        // 종료: 저번 주 월요일 07:59:59.999999999
-        LocalDateTime startDT = endDT.minusWeeks(1).minusNanos(1);
+        // 종료: 월요일
+        LocalDate endDt = today.with(DayOfWeek.MONDAY);
+        // 시작: 저번 주 월요일
+        LocalDate startDt = endDt.minusWeeks(1);
 
-        Optional<Report> findReport = reportRepository.findByCoupleEntityAndStrtDtAndEndDtAndDelYn(coupleInfo, startDT.toLocalDate(), endDT.toLocalDate(), "N");
-        //해당 주차에 이미 생성된게 있는 경우 -> 조회 후 반환
+        Optional<Report> findReport = reportRepository.findByCoupleEntityAndStrtDtAndEndDtAndDelYn(coupleInfo, startDt, endDt, "N");
+        //해당 주차에 생성된 리포트 조회 -> 조회 후 반환
         if (findReport.isPresent()) {
             Report mappingReport = findReport.get();
+
             //생성 가능 여부 및 초기 진입 여부 정보
+            String isInitial = mappingReport.getReadYn();
             ReportCreateStatusResponseDTO createStatusResponse = ReportCreateStatusResponseDTO.builder()
-                    .isCreatable(false)
-                    .isInitalize(false)
+                    .isCreatable(true)
+                    .isInitalize(isInitial.equals("N"))
                     .reportId(mappingReport.getId())
                     .build();
+
+            //읽음 여부 업데이트
+            mappingReport.updateReadYn(userId);
+            reportRepository.save(mappingReport);
 
             return createStatusResponse;
         }
         //생성된게 없는 경우
         else {
-            //커플 - 둘 다 답변 완료 갯수 확인
-            boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(userId1, userId2, startDT, endDT, "N");
             ReportCreateStatusResponseDTO createStatusResponse = ReportCreateStatusResponseDTO.builder()
-                    .isCreatable(isCreatable)
-                    .isInitalize(true)
+                    .isCreatable(false)
+                    .isInitalize(false)
                     .build();
 
-            // AI리포트 생성 가능한 경우
-            if (isCreatable) {
-                //신규 리포트 생성
-                Report createdReport = createReport(startDT, endDT, userId1, userId2, coupleInfo);
-                createStatusResponse.setReportId(createdReport.getId());
-            }
-
-            //생성된 AI리포트 상세 정보
             return createStatusResponse;
         }
     }
@@ -158,7 +154,31 @@ public class ReportServiceImpl implements ReportService {
     /**
      * AI 리포트 생성
      */
-    private Report createReport(LocalDateTime startDt, LocalDateTime endDt, Long userId1, Long userId2, CoupleEntity coupleEntity) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Report createReport(CoupleEntity coupleEntity, Long insightId, LocalDate startD, LocalDate endD) {
+        Long userId1 = coupleEntity.getUserId1();
+        Long userId2 = coupleEntity.getUserId2();
+
+        // [TDTDBE-55] SOLO 커플(userId2가 NULL)은 리포트 생성 불가
+        if (userId2 == null) {
+            return null;
+        }
+
+        //생성된적 있는지 확인
+        Optional<Report> findReport = reportRepository.findByCoupleEntityAndStrtDtAndEndDtAndDelYn(coupleEntity, startD, endD, "N");
+        if (findReport.isPresent()) return null;
+
+        // 시작: 저번 주 월요일 00:00
+        LocalDateTime startDt = startD.atTime(0, 0);
+        // 종료: 월요일 00:00
+        LocalDateTime endDt = endD.atTime(0, 0);
+
+        //둘다 답변한 데일리카드 존재하지 않아서 생성 불가
+        boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(userId1, userId2, startDt, endDt, "N");
+        if (!isCreatable) {
+            return null;
+        }
+
         //주간 일자
         //모두 응답한 데일리 카드 중 경제관인 것
         List<SyncAnswerDTO> economyCardAnswerList = dailyCardUserAnswerRepository.findDailyCardAnswerBySubject(CardSubject.ECONOMY, userId1, userId2,QuestionType.MULTIPLE_CHOICE, startDt, endDt, "N");
@@ -258,11 +278,11 @@ public class ReportServiceImpl implements ReportService {
 
         //인사이트 매필
         //시작: 월요일 00:00
-        LocalDate startDTOfInsight = startDt.toLocalDate();
+        //LocalDate startDTOfInsight = startDt.toLocalDate();
         //종료: 저번 주 월요일 00:00
-        LocalDate endDTOfInsight= endDt.toLocalDate();
-        Insight insight = insightRepository.findByCoupleIdAndStartDtAndEndDtAndDelYn(coupleEntity.getCoupleId(), startDTOfInsight, endDTOfInsight, "N")
-                .orElse(null);
+        //LocalDate endDTOfInsight= endDt.toLocalDate();
+        //Insight insight = insightRepository.findByCoupleIdAndStartDtAndEndDtAndDelYn(coupleEntity.getCoupleId(), startDTOfInsight, endDTOfInsight, "N")
+        //        .orElse(null);
 
         //리포트 생성
         Report newReport = Report.builder()
@@ -272,7 +292,7 @@ public class ReportServiceImpl implements ReportService {
                 .loveSyncRate(loveSyncRate)
                 .answerRate(participationRate)
                 .totalAnswerCnt(String.valueOf(bothAnswerCnt))
-                .insightId(insight == null ? null : insight.getId())
+                .insightId(insightId)
                 .strtDt(startDt.toLocalDate())
                 .endDt(endDt.toLocalDate())
                 .regrId(userId1)
@@ -284,7 +304,6 @@ public class ReportServiceImpl implements ReportService {
         newReport.addSimilarAnswer(similarAnswerList);
         newReport.addDifferentAnswer(diffrentAnswerList);
 
-        //저장 후 반횐
         return reportRepository.save(newReport);
     }
 
@@ -362,4 +381,5 @@ public class ReportServiceImpl implements ReportService {
 
         return insightData.toString();
     }
+
 }

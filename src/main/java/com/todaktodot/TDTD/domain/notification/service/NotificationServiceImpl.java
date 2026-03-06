@@ -34,7 +34,7 @@ public class NotificationServiceImpl implements NotificationService{
             String coupleDailyCardId = pushMessage.getData().get("coupleDailyCardId");
             notificationEntityList.add(NotificationEntity.builder()
                     .fcmToken(request.getFcmToken())
-                    .coupleDailyCardId(coupleDailyCardId == null ? null : Long.parseLong(coupleDailyCardId))
+                    .coupleDailyCardId(coupleDailyCardId == null ? 0L : Long.parseLong(coupleDailyCardId))
                     .receiveUser(request.getReceiveUser())
                     .title(pushMessage.getTitle())
                     .conent(pushMessage.getBody())

@@ -109,9 +109,9 @@ public class AdminCoupleController {
 
         // 커플 정보 조회하여 userId1 획득 (검증 통과용)
         CoupleDetailDTO couple = adminCoupleService.getCouple(coupleId);
-        Long userId = couple.getUserId1();
+        //Long userId = couple.getUserId1();
 
-        GenerateInsightResponseDTO response = insightService.generateInsight(userId, requestDTO);
+        GenerateInsightResponseDTO response = insightService.generateInsight(requestDTO);
 
         log.info("[Admin] 인샤이트 생성 완료: coupleId={}, InsightId={}",
                 coupleId, response.getInsightId());

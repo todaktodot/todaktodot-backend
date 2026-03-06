@@ -8,6 +8,7 @@ import com.todaktodot.TDTD.domain.aireport.repository.ReportRepository;
 import com.todaktodot.TDTD.domain.aireport.repository.entity.Report;
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
+import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardUserAnswerRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardSubject;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.QuestionType;
 import com.todaktodot.TDTD.domain.insight.dto.*;
@@ -24,6 +25,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
@@ -44,10 +47,12 @@ public class InsightServiceImpl implements InsightService{
     private final AiPromptRepository aiPromptRepository;
     private final ChatClient.Builder chatClientBuilder;
     private final ObjectMapper objectMapper;
-    private final TransactionTemplate transactionTemplate;
+    private final DailyCardUserAnswerRepository dailyCardUserAnswerRepository;
+//    private final TransactionTemplate transactionTemplate;
+    private final PlatformTransactionManager transactionManager;
 
     @Override
-    public GenerateInsightResponseDTO generateInsight(Long userId, GenerateInsightRequestDTO requestDTO) {
+    public GenerateInsightResponseDTO generateInsight(GenerateInsightRequestDTO requestDTO) {
         // 1단계. 한 주간 응답 데이터 조회
         CoupleEntity couple = coupleRepository.findById(requestDTO.getCoupleId()).orElseThrow(() -> new IllegalStateException("존재하지 않는 커플입니다."));
 
@@ -68,6 +73,12 @@ public class InsightServiceImpl implements InsightService{
 
         //중복시 리턴
         checkDuplicate(couple.getCoupleId(),strtDt.toLocalDate(), endDt.toLocalDate());
+
+        //둘다 답변한 데일리카드 존재하지 않는 경우
+        boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(couple.getUserId1(), couple.getUserId2(), strtDt, endDt, "N");
+        if (!isCreatable) {
+            throw new IllegalStateException("모두 응답한 데일리카드가 존재하지 않습니다.");
+        }
 
         GenerateInsightContext insightContext = loadInsightContext(couple, strtDt, endDt);
 
@@ -90,8 +101,11 @@ public class InsightServiceImpl implements InsightService{
 
         // 3단계. Insight 저장
         // ==================== 3단계: 저장 트랜잭션 ====================
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
         return transactionTemplate.execute(status -> {
-            GenerateInsightResponseDTO generateInsightResponseDTO = saveInsightResult(couple.getCoupleId(), userId, insightContext, insightResult, aiModel, config.getPromptId());
+            GenerateInsightResponseDTO generateInsightResponseDTO = saveInsightResult(couple.getCoupleId(), insightContext, insightResult, aiModel, config.getPromptId());
 
             reportRepository.findByCoupleEntityAndStrtDtAndEndDtAndDelYn(couple, endDate.minusWeeks(1), endDate, "N")
                     .ifPresent(report -> {
@@ -350,7 +364,6 @@ public class InsightServiceImpl implements InsightService{
     }
 
     private GenerateInsightResponseDTO saveInsightResult(Long coupleId,
-                                                         Long userId,
                                                          GenerateInsightContext context,
                                                          InsightGenerationResult insightResult,
                                                          String aiModel,
@@ -367,8 +380,8 @@ public class InsightServiceImpl implements InsightService{
                         .economyPart(aiInsight.getEconomyPart())
                         .lifestylePart(aiInsight.getLifestylePart())
                         .lovePart(aiInsight.getLovePart())
-                        .regrId(userId)
-                        .updrId(userId)
+                        .regrId(0L)
+                        .updrId(0L)
                         .build()
         );
 
@@ -381,8 +394,8 @@ public class InsightServiceImpl implements InsightService{
                         .temperature(String.valueOf(insightResult.getActualTemperatur()))
                         .finalPrompt(insightResult.getFinalPrompt())
                         .status(InsightStatus.SUCCESS.name())
-                        .regrId(userId)
-                        .updrId(userId)
+                        .regrId(0L)
+                        .updrId(0L)
                         .build());
 
         return GenerateInsightResponseDTO.from(insight);
