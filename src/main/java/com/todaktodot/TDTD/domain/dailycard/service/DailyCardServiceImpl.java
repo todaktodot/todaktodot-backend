@@ -804,7 +804,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                         .questionNo(qFirst.getQuestionNo())
                         .questionType(qFirst.getQuestionType())
                         .questionContent(qFirst.getQuestionCnts())
-                        .answerRequired(qFirst.getAnswerReqYn().equals("Y"))
+                        .answerRequired("Y".equals(qFirst.getAnswerReqYn()))
                         .options(options)
                         .build());
             }
