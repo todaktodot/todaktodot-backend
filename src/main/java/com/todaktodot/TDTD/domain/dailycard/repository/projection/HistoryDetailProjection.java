@@ -20,4 +20,5 @@ public interface HistoryDetailProjection {
     String getOptionCnts();
     String getUser1Answer();
     String getUser2Answer();
+    Long getSelectedByUserId();
 }

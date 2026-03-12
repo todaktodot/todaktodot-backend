@@ -43,6 +43,9 @@ public class HistoryDetailResponseDTO {
         @Schema(description = "유형 선택 완료 여부")
         private boolean selected;
 
+        @Schema(description = "유형 선택한 사용자 ID (미선택 시 null)")
+        private Long selectedByUserId;
+
         @Schema(description = "커플 카드 ID (선택 완료 시)")
         private Long coupleCardId;
 
