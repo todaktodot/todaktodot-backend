@@ -23,8 +23,8 @@ public class PushMessage {
      */
     public static PushMessage dailyCard(Long coupleId, Long coupleDailyCardId) {
         return PushMessage.builder()
-                .title("오늘의 질문이 도착했어요 💌")
-                .body("파트너와 함께 답변해보세요!")
+                .title("✉️오늘의 질문이 도착했어요")
+                .body("연인보다 빨리 답변 남기러 가볼까요?")
                 .pushType(PushType.DAILY_CARD)
                 .data(Map.of(
                         "type", PushType.DAILY_CARD.getCode(),
@@ -39,8 +39,8 @@ public class PushMessage {
      */
     public static PushMessage poke(String senderNickname, Long coupleDailyCardId) {
         return PushMessage.builder()
-                .title("콕! 👆")
-                .body(senderNickname + "님이 찔렀어요!")
+                .title("👉" + senderNickname + "님이 콕 찔렀어요!")
+                .body("오늘의 질문에 답변해주세요.")
                 .pushType(PushType.POKE)
                 .data(Map.of(
                         "type", PushType.POKE.getCode(),
@@ -54,8 +54,8 @@ public class PushMessage {
      */
     public static PushMessage partnerAnswer(Long coupleId, Long coupleDailyCardId) {
         return PushMessage.builder()
-                .title("파트너가 답변했어요! ✨")
-                .body("어떤 답변을 했는지 확인해보세요")
+                .title("📄연인이 방금 답변을 남겼어요!")
+                .body("내가 답해야 서로 확인할 수 있어요.")
                 .pushType(PushType.PARTNER_ANSWER)
                 .data(Map.of(
                         "type", PushType.PARTNER_ANSWER.getCode(),
