@@ -47,6 +47,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
 import com.todaktodot.TDTD.domain.notification.dto.PushMessage;
+import com.todaktodot.TDTD.domain.feedback.event.BothAnswersCompletedEvent;
 import com.todaktodot.TDTD.domain.notification.repository.NotificationRepository;
 import com.todaktodot.TDTD.domain.notification.repository.entity.NotificationEntity;
 import com.todaktodot.TDTD.domain.notification.repository.entity.PushType;
@@ -55,6 +56,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,6 +81,7 @@ public class DailyCardServiceImpl implements DailyCardService {
     private final UserRepository userRepository;
     private final FcmService fcmService;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     private static final Long SYSTEM_USER = 0L;
 
@@ -276,6 +279,9 @@ public class DailyCardServiceImpl implements DailyCardService {
 
         //푸시알림 전송
         submitAnswerPushAlarm(coupleCardId, userId, couple);
+
+        // 커플 내 양쪽 답변 완료 시 AI 피드백 자동 생성 이벤트 발행
+        publishFeedbackEventIfBothAnswered(coupleCardId, userId, couple, cardId, coupleCard.getIssuedDate());
 
         return SubmitAnswerResponseDTO.of(coupleCardId, cardId, userId, savedAnswers);
     }
@@ -1234,8 +1240,30 @@ public class DailyCardServiceImpl implements DailyCardService {
         return modes[nextIndex];
     }
 
+    private void publishFeedbackEventIfBothAnswered(Long coupleCardId, Long userId,
+                                                     CoupleEntity couple, Long cardId,
+                                                     LocalDate issuedDate) {
+        Long partnerUserId = couple.getUserId1().equals(userId)
+                ? couple.getUserId2() : couple.getUserId1();
+
+        // SOLO 커플은 피드백 생성 불가
+        if (partnerUserId == null) {
+            return;
+        }
+
+        boolean partnerAnswered = dailyCardUserAnswerRepository
+                .existsByCoupleCardIdAndUserIdAndDelYn(coupleCardId, partnerUserId, "N");
+
+        if (partnerAnswered) {
+            applicationEventPublisher.publishEvent(
+                    new BothAnswersCompletedEvent(userId, coupleCardId, cardId, issuedDate)
+            );
+            log.info("AI 피드백 자동 생성 이벤트 발행: coupleCardId={}", coupleCardId);
+        }
+    }
+
     private void submitAnswerPushAlarm(Long coupleCardId, Long userId, CoupleEntity couple) {
-        Long receiveUserId = couple.getUserId1() == userId ? couple.getUserId2() : couple.getUserId1();
+        Long receiveUserId = couple.getUserId1().equals(userId) ? couple.getUserId2() : couple.getUserId1();
         Long coupleId = couple.getCoupleId();
         // 파트너가 이미 답변했는지 확인
         boolean isAnswered = dailyCardUserAnswerRepository.existsByCoupleCardIdAndUserIdAndDelYn(coupleCardId, receiveUserId, "N");

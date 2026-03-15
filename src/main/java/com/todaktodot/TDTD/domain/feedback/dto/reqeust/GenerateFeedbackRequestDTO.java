@@ -3,11 +3,13 @@ package com.todaktodot.TDTD.domain.feedback.dto.reqeust;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 @Schema(description = "데일리카드 AI 피드백 생성 요청")
 public class GenerateFeedbackRequestDTO {
 
