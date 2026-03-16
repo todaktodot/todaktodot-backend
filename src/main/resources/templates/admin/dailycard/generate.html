@@ -724,14 +724,12 @@
                     });
                 });
 
-                // 추론 모델 여부 확인 (o1, o3, o4, gpt-5 시리즈)
+                // 추론 모델 여부 확인 (o1, o3, o4 시리즈)
+                const REASONING_MODEL_PREFIXES = ['o1', 'o3', 'o4'];
                 function isReasoningModel(modelId) {
                     if (!modelId) return false;
                     const lower = modelId.toLowerCase();
-                    return lower.startsWith('o1') ||
-                           lower.startsWith('o3') ||
-                           lower.startsWith('o4') ||
-                           lower.startsWith('gpt-5');
+                    return REASONING_MODEL_PREFIXES.some(prefix => lower.startsWith(prefix));
                 }
 
                 // 추론 모델 선택 시 온도 UI 비활성화

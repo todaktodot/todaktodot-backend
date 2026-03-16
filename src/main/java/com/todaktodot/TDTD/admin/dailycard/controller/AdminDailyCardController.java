@@ -134,7 +134,8 @@ public class AdminDailyCardController {
             Map.of("id", "gpt-4o", "name", "GPT-4o", "desc", "고품질, 범용 모델"),
             Map.of("id", "gpt-4.1", "name", "GPT-4.1", "desc", "코딩에 강함, 1M 컨텍스트"),
             Map.of("id", "gpt-4.1-mini", "name", "GPT-4.1 Mini", "desc", "GPT-4.1의 빠른 버전"),
-            Map.of("id", "gpt-5.2", "name", "GPT-5.2", "desc", "최신 플래그십 (400K 컨텍스트)")
+            Map.of("id", "gpt-5.2", "name", "GPT-5.2", "desc", "플래그십 (400K 컨텍스트)"),
+            Map.of("id", "gpt-5.4", "name", "GPT-5.4", "desc", "최신 플래그십 (1M 컨텍스트)")
     );
 
     @GetMapping("/generate")

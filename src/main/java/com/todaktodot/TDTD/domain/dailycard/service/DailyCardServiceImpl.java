@@ -727,15 +727,16 @@ public class DailyCardServiceImpl implements DailyCardService {
 
     /**
      * 추론 모델 여부 확인
-     * 추론 모델(o1, o3, gpt-5 시리즈)은 temperature 등 샘플링 파라미터를 지원하지 않음
+     * 추론 모델(o1, o3, o4 시리즈)은 temperature 등 샘플링 파라미터를 지원하지 않음
      */
+    private static final Set<String> REASONING_MODEL_PREFIXES = Set.of(
+            "o1", "o3", "o4"
+    );
+
     private boolean isReasoningModel(String modelId) {
         if (modelId == null) return false;
         String lowerModel = modelId.toLowerCase();
-        return lowerModel.startsWith("o1") ||
-               lowerModel.startsWith("o3") ||
-               lowerModel.startsWith("o4") ||
-               lowerModel.startsWith("gpt-5");
+        return REASONING_MODEL_PREFIXES.stream().anyMatch(lowerModel::startsWith);
     }
 
     private DailyCardEntity pickCard(CardMode mode, CardSubject subject, CardType type, Set<Long> answeredCardIds) {
