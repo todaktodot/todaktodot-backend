@@ -64,10 +64,13 @@ public class ReportDetailResponseDTO {
     @AllArgsConstructor
     public static class InsightInfo {
         private Long insightId;
-        private String content;
+        private String summary;
+        private String economyPart;
+        private String lifestylePart;
+        private String lovePart;
 
-        public static InsightInfo from(Long insightId, String content) {
-            return new InsightInfo(insightId, content);
+        public static InsightInfo from(Long insightId, String summary, String economyPart, String lifestylePart, String lovePart) {
+            return new InsightInfo(insightId, summary, economyPart, lifestylePart, lovePart);
         }
     }
 }

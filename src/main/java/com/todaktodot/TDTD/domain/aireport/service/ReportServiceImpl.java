@@ -143,10 +143,16 @@ public class ReportServiceImpl implements ReportService {
 
         //인사이트 조회
         Long insightId = findReport.getInsightId();
-        String insightContent = formatInsight(insightId);
+        //String insightContent = formatInsight(insightId);
+        Insight insight = insightRepository.findById(insightId)
+                .orElseThrow(() -> new IllegalStateException("[인사이트ID : " + insightId +" ]에 해당하는 인사이트가 존재하지 않습니다."));
 
         ReportDetailResponseDTO reportInfo = getReportInfo(findReport, coupleInfo.get());
-        ReportDetailResponseDTO.InsightInfo insightInfo = ReportDetailResponseDTO.InsightInfo.from(insightId, insightContent);
+        ReportDetailResponseDTO.InsightInfo insightInfo = ReportDetailResponseDTO.InsightInfo.from(insightId,
+                insight.getSummary(),
+                insight.getEconomyPart(),
+                insight.getLifestylePart(),
+                insight.getLovePart());
         reportInfo.setInsightInfo(insightInfo);
         return reportInfo;
     }
@@ -275,14 +281,6 @@ public class ReportServiceImpl implements ReportService {
                         .build());
             }
         });
-
-        //인사이트 매필
-        //시작: 월요일 00:00
-        //LocalDate startDTOfInsight = startDt.toLocalDate();
-        //종료: 저번 주 월요일 00:00
-        //LocalDate endDTOfInsight= endDt.toLocalDate();
-        //Insight insight = insightRepository.findByCoupleIdAndStartDtAndEndDtAndDelYn(coupleEntity.getCoupleId(), startDTOfInsight, endDTOfInsight, "N")
-        //        .orElse(null);
 
         //리포트 생성
         Report newReport = Report.builder()
