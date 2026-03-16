@@ -344,7 +344,7 @@
                                     </div>
                                 </div>
 
-                                <!-- AI 피드백 섹션 -->
+                                <!-- AI 인사이트 섹션 -->
                                 <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; border: 1px solid #bae6fd; margin-top: 16px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                                         <div style="display: flex; align-items: center; gap: 12px;">
@@ -353,7 +353,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- 케이스 1: 피드백 미생성 -->
+                                    <!-- 케이스 1: 인사이트 미생성 -->
                                     <div th:if="${report.insight == null}">
                                         <p style="color: #7f8c8d; margin-bottom: 12px;"> AI 인사이트를 생성할 수 있습니다.</p>
                                         <button type="button" class="btn btn-primary"
@@ -361,7 +361,7 @@
                                                          data-start-date=${#temporals.format(report.startDt, 'yyyy-MM-dd')},
                                                          data-end-date=${#temporals.format(report.endDt, 'yyyy-MM-dd')}"
                                                 onclick="generateInsight(this)">
-                                            AI 피드백 생성
+                                            AI 인사이트 생성
                                         </button>
                                     </div>
 
