@@ -94,6 +94,63 @@ body {
     font-size: 1.1rem;
 }
 
+/* Sidebar Tree Navigation */
+.nav-category-toggle {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+}
+
+.nav-category-toggle:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+.nav-category-toggle .arrow {
+    margin-left: auto;
+    font-size: 0.7rem;
+    transition: transform 0.3s ease;
+}
+
+.nav-category.open > .nav-category-toggle .arrow {
+    transform: rotate(180deg);
+}
+
+.nav-submenu {
+    list-style: none;
+    height: 0;
+    overflow: hidden;
+    transition: height 0.25s ease;
+    background: rgba(0,0,0,0.15);
+}
+
+.nav-submenu li a {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px 10px 48px;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+    font-size: 0.9rem;
+}
+
+.nav-submenu li a:hover {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+}
+
+.nav-submenu li a.active {
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    border-left-color: #f0c674;
+}
+
 /* Main Content */
 .main-content {
     flex: 1;

@@ -22,51 +22,93 @@
             </div>
             <nav class="sidebar-nav">
                 <ul>
-                    <li>
-                        <a th:href="@{/admin/daily-card/generate}"
-                           th:classappend="${activeMenu == 'generate'} ? 'active' : ''">
-                            <span class="icon">✨</span>
-                            <span>데일리카드 AI 생성</span>
-                        </a>
-                    </li>
+                    <!-- AI 프롬프트 관리 -->
                     <li>
                         <a th:href="@{/admin/prompt}"
                            th:classappend="${activeMenu == 'prompt'} ? 'active' : ''">
-                            <span class="icon">✨</span>
+                            <span class="icon">📝</span>
                             <span>AI 프롬프트 관리</span>
                         </a>
                     </li>
-                    <li>
-                        <a th:href="@{/admin/feedback}"
-                           th:classappend="${activeMenu == 'feedback'} ? 'active' : ''">
-                            <span class="icon">✨</span>
-                            <span>AI 피드백 관리</span>
+                    <!-- 데일리카드 -->
+                    <li class="nav-category" data-category="dailycard"
+                        th:classappend="${#strings.contains('generate,dailycard,dailycard-assign', activeMenu)} ? 'open' : ''">
+                        <a href="javascript:void(0)" class="nav-category-toggle">
+                            <span class="icon">📋</span>
+                            <span>데일리카드</span>
+                            <span class="arrow">&#9662;</span>
                         </a>
+                        <ul class="nav-submenu">
+                            <li>
+                                <a th:href="@{/admin/daily-card/generate}"
+                                   th:classappend="${activeMenu == 'generate'} ? 'active' : ''">
+                                    <span>데일리카드 AI 생성</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a th:href="@{/admin/daily-card}"
+                                   th:classappend="${activeMenu == 'dailycard'} ? 'active' : ''">
+                                    <span>데일리카드 관리</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a th:href="@{/admin/daily-card-assign}"
+                                   th:classappend="${activeMenu == 'dailycard-assign'} ? 'active' : ''">
+                                    <span>데일리카드 배정</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
-                    <li>
-                        <a th:href="@{/admin/insight}"
-                           th:classappend="${activeMenu == 'insight'} ? 'active' : ''">
-                            <span class="icon">✨</span>
-                            <span>AI 인사이트 관리</span>
+                    <!-- AI 피드백 -->
+                    <li class="nav-category" data-category="feedback"
+                        th:classappend="${activeMenu == 'feedback'} ? 'open' : ''">
+                        <a href="javascript:void(0)" class="nav-category-toggle">
+                            <span class="icon">💬</span>
+                            <span>AI 피드백</span>
+                            <span class="arrow">&#9662;</span>
                         </a>
+                        <ul class="nav-submenu">
+                            <li>
+                                <a th:href="@{/admin/feedback}"
+                                   th:classappend="${activeMenu == 'feedback'} ? 'active' : ''">
+                                    <span>AI 피드백 관리</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
-                    <li>
-                        <a th:href="@{/admin/daily-card}"
-                           th:classappend="${activeMenu == 'dailycard'} ? 'active' : ''">
-                            <span>데일리카드 관리</span>
+                    <!-- AI 인사이트 -->
+                    <li class="nav-category" data-category="insight"
+                        th:classappend="${activeMenu == 'insight'} ? 'open' : ''">
+                        <a href="javascript:void(0)" class="nav-category-toggle">
+                            <span class="icon">💡</span>
+                            <span>AI 인사이트</span>
+                            <span class="arrow">&#9662;</span>
                         </a>
+                        <ul class="nav-submenu">
+                            <li>
+                                <a th:href="@{/admin/insight}"
+                                   th:classappend="${activeMenu == 'insight'} ? 'active' : ''">
+                                    <span>AI 인사이트 관리</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
-                    <li>
-                        <a th:href="@{/admin/daily-card-assign}"
-                           th:classappend="${activeMenu == 'dailycard-assign'} ? 'active' : ''">
-                            <span>데일리카드 배정</span>
+                    <!-- 커플 -->
+                    <li class="nav-category" data-category="couple"
+                        th:classappend="${activeMenu == 'couple'} ? 'open' : ''">
+                        <a href="javascript:void(0)" class="nav-category-toggle">
+                            <span class="icon">💑</span>
+                            <span>커플</span>
+                            <span class="arrow">&#9662;</span>
                         </a>
-                    </li>
-                    <li>
-                        <a th:href="@{/admin/couple}"
-                           th:classappend="${activeMenu == 'couple'} ? 'active' : ''">
-                            <span>커플 관리</span>
-                        </a>
+                        <ul class="nav-submenu">
+                            <li>
+                                <a th:href="@{/admin/couple}"
+                                   th:classappend="${activeMenu == 'couple'} ? 'active' : ''">
+                                    <span>커플 관리</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </nav>
