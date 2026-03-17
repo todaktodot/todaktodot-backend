@@ -492,7 +492,7 @@
                             <th:block th:each="aiModel, stat : ${aiModels}">
                                 <label class="option-chip ai-model-chip model-option">
                                     <input type="radio" name="aiModel" th:value="${aiModel.get('id')}"
-                                           th:checked="${aiModel.get('id') == 'gpt-5.2'}">
+                                           th:checked="${aiModel.get('id') == 'gpt-5.4'}">
                                     <span class="option-title" th:text="${aiModel.get('name')}">GPT-4o Mini</span>
                                     <span class="option-desc" th:text="${aiModel.get('desc')}">빠르고 저렴함</span>
                                 </label>
@@ -835,7 +835,7 @@
                         'type': type.value,
                         'situationCategory': document.getElementById('situationCategory').value,
                         'promptId': document.getElementById('promptId').value,
-                        'aiModel': document.querySelector('input[name="aiModel"]:checked')?.value || 'gpt-4o-mini',
+                        'aiModel': document.querySelector('input[name="aiModel"]:checked')?.value || 'gpt-5.4',
                         'temperature': document.querySelector('input[name="temperature"]:checked')?.value || '0.8'
                     };
 

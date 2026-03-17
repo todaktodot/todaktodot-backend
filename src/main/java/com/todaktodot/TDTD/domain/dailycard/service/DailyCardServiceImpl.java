@@ -120,7 +120,7 @@ public class DailyCardServiceImpl implements DailyCardService {
 
         // AI 모델 기본값 설정
         if (aiModel == null || aiModel.isBlank()) {
-            aiModel = "gpt-4o-mini";
+            aiModel = "gpt-5.4";
         }
 
         // temperature 기본값 및 범위 검증
