@@ -591,6 +591,7 @@
                         const button = document.querySelector(`[data-target="card-detail-${expandCardId}"]`);
                         if (button) {
                             button.textContent = '접기';
+                            button.closest('.question-item').scrollIntoView({ behavior: 'smooth', block: 'start' });
                         }
                     }
                 }
