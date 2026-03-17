@@ -499,7 +499,9 @@
                     }
 
                     alert('AI 피드백이 생성되었습니다.');
-                    location.reload();
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('expandCard', coupleCardId);
+                    window.location.href = url.toString();
                 } catch (error) {
                     alert('오류: ' + error.message);
                     button.disabled = false;
@@ -578,6 +580,21 @@
                     button.textContent = originalText;
                 }
             }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const params = new URLSearchParams(window.location.search);
+                const expandCardId = params.get('expandCard');
+                if (expandCardId) {
+                    const section = document.getElementById('card-detail-' + expandCardId);
+                    if (section) {
+                        section.style.display = 'block';
+                        const button = document.querySelector(`[data-target="card-detail-${expandCardId}"]`);
+                        if (button) {
+                            button.textContent = '접기';
+                        }
+                    }
+                }
+            });
 
             function showTab(tabId, btn) {
 
