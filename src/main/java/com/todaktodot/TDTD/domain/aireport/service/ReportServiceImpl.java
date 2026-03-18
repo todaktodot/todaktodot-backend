@@ -70,7 +70,16 @@ public class ReportServiceImpl implements ReportService {
             Report mappingReport = findReport.get();
 
             //생성 가능 여부 및 초기 진입 여부 정보
-            String isInitial = mappingReport.getReadYn();
+            String isInitial;
+            //user1인 경우
+            if (userId1.equals(userId)) {
+                isInitial = mappingReport.getReadYnByUser1();
+            }
+            //user2인 경우
+            else {
+                isInitial = mappingReport.getReadYnByUser2();
+            }
+
             ReportCreateStatusResponseDTO createStatusResponse = ReportCreateStatusResponseDTO.builder()
                     .isCreatable(true)
                     .isInitalize(isInitial.equals("N"))

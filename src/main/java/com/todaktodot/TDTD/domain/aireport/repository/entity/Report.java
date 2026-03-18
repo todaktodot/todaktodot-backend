@@ -50,8 +50,11 @@ public class Report {
     @Column(name = "INSIGHT_ID")
     private Long insightId;
 
-    @Column(name = "READ_YN", nullable = false, length = 1)
-    private String readYn = "N";
+    @Column(name = "READ_YN_USER1", nullable = false, length = 1)
+    private String readYnByUser1 = "N";
+
+    @Column(name = "READ_YN_USER2", nullable = false, length = 1)
+    private String readYnByUser2 = "N";
 
     @Column(name = "REG_DT", nullable = false, updatable = false)
     @CreationTimestamp
@@ -91,7 +94,8 @@ public class Report {
         this.answerRate = answerRate;
         this.totalAnswerCnt = totalAnswerCnt;
         this.insightId = insightId;
-        this.readYn = "N";
+        this.readYnByUser1 = "N";
+        this.readYnByUser2 = "N";
         this.strtDt = strtDt;
         this.endDt = endDt;
         this.regrId = regrId;
@@ -115,7 +119,12 @@ public class Report {
     }
 
     public void updateReadYn(Long userId) {
-        this.readYn = "Y";
+        if (userId.equals(coupleEntity.getUserId1())) {
+            this.readYnByUser1 = "Y";
+        }
+        else {
+            this.readYnByUser2 = "Y";
+        }
         this.updrId = userId;
     }
 }
