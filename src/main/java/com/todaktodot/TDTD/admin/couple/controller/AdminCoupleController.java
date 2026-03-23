@@ -113,7 +113,7 @@ public class AdminCoupleController {
 
         GenerateInsightResponseDTO response = insightService.generateInsight(requestDTO);
 
-        log.info("[Admin] 인샤이트 생성 완료: coupleId={}, InsightId={}",
+        log.info("[Admin] 인사이트 생성 완료: coupleId={}, InsightId={}",
                 coupleId, response.getInsightId());
 
         return ResponseEntity.ok(response);

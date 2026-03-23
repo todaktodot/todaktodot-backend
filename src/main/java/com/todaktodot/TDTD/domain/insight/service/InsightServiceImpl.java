@@ -62,17 +62,17 @@ public class InsightServiceImpl implements InsightService{
 
         LocalDate endDate = requestDTO.getEndDt();
         //인사이트 생성 요청 종료날짜가 월요일인지 검증
-        if (endDate.getDayOfWeek().getValue() != 1) {
-            throw new IllegalStateException("인사이트 생성 시작 일자가 월요일이 아닙니다.");
+        if (endDate.getDayOfWeek().getValue() != 7) {
+            throw new IllegalStateException("인사이트 생성 종료 일자가 일요일이 아닙니다.");
         }
 
         // 종료: 월요일 00:00
-        LocalDateTime endDt = endDate.atTime(00, 0);
+        LocalDateTime endDt = endDate.plusDays(1).atTime(00, 0);
         // 시작: 전 주 월요일
         LocalDateTime strtDt = endDt.minusWeeks(1);
 
         //중복시 리턴
-        checkDuplicate(couple.getCoupleId(),strtDt.toLocalDate(), endDt.toLocalDate());
+        checkDuplicate(couple.getCoupleId(),strtDt.toLocalDate(), endDate);
 
         //둘다 답변한 데일리카드 존재하지 않는 경우
         boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(couple.getUserId1(), couple.getUserId2(), strtDt, endDt, "N");
@@ -167,7 +167,7 @@ public class InsightServiceImpl implements InsightService{
                 userId1,
                 userId2,
                 startDt.toLocalDate(),
-                endDt.toLocalDate(),
+                endDt.toLocalDate().minusDays(1),
                 economyAnswerData,
                 lifestyleAnswerData,
                 loveAnswerData

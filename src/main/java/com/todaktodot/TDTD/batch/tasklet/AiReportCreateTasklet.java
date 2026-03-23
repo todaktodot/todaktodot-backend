@@ -36,8 +36,6 @@ public class AiReportCreateTasklet implements Tasklet {
         //만약 현재가 월요일이 아니라면 월요일로 맞추기
         LocalDate endDt = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate startDt = endDt.minusWeeks(1);
-        //일요일로 변경
-        endDt = endDt.minusDays(1);
 
         //모든 커플 리스트 조회
         List<CoupleEntity> connectedCouples = coupleRepository.findConnectedCouples();
