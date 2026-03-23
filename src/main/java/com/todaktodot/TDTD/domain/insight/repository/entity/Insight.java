@@ -27,16 +27,16 @@ public class Insight {
     @Column(name = "END_DT", nullable = false)
     private LocalDate endDt;
 
-    @Column(name = "SUMMARY", nullable = false)
+    @Column(name = "SUMMARY", nullable = false, length = 1000)
     private String summary;
 
-    @Column(name = "ECONOMY_PART")
+    @Column(name = "ECONOMY_PART", length = 1000)
     private String economyPart;
 
-    @Column(name = "LIFESTYLE_PART")
+    @Column(name = "LIFESTYLE_PART", length = 1000)
     private String lifestylePart;
 
-    @Column(name = "LOVE_PART")
+    @Column(name = "LOVE_PART", length = 1000)
     private String lovePart;
 
     @Column(name = "REG_DT", nullable = false, updatable = false)
