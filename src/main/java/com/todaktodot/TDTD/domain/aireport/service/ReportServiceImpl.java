@@ -63,6 +63,7 @@ public class ReportServiceImpl implements ReportService {
         LocalDate endDt = today.with(DayOfWeek.MONDAY);
         // 시작: 저번 주 월요일
         LocalDate startDt = endDt.minusWeeks(1);
+        endDt = endDt.minusDays(1);
 
         Optional<Report> findReport = reportRepository.findByCoupleEntityAndStrtDtAndEndDtAndDelYn(coupleInfo, startDt, endDt, "N");
         //해당 주차에 생성된 리포트 조회 -> 조회 후 반환
@@ -186,7 +187,7 @@ public class ReportServiceImpl implements ReportService {
         // 시작: 저번 주 월요일 00:00
         LocalDateTime startDt = startD.atTime(0, 0);
         // 종료: 월요일 00:00
-        LocalDateTime endDt = endD.atTime(0, 0);
+        LocalDateTime endDt = startDt.plusWeeks(1);
 
         //둘다 답변한 데일리카드 존재하지 않아서 생성 불가
         boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(userId1, userId2, startDt, endDt, "N");
@@ -300,8 +301,8 @@ public class ReportServiceImpl implements ReportService {
                 .answerRate(participationRate)
                 .totalAnswerCnt(String.valueOf(bothAnswerCnt))
                 .insightId(insightId)
-                .strtDt(startDt.toLocalDate())
-                .endDt(endDt.toLocalDate())
+                .strtDt(startD)
+                .endDt(endD)
                 .regrId(userId1)
                 .updrId(userId1)
                 .delYn("N")

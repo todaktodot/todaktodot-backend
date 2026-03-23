@@ -36,6 +36,8 @@ public class AiReportCreateTasklet implements Tasklet {
         //만약 현재가 월요일이 아니라면 월요일로 맞추기
         LocalDate endDt = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate startDt = endDt.minusWeeks(1);
+        //일요일로 변경
+        endDt = endDt.minusDays(1);
 
         //모든 커플 리스트 조회
         List<CoupleEntity> connectedCouples = coupleRepository.findConnectedCouples();
@@ -64,7 +66,11 @@ public class AiReportCreateTasklet implements Tasklet {
 
                 //2. 리포트 생성
                 Report createdReport = reportService.createReport(couple, insightId, startDt, endDt);
-                log.debug("AI리포트가 생성되었습니다. AI리포트 ID {}", createdReport.getId());
+                log.debug("====AI리포트가 생성되었습니다.====");
+                log.debug("커플 ID :{}", couple.getCoupleId());
+                log.debug("AI리포트 ID {}",createdReport.getId());
+                log.debug("생성 날짜 : {} ~ {}", startDt, endDt);
+                log.debug("============================");
 
             } catch (IllegalStateException | IllegalArgumentException e) {
                 log.error("AI 리포트 생성 실패, 커플 ID : {}, 메세지 : {}", couple.getCoupleId(), e.getMessage());
