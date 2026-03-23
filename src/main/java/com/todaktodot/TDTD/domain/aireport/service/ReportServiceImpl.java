@@ -186,8 +186,8 @@ public class ReportServiceImpl implements ReportService {
 
         // 시작: 저번 주 월요일 00:00
         LocalDateTime startDt = startD.atTime(0, 0);
-        // 종료: 월요일 00:00
-        LocalDateTime endDt = startDt.plusWeeks(1);
+        // 종료: 일요일 23:59:59
+        LocalDateTime endDt = startDt.plusWeeks(1).minusSeconds(1);
 
         //둘다 답변한 데일리카드 존재하지 않아서 생성 불가
         boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(userId1, userId2, startDt, endDt, "N");
@@ -301,8 +301,8 @@ public class ReportServiceImpl implements ReportService {
                 .answerRate(participationRate)
                 .totalAnswerCnt(String.valueOf(bothAnswerCnt))
                 .insightId(insightId)
-                .strtDt(startD)
-                .endDt(endD)
+                .strtDt(startDt.toLocalDate())
+                .endDt(endDt.toLocalDate())
                 .regrId(userId1)
                 .updrId(userId1)
                 .delYn("N")
