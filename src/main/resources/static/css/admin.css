@@ -26,6 +26,8 @@ body {
     position: fixed;
     height: 100vh;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-header {
@@ -62,6 +64,35 @@ body {
 
 .sidebar-nav {
     padding: 20px 0;
+    flex: 1;
+}
+
+.sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.15);
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    color: rgba(255,255,255,0.75);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logout-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+.logout-btn .icon {
+    margin-right: 8px;
 }
 
 .sidebar-nav ul {
@@ -682,8 +713,17 @@ table td {
 
     .sidebar-header .logo,
     .sidebar-header .subtitle,
-    .sidebar-nav span:not(.icon) {
+    .sidebar-nav span:not(.icon),
+    .logout-btn span:not(.icon) {
         display: none;
+    }
+
+    .logout-btn {
+        justify-content: center;
+    }
+
+    .logout-btn .icon {
+        margin-right: 0;
     }
 
     .sidebar-header .logo-img {

@@ -112,6 +112,14 @@
                     </li>
                 </ul>
             </nav>
+            <div class="sidebar-footer">
+                <form th:action="@{/admin/logout}" method="post">
+                    <button type="submit" class="logout-btn">
+                        <span class="icon">🚪</span>
+                        <span>로그아웃</span>
+                    </button>
+                </form>
+            </div>
         </aside>
 
         <!-- 메인 콘텐츠 -->
