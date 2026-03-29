@@ -17,28 +17,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GoogleClient {
 
-    @Value("${oauth.google.ios-client-id-dev}")
-    private String iosClientIdDev;
-
     @Value("${oauth.google.ios-client-id-prod}")
     private String iosClientIdProd;
-
-    @Value("${oauth.google.aos-client-id-dev}")
-    private String aosClientIdDev;
 
     @Value("${oauth.google.aos-client-id-prod}")
     private String aosClientIdProd;
 
-    @Value("${oauth.google.web-client-id}")
-    private String webClientId;
-
     public SocialUserResponse getUserInfo(String idTokenStr) {
         List<String> clientIds = new ArrayList<>();
-        clientIds.add(iosClientIdDev);
         clientIds.add(iosClientIdProd);
-        clientIds.add(aosClientIdDev);
         clientIds.add(aosClientIdProd);
-        clientIds.add(webClientId);
 
         try {
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
