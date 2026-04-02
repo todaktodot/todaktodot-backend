@@ -20,7 +20,7 @@ jobs:
         run: |
           JSON_PAYLOAD=$(jq -n \
             --arg title "🚀 운영 서버 배포 시작" \
-            --arg desc "**실행자:** ${{ github.actor }} \
+            --arg desc "**실행자:** ${{ github.actor }}" \
             --arg bnc "**브랜치:** ${{ github.ref_name }}" \
             --arg color 3447003 \
             '{embeds: [{title: $title, description: $desc, bnc: $bnc, color: ($color | tonumber)}]}')
