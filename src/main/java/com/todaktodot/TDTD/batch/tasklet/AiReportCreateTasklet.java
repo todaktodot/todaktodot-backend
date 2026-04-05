@@ -7,6 +7,7 @@ import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
 import com.todaktodot.TDTD.domain.insight.dto.GenerateInsightRequestDTO;
 import com.todaktodot.TDTD.domain.insight.dto.GenerateInsightResponseDTO;
 import com.todaktodot.TDTD.domain.insight.service.InsightService;
+import com.todaktodot.TDTD.global.alert.DiscordNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.StepContribution;
@@ -27,6 +28,7 @@ public class AiReportCreateTasklet implements Tasklet {
 
    private final ReportService reportService;
    private final InsightService insightService;
+   private final DiscordNotificationService discordNotificationService;
    private final CoupleRepository coupleRepository;
 
     @Override
@@ -64,6 +66,7 @@ public class AiReportCreateTasklet implements Tasklet {
 
                 //2. 리포트 생성
                 Report createdReport = reportService.createReport(couple, insightId, startDt, endDt);
+                if (createdReport == null) continue;
                 log.debug("====AI리포트가 생성되었습니다.====");
                 log.debug("커플 ID :{}", couple.getCoupleId());
                 log.debug("AI리포트 ID {}",createdReport.getId());
@@ -71,7 +74,12 @@ public class AiReportCreateTasklet implements Tasklet {
                 log.debug("============================");
 
             } catch (IllegalStateException | IllegalArgumentException e) {
-                log.error("AI 리포트 생성 실패, 커플 ID : {}, 메세지 : {}", couple.getCoupleId(), e.getMessage());
+                String message = String.format("배치에서 AI 리포트 생성 실패, 커플 ID : %s, 메세지 : %s", couple.getCoupleId(), e.getMessage());
+                log.error(message);
+
+                if (!e.getMessage().equals("모두 응답한 데일리카드가 존재하지 않습니다.")) {
+                    discordNotificationService.sendErrorNotificationForBatch(message);
+                }
             } catch (Exception e) {
                 log.error("알 수 없는 예외로 AI리포트 생성 실패, 커플ID : {}, 메세지 : {}", couple.getCoupleId(), e.getMessage());
             }
