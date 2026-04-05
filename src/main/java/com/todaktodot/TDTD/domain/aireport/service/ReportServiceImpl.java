@@ -151,6 +151,11 @@ public class ReportServiceImpl implements ReportService {
             throw new IllegalArgumentException("삭제된 AI리포트입니다.");
         }
 
+        //커플이 만든 리포트가 아닌 경우
+        if (!findReport.getCoupleEntity().equals(coupleInfo.get())) {
+            throw new IllegalStateException("[커플 ID : { " +  coupleInfo.get().getCoupleId() + " }]에게 배정된 AI리포트가 아닙니다.");
+        }
+
         //인사이트 조회
         Long insightId = findReport.getInsightId();
         //String insightContent = formatInsight(insightId);
@@ -192,7 +197,7 @@ public class ReportServiceImpl implements ReportService {
         //둘다 답변한 데일리카드 존재하지 않아서 생성 불가
         boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(userId1, userId2, startDt, endDt, "N");
         if (!isCreatable) {
-            return null;
+            throw new IllegalStateException("모두 응답한 데일리카드가 존재하지 않습니다.");
         }
 
         //주간 일자
