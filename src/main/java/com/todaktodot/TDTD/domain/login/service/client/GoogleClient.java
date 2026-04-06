@@ -10,23 +10,22 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class GoogleClient {
 
-    @Value("${oauth.google.ios-client-id-prod}")
-    private String iosClientIdProd;
+    @Value("${oauth.google.ios-client-id}")
+    private String iosClientId;
 
-    @Value("${oauth.google.aos-client-id-prod}")
-    private String aosClientIdProd;
+    @Value("${oauth.google.aos-client-id}")
+    private String aosClientId;
 
     public SocialUserResponse getUserInfo(String idTokenStr) {
         List<String> clientIds = new ArrayList<>();
-        clientIds.add(iosClientIdProd);
-        clientIds.add(aosClientIdProd);
+        clientIds.add(iosClientId);
+        clientIds.add(aosClientId);
 
         try {
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(

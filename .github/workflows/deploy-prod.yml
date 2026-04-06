@@ -21,9 +21,9 @@ jobs:
           JSON_PAYLOAD=$(jq -n \
             --arg title "🚀 운영 서버 배포 시작" \
             --arg desc "**실행자:** ${{ github.actor }}" \
-            --arg bnc "**브랜치:** ${{ github.ref_name }}" \
+            --arg timestamp "$(TZ=Asia/Seoul date +"%Y-%m-%d %H:%M:%S")" \
             --arg color 3447003 \
-            '{embeds: [{title: $title, description: $desc, bnc: $bnc, color: ($color | tonumber)}]}')
+            '{embeds: [{title: $title, description: $desc, timestamp: $timestamp, color: ($color | tonumber)}]}')
 
           curl -f -s -m 10 -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
             -H "Content-Type: application/json" \
@@ -70,3 +70,4 @@ jobs:
           curl -f -s -m 10 -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
             -H "Content-Type: application/json" \
             -d "$JSON_PAYLOAD"
+
