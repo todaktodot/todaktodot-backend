@@ -72,7 +72,7 @@ public class InsightServiceImpl implements InsightService{
         LocalDateTime strtDt = endDt.minusWeeks(1);
 
         //중복시 리턴
-        checkDuplicate(couple.getCoupleId(),strtDt.toLocalDate(), endDate);
+        checkDuplicate(couple.getCoupleId(),strtDt.toLocalDate(), endDate.minusDays(1));
 
         //둘다 답변한 데일리카드 존재하지 않는 경우
         boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(couple.getUserId1(), couple.getUserId2(), strtDt, endDt, "N");
