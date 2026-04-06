@@ -24,14 +24,14 @@ public class DiscordNotificationService {
 
     // 기존 웹 요청용 메서드
     public void sendErrorNotificationForAPI(Exception e, HttpServletRequest request) {
-        String message = String.format("🚨 **[운영 서버 API 에러 발생]**\n- **에러 위치**: `%s`\n- **Error**: %s",
+        String message = String.format("🚨 **[개발 서버 API 에러 발생]**\n- **에러 위치**: `%s`\n- **Error**: %s",
                 request.getRequestURI(), e.getMessage());
 
         sendNotification(message);
     }
 
     public void sendErrorNotificationForBatch(String message) {
-        String notiMessage = String.format("🚨 **[운영 서버 배치 에러 발생]**\n\n- **Error Message**: %s",
+        String notiMessage = String.format("🚨 **[개발 서버 배치 에러 발생]**\n\n- **Error Message**: %s",
                 message);
 
         sendNotification(notiMessage);

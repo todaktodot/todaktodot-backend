@@ -190,7 +190,7 @@ public class ReportServiceImpl implements ReportService {
         if (findReport.isPresent()) return null;
 
         // 시작: 저번 주 월요일 00:00
-        LocalDateTime startDt = startD.atTime(0, 0);
+        LocalDateTime startDt = startD.atTime(0, 0, 0);
         // 종료: 일요일 23:59:59
         LocalDateTime endDt = startDt.plusWeeks(1).minusSeconds(1);
 
