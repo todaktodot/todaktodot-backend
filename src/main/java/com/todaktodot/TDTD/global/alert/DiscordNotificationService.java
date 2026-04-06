@@ -16,6 +16,7 @@ public class DiscordNotificationService {
 
     @Value("${discord.webhook.profile}")
     private String discordWebhookProfile;
+
     private final WebClient webClient;
 
     public DiscordNotificationService(WebClient.Builder webClientBuilder) {
