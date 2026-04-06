@@ -13,6 +13,9 @@ public class DiscordNotificationService {
 
     @Value("${discord.webhook.url}")
     private String discordWebhookUrl;
+
+    @Value("${discord.webhook.profile}")
+    private String discordWebhookProfile;
     private final WebClient webClient;
 
     public DiscordNotificationService(WebClient.Builder webClientBuilder) {
@@ -24,15 +27,15 @@ public class DiscordNotificationService {
 
     // 기존 웹 요청용 메서드
     public void sendErrorNotificationForAPI(Exception e, HttpServletRequest request) {
-        String message = String.format("🚨 **[개발 서버 API 에러 발생]**\n- **에러 위치**: `%s`\n- **Error**: %s",
-                request.getRequestURI(), e.getMessage());
+        String message = String.format("🚨 **[ %s 서버 API 에러 발생]**\n- **에러 위치**: `%s`\n- **Error**: %s",
+                discordWebhookProfile, request.getRequestURI(), e.getMessage());
 
         sendNotification(message);
     }
 
     public void sendErrorNotificationForBatch(String message) {
-        String notiMessage = String.format("🚨 **[개발 서버 배치 에러 발생]**\n\n- **Error Message**: %s",
-                message);
+        String notiMessage = String.format("🚨 **[ %s 서버 배치 에러 발생]**\n\n- **Error Message**: %s",
+                discordWebhookProfile, message);
 
         sendNotification(notiMessage);
     }
