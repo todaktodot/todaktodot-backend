@@ -32,8 +32,8 @@ public class BatchScheduler {
         }
     }
 
-    // 매주 월요일 오전 12시에 한 번만 실행됨
-    @Scheduled(cron = "0 0 0 * * MON", zone = "Asia/Seoul")
+    // 매주 월요일 오전 4시 반에 한 번만 실행됨
+    @Scheduled(cron = "0 30 4 * * MON", zone = "Asia/Seoul")
     public void runReportCreateJobs() throws Exception{
         runJob(aiReportCreateJob);
     }
