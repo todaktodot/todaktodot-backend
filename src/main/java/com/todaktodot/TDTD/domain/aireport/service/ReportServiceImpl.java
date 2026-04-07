@@ -59,7 +59,7 @@ public class ReportServiceImpl implements ReportService {
 
         //오늘 날짜
         LocalDate today = LocalDate.now();
-        // 종료: 월요일
+        // 종료: 일요일
         LocalDate endDt = today.with(DayOfWeek.MONDAY);
         // 시작: 저번 주 월요일
         LocalDate startDt = endDt.minusWeeks(1);
@@ -189,10 +189,10 @@ public class ReportServiceImpl implements ReportService {
         Optional<Report> findReport = reportRepository.findByCoupleEntityAndStrtDtAndEndDtAndDelYn(coupleEntity, startD, endD, "N");
         if (findReport.isPresent()) return null;
 
-        // 시작: 저번 주 월요일 00:00
-        LocalDateTime startDt = startD.atTime(0, 0, 0);
-        // 종료: 일요일 23:59:59
-        LocalDateTime endDt = startDt.plusWeeks(1).minusSeconds(1);
+        // 시작: 저번 주 월요일 08:00
+        LocalDateTime startDt = startD.atTime(8, 0, 0);
+        // 종료: 다음주 월요일 04:30
+        LocalDateTime endDt = endD.atTime(4, 30, 0);
 
         //둘다 답변한 데일리카드 존재하지 않아서 생성 불가
         boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(userId1, userId2, startDt, endDt, "N");
@@ -306,8 +306,8 @@ public class ReportServiceImpl implements ReportService {
                 .answerRate(participationRate)
                 .totalAnswerCnt(String.valueOf(bothAnswerCnt))
                 .insightId(insightId)
-                .strtDt(startDt.toLocalDate())
-                .endDt(endDt.toLocalDate())
+                .strtDt(startD)
+                .endDt(endD.minusDays(1))
                 .regrId(userId1)
                 .updrId(userId1)
                 .delYn("N")

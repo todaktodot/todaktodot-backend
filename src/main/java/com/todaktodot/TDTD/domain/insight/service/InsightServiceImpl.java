@@ -66,10 +66,10 @@ public class InsightServiceImpl implements InsightService{
             throw new IllegalStateException("인사이트 생성 종료 일자가 일요일이 아닙니다.");
         }
 
-        // 종료: 월요일 00:00
-        LocalDateTime endDt = endDate.atTime(0, 0);
-        // 시작: 전 주 월요일
-        LocalDateTime strtDt = endDt.minusWeeks(1);
+        // 종료: 월요일 04:30
+        LocalDateTime endDt = endDate.atTime(4, 30, 0);
+        // 시작: 전 주 월요일 08:00
+        LocalDateTime strtDt = endDate.minusWeeks(1).atTime(8, 0, 0);
 
         //중복시 리턴
         checkDuplicate(couple.getCoupleId(),strtDt.toLocalDate(), endDate.minusDays(1));
@@ -107,7 +107,7 @@ public class InsightServiceImpl implements InsightService{
         return transactionTemplate.execute(status -> {
             GenerateInsightResponseDTO generateInsightResponseDTO = saveInsightResult(couple.getCoupleId(), insightContext, insightResult, aiModel, config.getPromptId());
 
-            reportRepository.findByCoupleEntityAndStrtDtAndEndDtAndDelYn(couple, endDate.minusWeeks(1), endDate.minusDays(1), "N")
+            reportRepository.findByCoupleEntityAndStrtDtAndEndDtAndDelYn(couple, strtDt.toLocalDate(), endDate.minusDays(1), "N")
                     .ifPresent(report -> {
                         report.updateInsight(generateInsightResponseDTO.getInsightId());
                     });
