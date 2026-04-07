@@ -81,7 +81,7 @@ public class AiReportCreateTasklet implements Tasklet {
                     discordNotificationService.sendErrorNotificationForBatch(message);
                 }
             } catch (Exception e) {
-                String message = String.format("알수 없는 예외로 배치에서 AI 리포트 생성 실패, 커플 ID : %s, 메세지 : %s", couple.getCoupleId(), e.getMessage());
+                String message = String.format("알 수 없는 예외로 배치에서 AI 리포트 생성 실패, 커플 ID : %s, 메세지 : %s", couple.getCoupleId(), e.getMessage());
                 log.error(message);
                 discordNotificationService.sendErrorNotificationForBatch(message);
 
