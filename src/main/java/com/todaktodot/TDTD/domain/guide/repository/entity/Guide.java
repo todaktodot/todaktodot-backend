@@ -18,7 +18,7 @@ public class Guide {
     @Column(name = "GUIDE_ID")
     private Long guideId;
 
-    @Column(name = "CONTENT", nullable = false)
+    @Column(name = "CONTENT", nullable = false, columnDefinition = "VARCHAR(2000)")
     private String content;
 
     @Column(name = "REG_DT", nullable = false, updatable = false)
