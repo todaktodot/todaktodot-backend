@@ -42,10 +42,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-        }
-        else {
-            request.setAttribute("exception", "토큰 정보를 입력해주세요");
-            log.warn("JwtAuthFilter: Caught Exception {}", request.getAttribute("exception"));
         }}
         catch (MalformedJwtException e) {
             request.setAttribute("exception", "잘못된 JWT 서명입니다.");
