@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -53,6 +54,18 @@ public class GlobalExceptionHandler {
         discordNotificationService.sendErrorNotificationForAPI(e, request);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNoResourceFoundException(NoResourceFoundException e, HttpServletRequest request) {
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "요청한 리소스를 찾을 수 없습니다.");
+
+        if (!"/favicon.ico".equals(request.getRequestURI())) {
+            discordNotificationService.sendErrorNotificationForAPI(e, request);
+        }
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     @ExceptionHandler(Exception.class)
