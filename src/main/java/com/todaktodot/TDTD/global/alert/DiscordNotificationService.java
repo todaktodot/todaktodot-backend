@@ -11,10 +11,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Component
 public class DiscordNotificationService {
 
-    @Value("${discord.webhook.url}")
+    @Value("${discord.webhook.enabled:false}")
+    private boolean enabled;
+
+    @Value("${discord.webhook.url:}")
     private String discordWebhookUrl;
 
-    @Value("${discord.webhook.profile}")
+    @Value("${discord.webhook.profile:local}")
     private String discordWebhookProfile;
 
     private final WebClient webClient;
@@ -42,6 +45,10 @@ public class DiscordNotificationService {
     }
 
     private void sendNotification(String message) {
+        if (!enabled) {
+            return;
+        }
+
         webClient.post()
                 .uri(discordWebhookUrl)
                 .contentType(MediaType.APPLICATION_JSON)
