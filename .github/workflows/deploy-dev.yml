@@ -1,0 +1,63 @@
+name: Deploy Dev Server
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug n8n DNS
+        run: |
+          set -euxo pipefail
+          echo "Resolver:"; cat /etc/resolv.conf || true
+          echo "getent:"; getent hosts todaktodot-n8n.duckdns.org || true
+          echo "nslookup:"; nslookup todaktodot-n8n.duckdns.org || true
+          echo "dig(A):"; dig +time=2 +tries=1 todaktodot-n8n.duckdns.org A || true
+          echo "dig(A) @1.1.1.1:"; dig @1.1.1.1 +time=2 +tries=1 todaktodot-n8n.duckdns.org A || true
+      # 1. 배포 시작 알림 (n8n -> Discord)
+      - name: Notify Deploy Start
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          JSON_PAYLOAD=$(jq -n \
+            --arg ref "refs/heads/${{ github.ref_name }}" \
+            --arg after "${{ github.sha }}" \
+            --arg pusher "${{ github.actor }}" \
+            --arg message "$COMMIT_MESSAGE" \
+            --arg timestamp "$(TZ=Asia/Seoul date +"%Y-%m-%d %H:%M:%S")" \
+            '{ref: $ref, after: $after, pusher: {name: $pusher}, head_commit: {message: $message}, timestamp: $timestamp}')
+
+          curl -X POST https://todaktodot-n8n.duckdns.org/webhook/github-deploy \
+            -H "Content-Type: application/json" \
+            -d "$JSON_PAYLOAD"
+      # 1.5. DNS / HOST 진단 (임시)
+      - name: Debug EC2 host DNS
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo "EC2_HOST(raw)='${{ secrets.EC2_HOST }}'"
+          echo -n "${{ secrets.EC2_HOST }}" | xxd -p; echo
+
+          echo "getent hosts:"
+          getent hosts "${{ secrets.EC2_HOST }}" || true
+
+          echo "nslookup:"
+          nslookup "${{ secrets.EC2_HOST }}" || true
+
+          echo "dig A:"
+          dig +time=2 +tries=1 "${{ secrets.EC2_HOST }}" A || true
+
+          echo "TCP 22 check:"
+          timeout 5 bash -lc "cat < /dev/null > /dev/tcp/${{ secrets.EC2_HOST }}/22" \
+            && echo "22 open" || echo "22 connect failed"
+      # 2. SSH로 배포 스크립트 실행
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            /home/ec2-user/deploy.sh
