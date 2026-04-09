@@ -44,6 +44,13 @@ public class DiscordNotificationService {
         sendNotification(notiMessage);
     }
 
+    public void sendSuccessNotificationForBatch(String message) {
+        String notiMessage = String.format("✅ **[ %s 서버 배치 성공]**\n\n%s",
+                discordWebhookProfile, message);
+
+        sendNotification(notiMessage);
+    }
+
     private void sendNotification(String message) {
         if (!enabled) {
             return;

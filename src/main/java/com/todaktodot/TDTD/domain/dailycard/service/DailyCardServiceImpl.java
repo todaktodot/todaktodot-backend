@@ -43,6 +43,8 @@ import java.time.LocalDate;
 import java.util.*;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
@@ -84,6 +86,7 @@ public class DailyCardServiceImpl implements DailyCardService {
     private final ApplicationEventPublisher applicationEventPublisher;
 
     private static final Long SYSTEM_USER = 0L;
+    private static final String UNKNOWN_NICKNAME = "-";
 
     /**
      * AI 생성 결과를 담는 record
@@ -100,7 +103,11 @@ public class DailyCardServiceImpl implements DailyCardService {
     /**
      * 커플 단위 배정 결과를 담는 record
      */
-    private record CoupleAssignResult(int assignedCount, int skippedDateCount) {}
+    private record CoupleAssignResult(
+            int assignedCount,
+            int skippedDateCount,
+            List<AssignBatchResponseDTO.AssignedDayDetail> assignedDayDetails
+    ) {}
 
     @Override
     @Transactional
@@ -336,16 +343,20 @@ public class DailyCardServiceImpl implements DailyCardService {
         int days = (int) rangeDays + 1;
 
         List<CoupleEntity> couples = coupleRepository.findByDelYn("N");
+        Map<Long, String> nicknameMap = buildNicknameMap(couples);
         log.info("데일리카드 배정 시작: startDate={}, endDate={}, days={}, coupleCount={}",
                 startDate, endDate, days, couples.size());
         int assignedCount = 0;
         int skippedDateCount = 0;
+        List<AssignBatchResponseDTO.AssignedDayDetail> assignedDayDetails = new ArrayList<>();
 
         for (CoupleEntity couple : couples) {
+            String coupleName = buildCoupleName(couple, nicknameMap);
             CoupleAssignResult result = assignCardsForCouple(
-                    couple.getCoupleId(), startDate, endDate, SYSTEM_USER);
+                    couple.getCoupleId(), coupleName, startDate, endDate, SYSTEM_USER);
             assignedCount += result.assignedCount();
             skippedDateCount += result.skippedDateCount();
+            assignedDayDetails.addAll(result.assignedDayDetails());
         }
 
         log.info("데일리카드 배정 완료: startDate={}, endDate={}, days={}, assignedCount={}, skippedDateCount={}",
@@ -358,6 +369,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .coupleCount(couples.size())
                 .assignedCount(assignedCount)
                 .skippedDateCount(skippedDateCount)
+                .assignedDayDetails(assignedDayDetails)
                 .build();
     }
 
@@ -377,7 +389,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
 
         CoupleAssignResult result = assignCardsForCouple(
-                couple.getCoupleId(), startDate, endDate, userId);
+                couple.getCoupleId(), null, startDate, endDate, userId);
 
         return AssignMyCardResponseDTO.builder()
                 .coupleId(couple.getCoupleId())
@@ -392,14 +404,15 @@ public class DailyCardServiceImpl implements DailyCardService {
      * 커플 단위 데일리카드 배정 (배치/실시간 공용)
      * 이미 배정된 날짜는 스킵
      */
-    private CoupleAssignResult assignCardsForCouple(Long coupleId, LocalDate startDate,
-                                                     LocalDate endDate, Long registratorId) {
+    private CoupleAssignResult assignCardsForCouple(Long coupleId, String coupleName, LocalDate startDate,
+                                                      LocalDate endDate, Long registratorId) {
         int days = (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
         Set<Long> answeredCardIds = new HashSet<>(
                 dailyCardUserAnswerRepository.findAnsweredCardIdsByCoupleId(coupleId)
         );
         int assignedCount = 0;
         int skippedDateCount = 0;
+        List<AssignBatchResponseDTO.AssignedDayDetail> assignedDayDetails = new ArrayList<>();
 
         log.info("커플 배정 시작: coupleId={}, answeredCardCount={}", coupleId, answeredCardIds.size());
 
@@ -433,6 +446,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                     nextMode = advanceMode(skippedMode, 1);
                     lastSubject = existingAssignments.get(0).getDailyCard().getSubject();
                 }
+                assignedDayDetails.add(createSkippedDayDetail(coupleId, coupleName, targetDate, existingAssignments));
                 skippedDateCount++;
                 log.info("커플 배정 스킵: coupleId={}, targetDate={}, reason=alreadyAssigned",
                         coupleId, targetDate);
@@ -464,6 +478,15 @@ public class DailyCardServiceImpl implements DailyCardService {
 
             assignedCount += 2;
             lastSubject = subjectForDate;
+            assignedDayDetails.add(createAssignedDayDetail(
+                    coupleId,
+                    coupleName,
+                    targetDate,
+                    modeForDate,
+                    subjectForDate,
+                    roleplayCard,
+                    balanceCard
+            ));
 
             log.info("커플 배정 완료: coupleId={}, targetDate={}, mode={}, subject={}, roleplayCardId={}, balanceCardId={}",
                     coupleId, targetDate, modeForDate, subjectForDate,
@@ -473,7 +496,100 @@ public class DailyCardServiceImpl implements DailyCardService {
         log.info("커플 배정 요약: coupleId={}, assignedCount={}, skippedCount={}",
                 coupleId, assignedCount, skippedDateCount);
 
-        return new CoupleAssignResult(assignedCount, skippedDateCount);
+        return new CoupleAssignResult(assignedCount, skippedDateCount, assignedDayDetails);
+    }
+
+    private Map<Long, String> buildNicknameMap(List<CoupleEntity> couples) {
+        Set<Long> userIds = couples.stream()
+                .flatMap(couple -> Stream.of(couple.getUserId1(), couple.getUserId2()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> normalizeNickname(user.getNickname())));
+    }
+
+    private String buildCoupleName(CoupleEntity couple, Map<Long, String> nicknameMap) {
+        String user1Name = resolveNickname(couple.getUserId1(), nicknameMap);
+        String user2Name = resolveNickname(couple.getUserId2(), nicknameMap);
+        return user1Name + " / " + user2Name;
+    }
+
+    private String resolveNickname(Long userId, Map<Long, String> nicknameMap) {
+        if (userId == null) {
+            return UNKNOWN_NICKNAME;
+        }
+        return normalizeNickname(nicknameMap.get(userId));
+    }
+
+    private String normalizeNickname(String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            return UNKNOWN_NICKNAME;
+        }
+        return nickname;
+    }
+
+    private AssignBatchResponseDTO.AssignedDayDetail createSkippedDayDetail(
+            Long coupleId,
+            String coupleName,
+            LocalDate issuedDate,
+            List<CoupleDailyCardEntity> existingAssignments
+    ) {
+        CardMode mode = null;
+        CardSubject subject = null;
+
+        if (!existingAssignments.isEmpty() && existingAssignments.get(0).getDailyCard() != null) {
+            mode = existingAssignments.get(0).getDailyCard().getMode();
+            subject = existingAssignments.get(0).getDailyCard().getSubject();
+        }
+
+        return AssignBatchResponseDTO.AssignedDayDetail.builder()
+                .coupleId(coupleId)
+                .coupleName(coupleName)
+                .issuedDate(issuedDate)
+                .skipped(true)
+                .mode(mode != null ? mode.name() : null)
+                .modeDisplayName(mode != null ? mode.getDisplayName() : null)
+                .subject(subject != null ? subject.name() : null)
+                .subjectDisplayName(subject != null ? subject.getDisplayName() : null)
+                .cards(List.of())
+                .build();
+    }
+
+    private AssignBatchResponseDTO.AssignedDayDetail createAssignedDayDetail(
+            Long coupleId,
+            String coupleName,
+            LocalDate issuedDate,
+            CardMode mode,
+            CardSubject subject,
+            DailyCardEntity roleplayCard,
+            DailyCardEntity balanceCard
+    ) {
+        List<AssignBatchResponseDTO.AssignedCardDetail> cards = List.of(
+                createAssignedCardDetail(roleplayCard),
+                createAssignedCardDetail(balanceCard)
+        );
+
+        return AssignBatchResponseDTO.AssignedDayDetail.builder()
+                .coupleId(coupleId)
+                .coupleName(coupleName)
+                .issuedDate(issuedDate)
+                .skipped(false)
+                .mode(mode.name())
+                .modeDisplayName(mode.getDisplayName())
+                .subject(subject.name())
+                .subjectDisplayName(subject.getDisplayName())
+                .cards(cards)
+                .build();
+    }
+
+    private AssignBatchResponseDTO.AssignedCardDetail createAssignedCardDetail(DailyCardEntity card) {
+        return AssignBatchResponseDTO.AssignedCardDetail.builder()
+                .cardId(card.getCardId())
+                .cardTitle(card.getCardTitle())
+                .type(card.getType().name())
+                .typeDisplayName(card.getType().getDisplayName())
+                .build();
     }
 
     private AiGenerationResult callAiForCardGeneration(CardMode mode, CardSubject subject, CardType type,
