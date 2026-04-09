@@ -3,6 +3,7 @@ package com.todaktodot.TDTD.batch.config;
 import com.todaktodot.TDTD.batch.tasklet.AiReportAssignTasklet;
 import com.todaktodot.TDTD.batch.tasklet.AiReportCreateTasklet;
 import com.todaktodot.TDTD.batch.tasklet.DailyCardAssignTasklet;
+import com.todaktodot.TDTD.batch.tasklet.DailyCardBatchAssignTasklet;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -17,11 +18,13 @@ import org.springframework.transaction.PlatformTransactionManager;
 //@EnableBatchProcessing
 public class BatchConfig {
     private final DailyCardAssignTasklet dailyCardAssignTasklet;
+    private final DailyCardBatchAssignTasklet dailyCardBatchAssignTasklet;
     private final AiReportAssignTasklet aiReportAssignTasklet;
     private final AiReportCreateTasklet aiReportCreateTasklet;
 
-    public BatchConfig(DailyCardAssignTasklet dailyCardAssignTasklet, AiReportAssignTasklet aiReportAssignTasklet, AiReportCreateTasklet aiReportCreateTasklet) {
+    public BatchConfig(DailyCardAssignTasklet dailyCardAssignTasklet, DailyCardBatchAssignTasklet dailyCardBatchAssignTasklet, AiReportAssignTasklet aiReportAssignTasklet, AiReportCreateTasklet aiReportCreateTasklet) {
         this.dailyCardAssignTasklet = dailyCardAssignTasklet;
+        this.dailyCardBatchAssignTasklet = dailyCardBatchAssignTasklet;
         this.aiReportAssignTasklet = aiReportAssignTasklet;
         this.aiReportCreateTasklet = aiReportCreateTasklet;
     }
@@ -38,6 +41,21 @@ public class BatchConfig {
     public Step dailyCardAssignAlarmStep(JobRepository jopRepository, PlatformTransactionManager transactionManager) {
         return new StepBuilder("dailyCardAssignAlarmStep", jopRepository)
                 .tasklet(dailyCardAssignTasklet, transactionManager)
+                .build();
+    }
+
+    //데일리카드 자동 배정
+    @Bean
+    public Job dailyCardBatchAssignJob(JobRepository jobRepository, Step dailyCardBatchAssignStep) {
+        return new JobBuilder("dailyCardBatchAssignJob", jobRepository)
+                .start(dailyCardBatchAssignStep)
+                .build();
+    }
+
+    @Bean
+    public Step dailyCardBatchAssignStep(JobRepository jopRepository, PlatformTransactionManager transactionManager) {
+        return new StepBuilder("dailyCardBatchAssignStep", jopRepository)
+                .tasklet(dailyCardBatchAssignTasklet, transactionManager)
                 .build();
     }
 
