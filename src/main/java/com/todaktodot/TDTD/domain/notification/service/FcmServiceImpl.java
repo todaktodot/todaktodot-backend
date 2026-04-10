@@ -192,7 +192,7 @@ public class FcmServiceImpl implements FcmService {
     }
 
     private Map<Long, List<String>> getActiveTokens(List<Long> userIds) {
-        List<DeviceTokenEntity> tokens = deviceTokenRepository.findActiveTokensByUserIds(userIds);
+        List<DeviceTokenEntity> tokens = deviceTokenRepository.findActiveTokensByUserIdsWithUser(userIds);
         if (tokens.isEmpty()) {
             log.debug("활성화된 토큰이 없습니다 - userIds: {}", userIds);
             return Map.of();

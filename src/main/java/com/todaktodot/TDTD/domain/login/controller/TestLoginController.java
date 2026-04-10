@@ -64,7 +64,7 @@ public class TestLoginController {
 
     private UserAccount getOrCreateTestUser(String name, String providerId, String provider) {
 
-        UserAccount userTestAccount = userAccountRepository.findByProviderIdAndProviderAndDelYn(providerId, provider, "N")
+        UserAccount userTestAccount = userAccountRepository.findByProviderIdAndProviderAndDelYnWithUser(providerId, provider, "N")
                 .orElseGet(() -> {
                     UserAccount newUserAccount = UserAccount.builder()
                             .email(providerId + "@todaktodak.com")

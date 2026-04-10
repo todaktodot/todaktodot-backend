@@ -17,6 +17,7 @@ public class BatchScheduler {
 
     private final JobLauncher jobLauncher;
     private final Job dailyCardAssignAlarmJob;
+    private final Job dailyCardBatchAssignJob;
     private final Job aiReportAssignAlarmJob;
     private final Job aiReportCreateJob;
 
@@ -36,6 +37,12 @@ public class BatchScheduler {
     @Scheduled(cron = "0 30 4 * * MON", zone = "Asia/Seoul")
     public void runReportCreateJobs() throws Exception{
         runJob(aiReportCreateJob);
+    }
+
+    // 매일 오전 4시에 한 번만 실행됨
+    @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")
+    public void runDailyCardBatchAssignJob() throws Exception{
+        runJob(dailyCardBatchAssignJob);
     }
 
     private void runJob(Job job){
