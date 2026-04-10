@@ -39,7 +39,10 @@ import com.todaktodot.TDTD.admin.prompt.repository.SituationCategoryRepository;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.SituationCategoryEntity;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ThreadLocalRandom;
@@ -82,8 +85,11 @@ public class DailyCardServiceImpl implements DailyCardService {
     private final FcmService fcmService;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final Clock clock;
 
     private static final Long SYSTEM_USER = 0L;
+    private static final LocalTime DAILY_CARD_ANSWER_OPEN_TIME = LocalTime.of(8, 0);
+    private static final LocalTime DAILY_CARD_ANSWER_CLOSE_TIME = LocalTime.of(4, 0);
 
     /**
      * AI 생성 결과를 담는 record
@@ -243,6 +249,8 @@ public class DailyCardServiceImpl implements DailyCardService {
         if (!coupleCard.getCoupleId().equals(couple.getCoupleId())) {
             throw new IllegalStateException("해당 카드에 대한 접근 권한이 없습니다.");
         }
+
+        validateAnswerSubmissionWindow(coupleCard.getIssuedDate());
 
         // 이미 답변했는지 확인
         if (dailyCardUserAnswerRepository.existsByCoupleCardIdAndUserIdAndDelYn(coupleCardId, userId, "N")) {
@@ -1239,6 +1247,16 @@ public class DailyCardServiceImpl implements DailyCardService {
         int startIndex = startMode.ordinal();
         int nextIndex = (startIndex + offset) % modes.length;
         return modes[nextIndex];
+    }
+
+    private void validateAnswerSubmissionWindow(LocalDate issuedDate) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime openDateTime = issuedDate.atTime(DAILY_CARD_ANSWER_OPEN_TIME);
+        LocalDateTime closeDateTime = issuedDate.plusDays(1).atTime(DAILY_CARD_ANSWER_CLOSE_TIME);
+
+        if (now.isBefore(openDateTime) || now.isAfter(closeDateTime)) {
+            throw new IllegalStateException("데일리카드 답변 가능 시간은 발급일 08:00부터 다음날 04:00까지입니다.");
+        }
     }
 
     private void publishFeedbackEventIfBothAnswered(Long coupleCardId, Long userId,
