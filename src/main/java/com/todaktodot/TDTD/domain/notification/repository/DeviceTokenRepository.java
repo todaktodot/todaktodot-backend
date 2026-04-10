@@ -25,4 +25,7 @@ public interface DeviceTokenRepository extends JpaRepository<DeviceTokenEntity, 
 
     @Query("SELECT dt FROM DeviceTokenEntity dt WHERE dt.user.id IN :userIds AND dt.isActive = true AND dt.delYn = 'N'")
     List<DeviceTokenEntity> findActiveTokensByUserIds(@Param("userIds") List<Long> userIds);
+
+    @Query("SELECT dt FROM DeviceTokenEntity dt JOIN FETCH dt.user WHERE dt.user.id IN :userIds AND dt.isActive = true AND dt.delYn = 'N'")
+    List<DeviceTokenEntity> findActiveTokensByUserIdsWithUser(@Param("userIds") List<Long> userIds);
 }

@@ -11,7 +11,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
@@ -102,8 +101,15 @@ public class SecurityConfig {
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("api/login", "/login/test*", "api/reissue", "api/guide").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/image/**").permitAll()
+                        .requestMatchers("/api/login", "/login/test*", "/api/reissue", "/api/guide").permitAll()
+                        // WebSocket
+                        .requestMatchers("/ws/**").permitAll()
+                        // Swagger
+                        .requestMatchers("/v3/api-docs/**", "/swagger-resources/**", "/swagger-ui/**").permitAll()
+                        // Static Resources
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/image/**", "/favicon.ico").permitAll()
+                        // Error Page
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
@@ -129,20 +135,6 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return (web -> web.ignoring().requestMatchers(
-                // WebSocket
-                "/ws/**",
-                // Swagger
-                "/v3/api-docs/**", "/swagger-resources/**", "/swagger-ui/**",
-                // Static Resources
-                "/favicon.ico", "/css/**", "/js/**", "/images/**", "/image/**",
-                // Error Page
-                "/error"
-        ));
     }
 
     @Bean
