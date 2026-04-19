@@ -60,12 +60,16 @@ public class AdminDailyCardServiceImpl implements AdminDailyCardService {
                 .updrId(ADMIN_USER_ID)
                 .build();
 
+        String situation = (updateDTO.getSituation() != null && !updateDTO.getSituation().isBlank())
+                ? updateDTO.getSituation()
+                : card.getSituation();
+
         newCard.update(
                 updateDTO.getMode(),
                 updateDTO.getSubject(),
                 updateDTO.getType(),
                 updateDTO.getCardTitle(),
-                updateDTO.getSituation(),
+                situation,
                 updateDTO.getUseYn(),
                 ADMIN_USER_ID
         );

@@ -72,6 +72,14 @@
                         <textarea id="cardTitle" name="cardTitle" rows="4" required
                                   th:text="${card.cardTitle}"></textarea>
                     </div>
+
+                    <div class="form-group">
+                        <label for="situation">상황 (소제목)</label>
+                        <input type="text" id="situation" name="situation"
+                               th:value="${card.situation}"
+                               placeholder="비워두면 기존 값이 유지됩니다"
+                               style="width: 100%; padding: 8px 12px; border: 1px solid #dce4ec; border-radius: 4px;">
+                    </div>
                 </div>
             </div>
 
