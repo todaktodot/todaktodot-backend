@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -44,7 +45,10 @@ public class AdminCoupleController {
                        @RequestParam(required = false) String delYn,
                        Model model) {
         String resolvedDelYn = (delYn == null || delYn.isBlank()) ? "N" : delYn;
-        Page<CoupleListDTO> couples = adminCoupleService.getCouples(resolvedDelYn, PageRequest.of(page, DEFAULT_PAGE_SIZE));
+        Page<CoupleListDTO> couples = adminCoupleService.getCouples(
+                resolvedDelYn,
+                PageRequest.of(page, DEFAULT_PAGE_SIZE, Sort.by(Sort.Direction.DESC, "regDt"))
+        );
 
         model.addAttribute("couples", couples);
         model.addAttribute("delYn", resolvedDelYn);
