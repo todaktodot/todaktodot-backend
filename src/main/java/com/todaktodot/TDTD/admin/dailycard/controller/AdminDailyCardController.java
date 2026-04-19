@@ -78,11 +78,7 @@ public class AdminDailyCardController {
     public String editForm(@PathVariable Long cardId, Model model) {
         DailyCardDetailDTO card = adminDailyCardService.getDailyCardDetail(cardId);
 
-        model.addAttribute("card", card);
-        model.addAttribute("modes", CardMode.values());
-        model.addAttribute("subjects", CardSubject.values());
-        model.addAttribute("types", CardType.values());
-        model.addAttribute("activeMenu", "dailycard");
+        populateEditModel(model, card, card.getSituation());
 
         return "admin/dailycard/edit";
     }
@@ -96,11 +92,15 @@ public class AdminDailyCardController {
 
         if (bindingResult.hasErrors()) {
             DailyCardDetailDTO card = adminDailyCardService.getDailyCardDetail(cardId);
-            model.addAttribute("card", card);
-            model.addAttribute("modes", CardMode.values());
-            model.addAttribute("subjects", CardSubject.values());
-            model.addAttribute("types", CardType.values());
-            model.addAttribute("activeMenu", "dailycard");
+            String selectedSituation = updateDTO.getSituation() != null ? updateDTO.getSituation() : card.getSituation();
+            populateEditModel(model, card, selectedSituation);
+            return "admin/dailycard/edit";
+        }
+
+        DailyCardDetailDTO card = adminDailyCardService.getDailyCardDetail(cardId);
+        if (!isSituationSelectionAllowed(card.getSubject(), card.getSituation(), updateDTO.getSituation())) {
+            populateEditModel(model, card, card.getSituation());
+            model.addAttribute("situationError", "현재 카드 주제에서 선택할 수 없는 상황입니다.");
             return "admin/dailycard/edit";
         }
 
@@ -195,5 +195,71 @@ public class AdminDailyCardController {
                 .previewPromptSeparated(mode, subject, type, situationCategory, promptId);
 
         return ResponseEntity.ok(separated);
+    }
+
+    private void populateEditModel(Model model, DailyCardDetailDTO card, String selectedSituation) {
+        model.addAttribute("card", card);
+        model.addAttribute("modes", CardMode.values());
+        model.addAttribute("subjects", CardSubject.values());
+        model.addAttribute("types", CardType.values());
+        model.addAttribute("activeMenu", "dailycard");
+
+        addSituationSelectionModel(model, card.getSubject(), selectedSituation);
+    }
+
+    private void addSituationSelectionModel(Model model, CardSubject subject, String selectedSituation) {
+        Map<CardSubject, List<SituationCategoryDTO>> categoriesBySubject =
+                adminPromptService.getCategoriesGroupedBySubject();
+        List<SituationCategoryDTO> allSituationOptions = subject != null
+                ? categoriesBySubject.getOrDefault(subject, List.of())
+                : List.of();
+        List<SituationCategoryDTO> situationOptions = allSituationOptions.stream()
+                .filter(SituationCategoryDTO::isActive)
+                .toList();
+
+        model.addAttribute("situationOptions", situationOptions);
+        model.addAttribute("selectedSituation", selectedSituation);
+
+        if (selectedSituation == null || selectedSituation.isBlank() || subject == null) {
+            model.addAttribute("selectedSituationCompatibilityState", null);
+            return;
+        }
+
+        boolean selectedSituationInActiveOptions = situationOptions.stream()
+                .anyMatch(category -> selectedSituation.equals(category.getCategoryName()));
+
+        if (selectedSituationInActiveOptions) {
+            model.addAttribute("selectedSituationCompatibilityState", null);
+            return;
+        }
+
+        boolean selectedSituationExistsForSubject = allSituationOptions.stream()
+                .anyMatch(category -> selectedSituation.equals(category.getCategoryName()));
+
+        model.addAttribute(
+                "selectedSituationCompatibilityState",
+                selectedSituationExistsForSubject ? "inactive" : "missing"
+        );
+    }
+
+    private boolean isSituationSelectionAllowed(CardSubject subject, String currentSituation, String submittedSituation) {
+        if (submittedSituation == null || submittedSituation.isBlank()) {
+            return true;
+        }
+
+        if (submittedSituation.equals(currentSituation)) {
+            return true;
+        }
+
+        if (subject == null) {
+            return false;
+        }
+
+        Map<CardSubject, List<SituationCategoryDTO>> categoriesBySubject =
+                adminPromptService.getCategoriesGroupedBySubject();
+
+        return categoriesBySubject.getOrDefault(subject, List.of()).stream()
+                .filter(SituationCategoryDTO::isActive)
+                .anyMatch(category -> submittedSituation.equals(category.getCategoryName()));
     }
 }
