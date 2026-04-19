@@ -92,8 +92,22 @@
                     <p>새로운 데일리카드를 생성해보세요.</p>
                 </div>
 
-                <div th:unless="${cards.empty}" class="table-container">
-                    <table>
+                <div th:unless="${cards.empty}" class="table-container daily-card-list-table-container">
+                    <table class="daily-card-list-table">
+                        <colgroup>
+                            <col class="col-id">
+                            <col class="col-mode">
+                            <col class="col-subject">
+                            <col class="col-type">
+                            <col class="col-title">
+                            <col class="col-question-count">
+                            <col class="col-status">
+                            <col class="col-date">
+                            <col class="col-user">
+                            <col class="col-date">
+                            <col class="col-user">
+                            <col class="col-actions">
+                        </colgroup>
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -173,23 +187,52 @@
                 </div>
 
                 <!-- 페이지네이션 -->
-                <div th:if="${cards.totalPages > 1}" class="pagination">
+                <div th:if="${cards.totalPages > 1}"
+                     class="pagination"
+                     th:with="startPage=${T(java.lang.Math).max(0, cards.number - 2)},
+                              endPage=${T(java.lang.Math).min(cards.totalPages - 1, cards.number + 2)},
+                              lastPage=${cards.totalPages - 1}">
+                    <a th:if="${cards.hasPrevious()}"
+                       th:href="@{/admin/daily-card(page=0, mode=${searchDTO.mode}, subject=${searchDTO.subject}, type=${searchDTO.type}, useYn=${searchDTO.useYn}, keyword=${searchDTO.keyword})}">
+                        처음
+                    </a>
+                    <span th:unless="${cards.hasPrevious()}" class="disabled">처음</span>
+
                     <a th:if="${cards.hasPrevious()}"
                        th:href="@{/admin/daily-card(page=${cards.number - 1}, mode=${searchDTO.mode}, subject=${searchDTO.subject}, type=${searchDTO.type}, useYn=${searchDTO.useYn}, keyword=${searchDTO.keyword})}">
-                        &laquo; 이전
+                        이전
                     </a>
+                    <span th:unless="${cards.hasPrevious()}" class="disabled">이전</span>
 
-                    <th:block th:each="i : ${#numbers.sequence(0, cards.totalPages - 1)}">
+                    <a th:if="${startPage > 0}"
+                       th:href="@{/admin/daily-card(page=0, mode=${searchDTO.mode}, subject=${searchDTO.subject}, type=${searchDTO.type}, useYn=${searchDTO.useYn}, keyword=${searchDTO.keyword})}">
+                        1
+                    </a>
+                    <span th:if="${startPage > 1}" class="ellipsis">...</span>
+
+                    <th:block th:each="i : ${#numbers.sequence(startPage, endPage)}">
                         <span th:if="${i == cards.number}" class="active" th:text="${i + 1}">1</span>
                         <a th:unless="${i == cards.number}"
                            th:href="@{/admin/daily-card(page=${i}, mode=${searchDTO.mode}, subject=${searchDTO.subject}, type=${searchDTO.type}, useYn=${searchDTO.useYn}, keyword=${searchDTO.keyword})}"
                            th:text="${i + 1}">1</a>
                     </th:block>
 
+                    <span th:if="${endPage < lastPage - 1}" class="ellipsis">...</span>
+                    <a th:if="${endPage < lastPage}"
+                       th:href="@{/admin/daily-card(page=${lastPage}, mode=${searchDTO.mode}, subject=${searchDTO.subject}, type=${searchDTO.type}, useYn=${searchDTO.useYn}, keyword=${searchDTO.keyword})}"
+                       th:text="${cards.totalPages}">112</a>
+
                     <a th:if="${cards.hasNext()}"
                        th:href="@{/admin/daily-card(page=${cards.number + 1}, mode=${searchDTO.mode}, subject=${searchDTO.subject}, type=${searchDTO.type}, useYn=${searchDTO.useYn}, keyword=${searchDTO.keyword})}">
-                        다음 &raquo;
+                        다음
                     </a>
+                    <span th:unless="${cards.hasNext()}" class="disabled">다음</span>
+
+                    <a th:if="${cards.hasNext()}"
+                       th:href="@{/admin/daily-card(page=${lastPage}, mode=${searchDTO.mode}, subject=${searchDTO.subject}, type=${searchDTO.type}, useYn=${searchDTO.useYn}, keyword=${searchDTO.keyword})}">
+                        마지막
+                    </a>
+                    <span th:unless="${cards.hasNext()}" class="disabled">마지막</span>
                 </div>
             </div>
         </div>
