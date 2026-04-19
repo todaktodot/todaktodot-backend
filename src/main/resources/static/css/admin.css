@@ -186,6 +186,7 @@ body {
 .main-content {
     flex: 1;
     margin-left: 260px;
+    min-width: 0;
     min-height: 100vh;
 }
 
@@ -484,15 +485,65 @@ table td {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    min-width: 260px;
 }
 
 .daily-card-title-text {
-    max-width: 300px;
+    max-width: 100%;
 }
 
 .daily-card-title-meta {
     margin-top: 10px;
+}
+
+.daily-card-list-table-container {
+    width: 100%;
+}
+
+.daily-card-list-table {
+    width: 1600px;
+    max-width: none;
+    table-layout: fixed;
+}
+
+.daily-card-list-table .col-id {
+    width: 70px;
+}
+
+.daily-card-list-table .col-mode,
+.daily-card-list-table .col-subject,
+.daily-card-list-table .col-type {
+    width: 110px;
+}
+
+.daily-card-list-table .col-title {
+    width: 320px;
+}
+
+.daily-card-list-table .col-question-count,
+.daily-card-list-table .col-status {
+    width: 85px;
+}
+
+.daily-card-list-table .col-date {
+    width: 145px;
+}
+
+.daily-card-list-table .col-user {
+    width: 95px;
+}
+
+.daily-card-list-table .col-actions {
+    width: 230px;
+}
+
+.daily-card-list-table th,
+.daily-card-list-table td {
+    vertical-align: middle;
+}
+
+.daily-card-list-table th:not(:nth-child(5)),
+.daily-card-list-table td:not(:nth-child(5)) {
+    white-space: nowrap;
 }
 
 /* Form */
@@ -548,6 +599,7 @@ table td {
     justify-content: center;
     gap: 8px;
     margin-top: 20px;
+    flex-wrap: wrap;
 }
 
 .pagination a,
@@ -570,6 +622,18 @@ table td {
     background: #3498db;
     border-color: #3498db;
     color: #fff;
+}
+
+.pagination .disabled,
+.pagination .ellipsis {
+    color: #b0bdc8;
+    background: #f8fafc;
+    cursor: default;
+}
+
+.pagination .ellipsis {
+    border-color: transparent;
+    background: transparent;
 }
 
 /* Alert */
