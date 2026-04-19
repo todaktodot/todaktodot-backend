@@ -128,7 +128,14 @@
                                           th:classappend="'badge-' + ${card.type.name().toLowerCase()}"
                                           th:text="${card.typeDisplayName}">상황극</span>
                                 </td>
-                                <td class="truncate" th:text="${card.cardTitle}">카드 제목</td>
+                                <td>
+                                    <div class="daily-card-title-cell">
+                                        <div class="daily-card-title-text truncate" th:text="${card.cardTitle}">카드 제목</div>
+                                        <div th:if="${card.situation != null and !card.situation.isBlank()}" class="category-chips" style="margin-top: 0;">
+                                            <span class="category-chip readonly" th:text="${card.situation}">기념일/이벤트</span>
+                                        </div>
+                                    </div>
+                                </td>
                                 <td th:text="${card.questionCount}">2</td>
                                 <td>
                                     <span class="badge"
