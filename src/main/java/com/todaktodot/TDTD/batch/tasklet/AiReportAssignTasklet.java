@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
 @Component
@@ -30,12 +32,9 @@ public class AiReportAssignTasklet implements Tasklet {
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
         log.debug("=====AI 리포트 도착 알림 배치 시작=====");
 
-        LocalDate endDt = LocalDate.now();
-        //만약 현재가 월요일이 아니라면 월요일로 맞추기
-        if (endDt.getDayOfWeek() != DayOfWeek.MONDAY) {
-            endDt = endDt.with(DayOfWeek.MONDAY);
-        }
+        LocalDate endDt = LocalDate.now(ZoneId.of("Asia/Seoul"));
         LocalDate startDt = endDt.minusWeeks(1);
+        endDt = endDt.minusDays(1);
 
         //한주동안 생성된 모든 리포트 조회
         List<Report> createdReports = reportRepository.findCreatedReport(startDt, endDt);
@@ -59,6 +58,7 @@ public class AiReportAssignTasklet implements Tasklet {
 
             //전송
             fcmService.sendToUsers(List.of(userId1, userId2), pushMessage);
+            log.debug("리포트 알림 전송, coupleId : {}, userId1 : {}, userId2 : {}", couple.getCoupleId(), userId1, userId2);
         }
 
         log.debug("=====AI리포트 도착 알림 배치 완료=====");
