@@ -186,6 +186,7 @@ body {
 .main-content {
     flex: 1;
     margin-left: 260px;
+    min-width: 0;
     min-height: 100vh;
 }
 
@@ -401,6 +402,150 @@ table td {
 .badge-active { background: #d1fae5; color: #065f46; }
 .badge-inactive { background: #fee2e2; color: #991b1b; }
 
+/* Situation/category chips */
+.category-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.category-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #f8fafc;
+    border: 1px solid #e1e8ed;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    color: #2c3e50;
+}
+
+.category-chip:hover {
+    background: #e8f4fd;
+    border-color: #3498db;
+}
+
+.category-chip.selected {
+    background: #3498db;
+    border-color: #3498db;
+    color: #fff;
+}
+
+.category-chip.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.category-chip.readonly,
+.category-chip.readonly:hover {
+    cursor: default;
+    background: #f8fafc;
+    border-color: #e1e8ed;
+    color: #2c3e50;
+}
+
+.category-chip.compatibility,
+.category-chip.compatibility:hover {
+    cursor: default;
+    background: #eef6ff;
+    border-color: #bcd9f5;
+    color: #1f4f82;
+}
+
+.category-chip.compatibility .category-chip-meta {
+    color: #5e7fa0;
+}
+
+.category-chip-button {
+    appearance: none;
+    font: inherit;
+    line-height: 1.2;
+}
+
+.category-chip-meta {
+    font-size: 0.75rem;
+    color: #7f8c8d;
+}
+
+.category-chip.selected .category-chip-meta {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.form-hint {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    margin-bottom: 12px;
+}
+
+.daily-card-title-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.daily-card-title-text {
+    max-width: 100%;
+}
+
+.daily-card-title-meta {
+    margin-top: 10px;
+}
+
+.daily-card-list-table-container {
+    width: 100%;
+}
+
+.daily-card-list-table {
+    width: 1600px;
+    max-width: none;
+    table-layout: fixed;
+}
+
+.daily-card-list-table .col-id {
+    width: 70px;
+}
+
+.daily-card-list-table .col-mode,
+.daily-card-list-table .col-subject,
+.daily-card-list-table .col-type {
+    width: 110px;
+}
+
+.daily-card-list-table .col-title {
+    width: 320px;
+}
+
+.daily-card-list-table .col-question-count,
+.daily-card-list-table .col-status {
+    width: 85px;
+}
+
+.daily-card-list-table .col-date {
+    width: 145px;
+}
+
+.daily-card-list-table .col-user {
+    width: 95px;
+}
+
+.daily-card-list-table .col-actions {
+    width: 230px;
+}
+
+.daily-card-list-table th,
+.daily-card-list-table td {
+    vertical-align: middle;
+}
+
+.daily-card-list-table th:not(:nth-child(5)),
+.daily-card-list-table td:not(:nth-child(5)) {
+    white-space: nowrap;
+}
+
 /* Form */
 .form-group {
     margin-bottom: 20px;
@@ -454,6 +599,7 @@ table td {
     justify-content: center;
     gap: 8px;
     margin-top: 20px;
+    flex-wrap: wrap;
 }
 
 .pagination a,
@@ -478,6 +624,18 @@ table td {
     color: #fff;
 }
 
+.pagination .disabled,
+.pagination .ellipsis {
+    color: #b0bdc8;
+    background: #f8fafc;
+    cursor: default;
+}
+
+.pagination .ellipsis {
+    border-color: transparent;
+    background: transparent;
+}
+
 /* Alert */
 .alert {
     padding: 14px 18px;
@@ -495,6 +653,15 @@ table td {
     background: #fee2e2;
     color: #991b1b;
     border: 1px solid #fecaca;
+}
+
+.error-message {
+    background: #fdf2f2;
+    border: 1px solid #e74c3c;
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: #c0392b;
+    margin-top: 12px;
 }
 
 .alert-info {
