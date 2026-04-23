@@ -9,6 +9,7 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import java.io.IOException;
 import java.util.List;
@@ -57,11 +58,13 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String traceId = generateTraceId();
         MDC.put(TRACE_ID_KEY, traceId);
+        response.setHeader("X-Trace-Id", traceId);
 
+        ContentCachingRequestWrapper wrappedRequest = new ContentCachingRequestWrapper(request);
         long startTime = System.currentTimeMillis();
 
         try {
-            filterChain.doFilter(request, response);
+            filterChain.doFilter(wrappedRequest, response);
         } finally {
             long duration = System.currentTimeMillis() - startTime;
             log.info("HTTP {} {} -> {} ({}ms)",
