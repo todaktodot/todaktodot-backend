@@ -28,6 +28,10 @@ public class CoupleDailyCardEntity {
     @Column(name = "CARD_ID", nullable = false)
     private Long cardId;
 
+    @Column(name = "CARD_TYPE", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    private CardType cardType;
+
     @Column(name = "ISSUED_DATE", nullable = false)
     private LocalDate issuedDate;
 
@@ -63,10 +67,11 @@ public class CoupleDailyCardEntity {
     private DailyCardEntity dailyCard;
 
     @Builder
-    public CoupleDailyCardEntity(Long coupleId, Long cardId, LocalDate issuedDate,
+    public CoupleDailyCardEntity(Long coupleId, Long cardId, CardType cardType, LocalDate issuedDate,
                                   Long regrId, Long updrId) {
         this.coupleId = coupleId;
         this.cardId = cardId;
+        this.cardType = cardType;
         this.issuedDate = issuedDate;
         this.regrId = regrId;
         this.updrId = updrId;

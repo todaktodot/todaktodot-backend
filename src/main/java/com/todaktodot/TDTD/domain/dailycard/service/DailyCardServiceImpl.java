@@ -62,6 +62,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -307,10 +309,9 @@ public class DailyCardServiceImpl implements DailyCardService {
         Long coupleId = requestDTO.getCoupleId();
         Long cardId = requestDTO.getCardId();
 
-        // 카드 존재 여부 확인
-        if (!dailyCardRepository.existsById(cardId)) {
-            throw new IllegalArgumentException("존재하지 않는 카드입니다: " + cardId);
-        }
+        // 카드 존재 여부 확인 + 타입 획득
+        DailyCardEntity card = dailyCardRepository.findById(cardId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카드입니다: " + cardId));
 
         // 해당 커플에게 같은 날짜에 이미 카드가 2개 할당되어 있는지 확인
         if (coupleDailyCardRepository.countByCoupleIdAndIssuedDateAndDelYn(
@@ -324,12 +325,24 @@ public class DailyCardServiceImpl implements DailyCardService {
         CoupleDailyCardEntity coupleCard = CoupleDailyCardEntity.builder()
                 .coupleId(coupleId)
                 .cardId(cardId)
+                .cardType(card.getType())
                 .issuedDate(requestDTO.getIssuedDate())
                 .regrId(userId)
                 .updrId(userId)
                 .build();
 
-        CoupleDailyCardEntity savedCard = coupleDailyCardRepository.save(coupleCard);
+        CoupleDailyCardEntity savedCard;
+        try {
+            savedCard = coupleDailyCardRepository.save(coupleCard);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("데일리카드 단건 중복 배정 감지: coupleId={}, issuedDate={}, cardType={}",
+                    coupleId, requestDTO.getIssuedDate(), card.getType());
+            throw new IllegalStateException("이미 해당 날짜에 해당 타입의 데일리카드가 배정되었습니다.", e);
+        } catch (PessimisticLockingFailureException e) {
+            log.warn("데일리카드 단건 배정 락 대기 타임아웃: coupleId={}, issuedDate={}, cardType={}",
+                    coupleId, requestDTO.getIssuedDate(), card.getType());
+            throw new IllegalStateException("다른 요청이 배정 중입니다. 잠시 후 다시 시도해주세요.", e);
+        }
 
         log.info("커플에게 데일리카드 할당 완료: coupleCardId={}", savedCard.getCoupleCardId());
 
@@ -468,21 +481,33 @@ public class DailyCardServiceImpl implements DailyCardService {
             DailyCardEntity roleplayCard = pickCard(modeForDate, subjectForDate, CardType.ROLEPLAY, answeredCardIds);
             DailyCardEntity balanceCard = pickCard(modeForDate, subjectForDate, CardType.BALANCE, answeredCardIds);
 
-            coupleDailyCardRepository.save(CoupleDailyCardEntity.builder()
-                    .coupleId(coupleId)
-                    .cardId(roleplayCard.getCardId())
-                    .issuedDate(targetDate)
-                    .regrId(registratorId)
-                    .updrId(registratorId)
-                    .build());
+            try {
+                coupleDailyCardRepository.save(CoupleDailyCardEntity.builder()
+                        .coupleId(coupleId)
+                        .cardId(roleplayCard.getCardId())
+                        .cardType(roleplayCard.getType())
+                        .issuedDate(targetDate)
+                        .regrId(registratorId)
+                        .updrId(registratorId)
+                        .build());
 
-            coupleDailyCardRepository.save(CoupleDailyCardEntity.builder()
-                    .coupleId(coupleId)
-                    .cardId(balanceCard.getCardId())
-                    .issuedDate(targetDate)
-                    .regrId(registratorId)
-                    .updrId(registratorId)
-                    .build());
+                coupleDailyCardRepository.save(CoupleDailyCardEntity.builder()
+                        .coupleId(coupleId)
+                        .cardId(balanceCard.getCardId())
+                        .cardType(balanceCard.getType())
+                        .issuedDate(targetDate)
+                        .regrId(registratorId)
+                        .updrId(registratorId)
+                        .build());
+            } catch (DataIntegrityViolationException e) {
+                log.warn("데일리카드 중복 배정 감지: coupleId={}, targetDate={}",
+                        coupleId, targetDate);
+                throw new IllegalStateException("이미 해당 날짜에 데일리카드가 배정되었습니다.", e);
+            } catch (PessimisticLockingFailureException e) {
+                log.warn("데일리카드 배정 락 대기 타임아웃: coupleId={}, targetDate={}",
+                        coupleId, targetDate);
+                throw new IllegalStateException("다른 배정 요청이 진행 중입니다. 잠시 후 다시 시도해주세요.", e);
+            }
 
             assignedCount += 2;
             lastSubject = subjectForDate;
