@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Slf4j
@@ -14,8 +15,11 @@ public class DiscordNotificationService {
     @Value("${discord.webhook.enabled:false}")
     private boolean enabled;
 
-    @Value("${discord.webhook.url:}")
-    private String discordWebhookUrl;
+    @Value("${discord.webhook.api-url:}")
+    private String discordApiWebhookUrl;
+
+    @Value("${discord.webhook.batch-url:}")
+    private String discordBatchWebhookUrl;
 
     @Value("${discord.webhook.profile:local}")
     private String discordWebhookProfile;
@@ -34,37 +38,42 @@ public class DiscordNotificationService {
         String message = String.format("🚨 **[ %s 서버 API 에러 발생]**\n- **에러 위치**: `%s`\n- **Error**: %s",
                 discordWebhookProfile, request.getRequestURI(), e.getMessage());
 
-        sendNotification(message);
+        sendNotification(discordApiWebhookUrl, message, "API");
     }
 
     public void sendErrorNotificationForBatch(String message) {
         String notiMessage = String.format("🚨 **[ %s 서버 배치 에러 발생]**\n\n- **Error Message**: %s",
                 discordWebhookProfile, message);
 
-        sendNotification(notiMessage);
+        sendNotification(discordBatchWebhookUrl, notiMessage, "BATCH_ERROR");
     }
 
     public void sendSuccessNotificationForBatch(String message) {
         String notiMessage = String.format("✅ **[ %s 서버 배치 성공]**\n\n%s",
                 discordWebhookProfile, message);
 
-        sendNotification(notiMessage);
+        sendNotification(discordBatchWebhookUrl, notiMessage, "BATCH_SUCCESS");
     }
 
-    private void sendNotification(String message) {
+    private void sendNotification(String webhookUrl, String message, String notificationType) {
         if (!enabled) {
             return;
         }
 
+        if (!StringUtils.hasText(webhookUrl)) {
+            log.warn("디스코드 웹훅 URL이 비어 있어 {} 알림을 전송하지 않음", notificationType);
+            return;
+        }
+
         webClient.post()
-                .uri(discordWebhookUrl)
+                .uri(webhookUrl)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(new DiscordMessage(message))
                 .retrieve()
                 .bodyToMono(Void.class)
                 .subscribe(
-                        success -> {}, // 성공 시 처리할 로직 (필요시 작성)
-                        error -> log.error("디스코드 웹훅 알림 전송 실패", error) // 에러 콜백
+                        success -> {},
+                        error -> log.error("디스코드 웹훅 {} 알림 전송 실패", notificationType, error)
                 );
     }
 }
