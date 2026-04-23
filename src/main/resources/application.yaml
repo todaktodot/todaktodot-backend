@@ -20,6 +20,7 @@ spring:
 logging:
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg [%X{traceId:-}]%n'
+    file: '%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg [%X{traceId:-}]%n'
   level:
     com.todaktodot.TDTD: info
 
