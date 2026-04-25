@@ -68,6 +68,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
+    @ExceptionHandler(CustomJwtException.class)
+    public ResponseEntity<Map<String, String>> handleJwtException(CustomJwtException e, HttpServletRequest request) {
+        Map<String, String> response = new HashMap<>();
+        response.put("message", e.getMessage());
+
+        discordNotificationService.sendErrorNotificationForAPI(e, request);
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleAllExceptions(Exception e, HttpServletRequest request) {
 
