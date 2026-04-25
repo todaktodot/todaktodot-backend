@@ -35,11 +35,15 @@ public class DiscordNotificationService {
     @Value("${discord.webhook.batch-url:}")
     private String discordBatchWebhookUrl;
 
+    @Value("${discord.webhook.signup-url:}")
+    private String discordSignUpWebhookUrl;
+
     @Value("${discord.webhook.extra-api-urls:}")
     private String extraApiWebhookUrls;
 
     @Value("${discord.webhook.extra-batch-urls:}")
     private String extraBatchWebhookUrls;
+
 
     @Value("${discord.webhook.profile:local}")
     private String discordWebhookProfile;
@@ -135,6 +139,22 @@ public class DiscordNotificationService {
         );
 
         sendNotification(resolveWebhookUrls(discordBatchWebhookUrl, extraBatchWebhookUrls), payload, "BATCH_SUCCESS");
+    }
+
+    public void sendSuccessNotificationForNewUser(String message) {
+        DiscordWebhookPayload payload = new DiscordWebhookPayload(
+                buildUsername(),
+                List.of(new DiscordEmbed(
+                        "👦🏻 신규 가입",
+                        String.format("**%s** 서버 신규 가입 발생.", discordWebhookProfile),
+                        0x57F287,
+                        List.of(new DiscordEmbedField("Result", truncate(defaultString(message, "신규 가입"), 900), false)),
+                        new DiscordEmbedFooter(discordWebhookProfile + " • NEW USER"),
+                        OffsetDateTime.now().toString()
+                ))
+        );
+
+        sendNotification(resolveWebhookUrls(discordSignUpWebhookUrl, ""), payload, "NEW_USER");
     }
 
     private void sendNotification(List<String> webhookUrls, DiscordWebhookPayload payload, String notificationType) {
