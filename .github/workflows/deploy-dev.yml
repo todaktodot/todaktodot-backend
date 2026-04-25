@@ -17,7 +17,7 @@ jobs:
           JSON_PAYLOAD=$(jq -n \
             --arg title "🚀 개발 서버 배포 시작" \
             --arg desc "**커밋:** $COMMIT_MESSAGE"$'\n'"**실행자:** ${{ github.actor }}" \
-            --arg timestamp "$(TZ=Asia/Seoul date +"%Y-%m-%d %H:%M:%S")" \
+            --arg timestamp "$(TZ=Asia/Seoul date +"%Y-%m-%dT%H:%M:%S+09:00")" \
             --arg color 3447003 \
             '{embeds: [{title: $title, description: $desc, timestamp: $timestamp, color: ($color | tonumber)}]}')
 
@@ -43,7 +43,7 @@ jobs:
           JSON_PAYLOAD=$(jq -n \
             --arg title "✅ 개발 서버 배포 성공" \
             --arg desc "**실행자:** ${{ github.actor }}" \
-            --arg timestamp "$(TZ=Asia/Seoul date +"%Y-%m-%d %H:%M:%S")" \
+            --arg timestamp "$(TZ=Asia/Seoul date +"%Y-%m-%dT%H:%M:%S+09:00")" \
             --arg color 65280 \
             '{embeds: [{title: $title, description: $desc, timestamp: $timestamp, color: ($color | tonumber)}]}')
 
@@ -58,7 +58,7 @@ jobs:
           JSON_PAYLOAD=$(jq -n \
             --arg title "🚨 개발 서버 배포 실패" \
             --arg desc "EC2 배포 과정에서 에러가 발생했습니다."$'\n'"GitHub Actions 로그를 확인해주세요."$'\n'"**실행자:** ${{ github.actor }}" \
-            --arg timestamp "$(TZ=Asia/Seoul date +"%Y-%m-%d %H:%M:%S")" \
+            --arg timestamp "$(TZ=Asia/Seoul date +"%Y-%m-%dT%H:%M:%S+09:00")" \
             --arg color 16711680 \
             '{embeds: [{title: $title, description: $desc, timestamp: $timestamp, color: ($color | tonumber)}]}')
 
