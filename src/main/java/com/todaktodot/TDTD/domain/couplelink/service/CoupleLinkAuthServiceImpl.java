@@ -9,6 +9,8 @@ import com.todaktodot.TDTD.domain.couplelink.dto.response.IssueLinkCodeResponseD
 import com.todaktodot.TDTD.domain.couplelink.repository.CoupleLinkAuthRepository;
 import com.todaktodot.TDTD.domain.couplelink.repository.entity.CoupleLinkAuthEntity;
 import com.todaktodot.TDTD.domain.couplelink.repository.entity.LinkCodeStatus;
+import com.todaktodot.TDTD.domain.notification.dto.PushMessage;
+import com.todaktodot.TDTD.domain.notification.service.FcmService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
 
     private final CoupleLinkAuthRepository coupleLinkAuthRepository;
     private final CoupleRepository coupleRepository;
+    private final FcmService fcmService;
     private final SecureRandom random = new SecureRandom();
 
     @Override
@@ -210,6 +213,9 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
         linkAuthEntity.linkCouple(userId, userId);
         coupleLinkAuthRepository.save(linkAuthEntity);
 
+        //발급자에게만 푸시알림 전송
+        connectCouplePushAlarm(issuedUserId, resultCouple.getCoupleId());
+
         log.info("========================================");
         log.info("커플 연결 성공!");
         log.info("커플 ID: {}", resultCouple.getCoupleId());
@@ -224,5 +230,10 @@ public class CoupleLinkAuthServiceImpl implements CoupleLinkAuthService {
                 userId,
                 resultCouple.getConnectedDt()
         );
+    }
+
+    private void connectCouplePushAlarm(Long receiveUserId, Long coupleId) {
+        PushMessage pushMessage = PushMessage.connectCouple(coupleId);
+        fcmService.sendToUser(receiveUserId, pushMessage);
     }
 }
