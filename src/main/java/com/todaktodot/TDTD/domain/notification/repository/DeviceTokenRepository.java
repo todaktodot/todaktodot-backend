@@ -15,7 +15,9 @@ public interface DeviceTokenRepository extends JpaRepository<DeviceTokenEntity, 
 
     Optional<DeviceTokenEntity> findByUserIdAndDeviceTypeAndDelYn(Long userId, DeviceType deviceType, String delYn);
 
-    Optional<DeviceTokenEntity> findByFcmTokenAndDelYn(String fcmToken, String delYn);
+    List<DeviceTokenEntity> findAllByUserIdAndDeviceTypeAndDelYn(Long userId, DeviceType deviceType, String delYn);
+
+    List<DeviceTokenEntity> findAllByFcmTokenAndDelYn(String fcmToken, String delYn);
 
     @Query("SELECT dt FROM DeviceTokenEntity dt WHERE dt.user.id = :userId AND dt.isActive = true AND dt.delYn = 'N'")
     List<DeviceTokenEntity> findActiveTokensByUserId(@Param("userId") Long userId);

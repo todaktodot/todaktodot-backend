@@ -312,12 +312,15 @@ public class FcmServiceImpl implements FcmService {
     private void handleFailedToken(String fcmToken, FirebaseMessagingException e) {
         if (e.getMessagingErrorCode() == MessagingErrorCode.UNREGISTERED ||
             e.getMessagingErrorCode() == MessagingErrorCode.INVALID_ARGUMENT) {
-            deviceTokenRepository.findByFcmTokenAndDelYn(fcmToken, "N")
-                    .ifPresent(token -> {
-                        token.deactivate(token.getRegrId());
-                        deviceTokenRepository.save(token);
-                        log.info("유효하지 않은 토큰 비활성화 - fcmToken: {}", fcmToken);
-                    });
+            List<DeviceTokenEntity> tokens = deviceTokenRepository.findAllByFcmTokenAndDelYn(fcmToken, "N");
+            for (DeviceTokenEntity token : tokens) {
+                token.deactivate(token.getUpdrId());
+                token.softDelete(token.getUpdrId());
+                deviceTokenRepository.save(token);
+            }
+            if (!tokens.isEmpty()) {
+                log.info("유효하지 않은 토큰 비활성화 - fcmToken: {}, count: {}", fcmToken, tokens.size());
+            }
         }
     }
 
