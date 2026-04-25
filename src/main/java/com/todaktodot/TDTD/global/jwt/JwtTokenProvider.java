@@ -1,5 +1,6 @@
 package com.todaktodot.TDTD.global.jwt;
 
+import com.todaktodot.TDTD.global.exception.CustomJwtException;
 import com.todaktodot.TDTD.global.security.Role;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
@@ -86,19 +87,19 @@ public class JwtTokenProvider implements InitializingBean {
             return claims.getBody().getExpiration().after(new Date());
         } catch (SecurityException | MalformedJwtException e) {
             log.warn("잘못된 JWT 서명입니다.");
-            throw e;
+            throw new CustomJwtException("잘못된 JWT 서명입니다.");
         } catch (ExpiredJwtException e) {
             log.warn("만료된 JWT 토큰입니다.");
-            throw e;
+            throw new CustomJwtException("만료된 JWT 토큰입니다.");
         } catch (UnsupportedJwtException e) {
             log.warn("지원되지 않는 JWT 토큰입니다.");
-            throw e;
+            throw new CustomJwtException("지원되지 않는 JWT 토큰입니다.");
         } catch (IllegalArgumentException e) {
             log.warn("JWT 토큰이 잘못되었습니다.");
-            throw e;
+            throw new CustomJwtException("WT 토큰이 잘못되었습니다.");
         } catch (Exception e) {
             log.warn("예외가 발생했습니다.");
-            throw e;
+            throw new CustomJwtException("예외가 발생했습니다.");
         }
     }
 }

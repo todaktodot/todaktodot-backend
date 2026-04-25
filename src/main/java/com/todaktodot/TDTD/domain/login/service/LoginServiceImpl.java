@@ -1,6 +1,5 @@
 package com.todaktodot.TDTD.domain.login.service;
 
-import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.login.dto.request.LoginRequestDTO;
 import com.todaktodot.TDTD.domain.login.dto.request.TokenReissueRequestDTO;
 import com.todaktodot.TDTD.domain.login.dto.response.LoginResponseDTO;
@@ -12,15 +11,16 @@ import com.todaktodot.TDTD.domain.login.respository.entity.User;
 import com.todaktodot.TDTD.domain.login.respository.entity.UserAccount;
 import com.todaktodot.TDTD.domain.notification.repository.DeviceTokenRepository;
 import com.todaktodot.TDTD.domain.notification.repository.entity.DeviceTokenEntity;
+import com.todaktodot.TDTD.global.alert.DiscordNotificationService;
 import com.todaktodot.TDTD.global.jwt.JwtTokenProvider;
 import com.todaktodot.TDTD.global.security.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +30,7 @@ public class LoginServiceImpl implements LoginService {
     private final UserRepository userRepository;
     private final UserAccountRepository userAccountRepository;
     private final DeviceTokenRepository deviceTokenRepository;
+    private final DiscordNotificationService discordNotificationService;
 
     /**
      * 로그인
@@ -57,8 +58,12 @@ public class LoginServiceImpl implements LoginService {
 
                     newUserAccount.setUser(newUser);
 
-                    userRepository.save(newUser);
-                    return userAccountRepository.save(newUserAccount);
+                    User savedUser = userRepository.save(newUser);
+                    UserAccount savedUserAccount = userAccountRepository.save(newUserAccount);
+
+                    discordNotificationService.sendSuccessNotificationForNewUser(formatSignupMessage(savedUserAccount, savedUser.getId()));
+
+                    return savedUserAccount;
                 });
 
         // 3. 서비스 전용 JWT 토큰 발급
@@ -71,11 +76,6 @@ public class LoginServiceImpl implements LoginService {
         //4. 리프레쉬 토큰 저장
         userAccount.updateRefreshToken(refreshToken);
         userAccountRepository.save(userAccount);
-
-        //4. 커플여부 확인 [TDTDBE-55] coupleType 추가
-//        var coupleOpt = coupleRepository.findByUserId(user.getId());
-//        boolean isCouple = coupleOpt.map(c -> c.isComplete()).orElse(false);
-//        String coupleType = coupleOpt.map(c -> c.getCoupleType().name()).orElse(null);
 
         return LoginResponseDTO.builder()
                 .accessToken(accessToken)
@@ -90,9 +90,14 @@ public class LoginServiceImpl implements LoginService {
     @Transactional
     public TokenReissueResponseDTO reissue(TokenReissueRequestDTO tokenReissueRequestDTO) {
         String refreshToken = tokenReissueRequestDTO.getRefreshToken();
-        if (refreshToken == null) throw new IllegalStateException("Refresh Token이 존재하지 않습니다.");
+
+        if (!StringUtils.hasText(refreshToken)) {
+            throw new IllegalStateException("Refresh Token이 존재하지 않습니다.");
+        }
+
         User user = userRepository.findByIdAndDelYn(tokenReissueRequestDTO.getUserId(), "N")
                 .orElseThrow(() -> new IllegalStateException("[userId : " +tokenReissueRequestDTO.getUserId()+" ]에 해당하는 유저가 없습니다."));
+
         validate(tokenReissueRequestDTO.getRefreshToken(), user);
 
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
@@ -126,12 +131,33 @@ public class LoginServiceImpl implements LoginService {
     private void validate(String refreshToken, User user) {
         // 1. 유효한 리프레쉬인지
         jwtTokenProvider.validateToken(refreshToken);
-        if (user.getSocialAccounts().isEmpty()) throw new IllegalStateException("유저와 연결된 소셜 계정이 없습니다.");
+
+        if (user.getSocialAccounts().isEmpty()) {
+            throw new IllegalStateException("유저와 연결된 소셜 계정이 없습니다.");
+        }
 
         // 2. 일치하는 리프레쉬토큰인지
         UserAccount userAccount = user.getSocialAccounts().getFirst();
         if (!userAccount.getRefreshToken().equals(refreshToken)) {
             throw new IllegalStateException("유효하지 않은 리프레쉬 토큰 입니다. 재로그인 해주세요.");
         }
+    }
+
+    private String formatSignupMessage(UserAccount userAccount, Long userId){
+        String provider = userAccount.getProvider();
+        String email = userAccount.getEmail();
+        String name = userAccount.getName();
+
+        return String.format(
+            "**신규 가입자 발생**\n"
+                    + "- **사용자 ID**: %s\n"
+                    + "- **소셜 플랫폼**: %s\n"
+                    + "- **이메일**: %s\n"
+                    + "- **이름**: %s\n",
+                userId != null ? userId : "ID 없음",
+                StringUtils.hasText(provider) ? provider : "플랫폼 없음",
+                StringUtils.hasText(email) ? email : "이메일 없음",
+                StringUtils.hasText(name) ? name : "이름 없음"
+        );
     }
 }
