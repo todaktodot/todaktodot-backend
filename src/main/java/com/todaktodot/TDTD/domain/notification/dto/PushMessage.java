@@ -112,4 +112,19 @@ public class PushMessage {
                 ))
                 .build();
     }
+
+    /**
+     * 모두 답변 완료 알림 생성
+     */
+    public static PushMessage connectCouple(Long coupleId) {
+        return PushMessage.builder()
+                .title("커플 연결 완료!")
+                .body("이제 둘만의 대화를 시작할 수 있어요! 닉네임을 입력하러 가볼까요?")
+                .pushType(PushType.CONNECT_COUPLE)
+                .data(Map.of(
+                        "type", PushType.CONNECT_COUPLE.getCode(),
+                        "coupleId", String.valueOf(coupleId)
+                ))
+                .build();
+    }
 }
