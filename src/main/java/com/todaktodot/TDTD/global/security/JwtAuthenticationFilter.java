@@ -41,9 +41,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
-        } catch (CustomJwtException e) {
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        }}
+        catch (CustomJwtException e) {
             request.setAttribute("exception", e.getMessage());
             log.warn("JwtAuthFilter: Caught CustomJwtException {}", e.getMessage(), e);
         }
