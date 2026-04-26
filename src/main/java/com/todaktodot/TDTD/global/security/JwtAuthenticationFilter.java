@@ -1,6 +1,7 @@
 package com.todaktodot.TDTD.global.security;
 
 import com.todaktodot.TDTD.domain.login.respository.entity.UserPrincipal;
+import com.todaktodot.TDTD.global.exception.CustomJwtException;
 import com.todaktodot.TDTD.global.jwt.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -43,17 +44,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }}
-        catch (MalformedJwtException e) {
-            request.setAttribute("exception", "잘못된 JWT 서명입니다.");
-            log.warn("JwtAuthFilter: Caught Exception {}", request.getAttribute("exception"));
-        }
-        catch (ExpiredJwtException e) {
-            request.setAttribute("exception", "만료된 토큰입니다.");
-            log.warn("JwtAuthFilter: Caught ExpiredJwtException {}", request.getAttribute("exception"), e);
-        }
-        catch (IllegalArgumentException e) {
-            request.setAttribute("exception", "유효하지 않은 토큰입니다.");
-            log.warn("JwtAuthFilter: Caught IllegalArgumentException {}", request.getAttribute("exception"), e);
+        catch (CustomJwtException e) {
+            request.setAttribute("exception", e.getMessage());
+            log.warn("JwtAuthFilter: Caught CustomJwtException {}", e.getMessage(), e);
         }
 
         filterChain.doFilter(request, response);
