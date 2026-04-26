@@ -96,7 +96,7 @@ public class JwtTokenProvider implements InitializingBean {
             throw new CustomJwtException("지원되지 않는 JWT 토큰입니다.");
         } catch (IllegalArgumentException e) {
             log.warn("JWT 토큰이 잘못되었습니다.");
-            throw new CustomJwtException("WT 토큰이 잘못되었습니다.");
+            throw new CustomJwtException("JWT 토큰이 잘못되었습니다.");
         } catch (Exception e) {
             log.warn("예외가 발생했습니다.");
             throw new CustomJwtException("예외가 발생했습니다.");
