@@ -1,10 +1,9 @@
 package com.todaktodot.TDTD.global.security;
 
 import com.todaktodot.TDTD.domain.login.respository.entity.UserPrincipal;
+import com.todaktodot.TDTD.global.exception.CustomJwtException;
 import com.todaktodot.TDTD.global.jwt.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,37 +22,30 @@ import java.util.Collections;
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token = resolveToken(request);
 
-        try{
-        if (token != null && jwtTokenProvider.validateToken(token)) {
-            Claims claims = jwtTokenProvider.parseClaims(token);
+        try {
+            if (token != null && jwtTokenProvider.validateToken(token)) {
+                Claims claims = jwtTokenProvider.parseClaims(token);
 
-            // 토큰 정보로 UserPrincipal 생성
-            Long userId = Long.parseLong(claims.getSubject());
-            String role = claims.get("roles", String.class);
+                // 토큰 정보로 UserPrincipal 생성
+                Long userId = Long.parseLong(claims.getSubject());
+                String role = claims.get("roles", String.class);
 
-            UserPrincipal userPrincipal = new UserPrincipal(userId, Collections.singleton(new SimpleGrantedAuthority(role)));
+                UserPrincipal userPrincipal = new UserPrincipal(userId, Collections.singleton(new SimpleGrantedAuthority(role)));
 
-            // SecurityContext에 등록
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
+                // SecurityContext에 등록
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        }}
-        catch (MalformedJwtException e) {
-            request.setAttribute("exception", "잘못된 JWT 서명입니다.");
-            log.warn("JwtAuthFilter: Caught Exception {}", request.getAttribute("exception"));
-        }
-        catch (ExpiredJwtException e) {
-            request.setAttribute("exception", "만료된 토큰입니다.");
-            log.warn("JwtAuthFilter: Caught ExpiredJwtException {}", request.getAttribute("exception"), e);
-        }
-        catch (IllegalArgumentException e) {
-            request.setAttribute("exception", "유효하지 않은 토큰입니다.");
-            log.warn("JwtAuthFilter: Caught IllegalArgumentException {}", request.getAttribute("exception"), e);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        } catch (CustomJwtException e) {
+            request.setAttribute("exception", e.getMessage());
+            log.warn("JwtAuthFilter: Caught CustomJwtException {}", e.getMessage(), e);
         }
 
         filterChain.doFilter(request, response);
