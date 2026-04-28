@@ -118,8 +118,8 @@ public class PushMessage {
      */
     public static PushMessage connectCouple(Long coupleId) {
         return PushMessage.builder()
-                .title("커플 연결 완료!")
-                .body("이제 둘만의 대화를 시작할 수 있어요! 닉네임을 입력하러 가볼까요?")
+                .title("🤍연인과 연결되었어요!")
+                .body("이제 둘만의 대화를 시작할 수 있어요.")
                 .pushType(PushType.CONNECT_COUPLE)
                 .data(Map.of(
                         "type", PushType.CONNECT_COUPLE.getCode(),
