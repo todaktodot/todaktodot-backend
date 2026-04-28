@@ -31,6 +31,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
@@ -46,6 +48,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     private final AiPromptRepository aiPromptRepository;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
+    private final PlatformTransactionManager transactionManager;
 
     private static final String QUESTION_TYPE_SUBJECTIVE = "SUBJECTIVE";
     private static final String ANSWER_REQUIRED = "Y";
@@ -149,9 +152,16 @@ public class FeedbackServiceImpl implements FeedbackService {
         FeedbackGenerationResult feedbackResult = callAiForFeedback(context, promptEntity.getPromptContent(), aiModel, temperature);
 
         // ==================== 3단계: 저장 트랜잭션 ====================
-        return transactionTemplate.execute(status ->
-                saveFeedbackResult(userId, context, feedbackResult, aiModel, config.getPromptId())
-        );
+        return transactionTemplate.execute(status -> {
+            try {
+                return saveFeedbackResult(userId, context, feedbackResult, aiModel, config.getPromptId());
+            } catch (DataIntegrityViolationException e) {
+                status.setRollbackOnly();
+                log.warn("피드백 중복 저장 시도 감지, 기존 레코드 조회: cardId={}, hash={}",
+                        context.cardId(), context.combinationHash());
+                return recoverFromDuplicateFeedbackInsert(userId, context, e);
+            }
+        });
     }
 
     /**
@@ -323,32 +333,19 @@ public class FeedbackServiceImpl implements FeedbackService {
         String differencesText = toText(aiFeedback.getDifferences());
         String hasSubjectiveFlag = context.hasSubjectiveAnswer() ? "Y" : "N";
 
-        DailyCardFeedbackEntity feedback;
-        try {
-            feedback = dailyCardFeedbackRepository.save(
-                    DailyCardFeedbackEntity.builder()
-                            .cardId(context.cardId())
-                            .choiceCombinationHash(context.combinationHash())
-                            .choiceCombinationRaw(context.rawCombination())
-                            .hasSubjective(hasSubjectiveFlag)
-                            .summary(aiFeedback.getSummary())
-                            .matchPoints(matchPointsText)
-                            .differences(differencesText)
-                            .conversationStarter(aiFeedback.getConversationStarter())
-                            .regrId(userId)
-                            .updrId(userId)
-                            .build());
-        } catch (DataIntegrityViolationException e) {
-            log.warn("피드백 중복 저장 시도 감지, 기존 레코드 조회: cardId={}, hash={}",
-                    context.cardId(), context.combinationHash());
-            feedback = dailyCardFeedbackRepository
-                    .findByCardIdAndChoiceCombinationHashAndHasSubjectiveAndDelYn(
-                            context.cardId(), context.combinationHash(), hasSubjectiveFlag, "N")
-                    .orElseThrow(() -> new IllegalStateException("피드백 저장에 실패했습니다.", e));
-
-            saveOrUpdateCoupleFeedbackMapping(context.coupleCardId(), feedback.getFeedbackId(), userId);
-            return GenerateFeedbackResponseDTO.from(feedback);
-        }
+        DailyCardFeedbackEntity feedback = dailyCardFeedbackRepository.save(
+                DailyCardFeedbackEntity.builder()
+                        .cardId(context.cardId())
+                        .choiceCombinationHash(context.combinationHash())
+                        .choiceCombinationRaw(context.rawCombination())
+                        .hasSubjective(hasSubjectiveFlag)
+                        .summary(aiFeedback.getSummary())
+                        .matchPoints(matchPointsText)
+                        .differences(differencesText)
+                        .conversationStarter(aiFeedback.getConversationStarter())
+                        .regrId(userId)
+                        .updrId(userId)
+                        .build());
 
         aiCardFeedbackInfoRepository.save(
                 AiCardFeedbackInfoEntity.builder()
@@ -372,6 +369,30 @@ public class FeedbackServiceImpl implements FeedbackService {
                         .build());
 
         return GenerateFeedbackResponseDTO.from(feedback);
+    }
+
+    private GenerateFeedbackResponseDTO recoverFromDuplicateFeedbackInsert(Long userId, FeedbackContext context,
+                                                                           DataIntegrityViolationException cause) {
+        TransactionTemplate requiresNewTransaction = new TransactionTemplate(transactionManager);
+        requiresNewTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+        GenerateFeedbackResponseDTO response = requiresNewTransaction.execute(status -> {
+            String hasSubjectiveFlag = context.hasSubjectiveAnswer() ? "Y" : "N";
+
+            DailyCardFeedbackEntity feedback = dailyCardFeedbackRepository
+                    .findByCardIdAndChoiceCombinationHashAndHasSubjectiveAndDelYn(
+                            context.cardId(), context.combinationHash(), hasSubjectiveFlag, "N")
+                    .orElseThrow(() -> new IllegalStateException("피드백 저장에 실패했습니다.", cause));
+
+            saveOrUpdateCoupleFeedbackMapping(context.coupleCardId(), feedback.getFeedbackId(), userId);
+            return GenerateFeedbackResponseDTO.from(feedback);
+        });
+
+        if (response == null) {
+            throw new IllegalStateException("중복 피드백 복구에 실패했습니다.");
+        }
+
+        return response;
     }
 
 
