@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +32,7 @@ public class TermController {
     @Operation(description = "약관동의 저장 API")
     @ApiResponse(responseCode = "200", description = "약관 동의 저장 성공")
     @PostMapping
-    public ResponseEntity<HttpStatus> saveTerm(@AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody TermRequestDTO termRequestDTO) {
+    public ResponseEntity<HttpStatus> saveTerm(@AuthenticationPrincipal UserPrincipal userPrincipal, @Valid @RequestBody TermRequestDTO termRequestDTO) {
         termRequestDTO.setUserId(userPrincipal.getId());
         termService.saveTerm(termRequestDTO);
         return ResponseEntity.ok(HttpStatus.OK);
