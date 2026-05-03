@@ -62,6 +62,18 @@ class DomainTextValidationTest {
                 .contains("답변에는 HTML 태그를 입력할 수 없습니다");
     }
 
+    @Test
+    @DisplayName("Y/N 값은 Y와 N만 허용한다")
+    void ynAllowsOnlyYOrN() {
+        assertThat(validator.validate(new YnFixture("Y"))).isEmpty();
+        assertThat(validator.validate(new YnFixture("N"))).isEmpty();
+
+        assertThat(validator.validate(new YnFixture(null))).isNotEmpty();
+        assertThat(validator.validate(new YnFixture(""))).isNotEmpty();
+        assertThat(validator.validate(new YnFixture("y"))).isNotEmpty();
+        assertThat(validator.validate(new YnFixture("true"))).isNotEmpty();
+    }
+
     private static class NicknameFixture {
         @Nickname
         private final String value;
@@ -76,6 +88,15 @@ class DomainTextValidationTest {
         private final String value;
 
         private UserAnswerFixture(String value) {
+            this.value = value;
+        }
+    }
+
+    private static class YnFixture {
+        @Yn
+        private final String value;
+
+        private YnFixture(String value) {
             this.value = value;
         }
     }
