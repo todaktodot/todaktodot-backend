@@ -63,12 +63,12 @@ class DomainTextValidationTest {
     }
 
     @Test
-    @DisplayName("Y/N 값은 Y와 N만 허용한다")
-    void ynAllowsOnlyYOrN() {
+    @DisplayName("Y/N 값은 null과 Y, N만 허용한다")
+    void ynAllowsNullYOrN() {
+        assertThat(validator.validate(new YnFixture(null))).isEmpty();
         assertThat(validator.validate(new YnFixture("Y"))).isEmpty();
         assertThat(validator.validate(new YnFixture("N"))).isEmpty();
 
-        assertThat(validator.validate(new YnFixture(null))).isNotEmpty();
         assertThat(validator.validate(new YnFixture(""))).isNotEmpty();
         assertThat(validator.validate(new YnFixture("y"))).isNotEmpty();
         assertThat(validator.validate(new YnFixture("true"))).isNotEmpty();

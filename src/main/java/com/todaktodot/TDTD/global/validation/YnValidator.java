@@ -7,6 +7,10 @@ public class YnValidator implements ConstraintValidator<Yn, String> {
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
+        if (value == null) {
+            return true;
+        }
+
         return "Y".equals(value) || "N".equals(value);
     }
 }
