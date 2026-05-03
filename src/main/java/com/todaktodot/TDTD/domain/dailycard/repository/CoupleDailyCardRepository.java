@@ -134,17 +134,21 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
     // 데일리카드 답변 잔디 조회 (일자별 내/상대 답변 여부)
     @Query(value = """
         SELECT cdc.ISSUED_DATE AS issuedDate,
-               MAX(CASE WHEN me.COUPLE_CARD_ID IS NOT NULL THEN 1 ELSE 0 END) AS meAnswered,
-               MAX(CASE WHEN partner.COUPLE_CARD_ID IS NOT NULL THEN 1 ELSE 0 END) AS partnerAnswered
+               MAX(CASE WHEN me.ANSWER_ID IS NOT NULL THEN 1 ELSE 0 END) AS meAnswered,
+               MAX(CASE WHEN partner.ANSWER_ID IS NOT NULL THEN 1 ELSE 0 END) AS partnerAnswered
         FROM couple_daily_card cdc
-            LEFT JOIN (SELECT DISTINCT COUPLE_CARD_ID FROM daily_card_user_answer
-                       WHERE USER_ID = :userId AND DEL_YN = 'N') me
+            LEFT JOIN daily_card_user_answer me
                 ON me.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
-            LEFT JOIN (SELECT DISTINCT COUPLE_CARD_ID FROM daily_card_user_answer
-                       WHERE USER_ID = :partnerUserId AND :partnerUserId IS NOT NULL AND DEL_YN = 'N') partner
+               AND me.USER_ID = :userId
+               AND me.DEL_YN = 'N'
+            LEFT JOIN daily_card_user_answer partner
                 ON partner.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
+               AND partner.USER_ID = :partnerUserId
+               AND :partnerUserId IS NOT NULL
+               AND partner.DEL_YN = 'N'
         WHERE cdc.COUPLE_ID = :coupleId
           AND cdc.ISSUED_DATE BETWEEN :startDate AND :endDate
+          AND cdc.SELECTED_YN = 'Y'
           AND cdc.DEL_YN = 'N'
         GROUP BY cdc.ISSUED_DATE
         ORDER BY cdc.ISSUED_DATE ASC
