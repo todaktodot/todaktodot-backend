@@ -1,8 +1,8 @@
 package com.todaktodot.TDTD.domain.dailycard.dto.request;
 
+import com.todaktodot.TDTD.global.validation.UserAnswer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -37,7 +37,7 @@ public class SubmitAnswerRequestDTO {
         @Schema(description = "질문 번호", example = "1")
         private Integer questionNo;
 
-        @NotBlank(message = "답변 내용은 필수입니다")
+        @UserAnswer(max = 500)
         @Schema(description = "답변 내용 (객관식: 옵션 번호, 주관식: 텍스트)", example = "2")
         private String answerContent;
     }

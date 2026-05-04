@@ -36,8 +36,10 @@ public interface DailyCardUserAnswerRepository extends JpaRepository<DailyCardUs
     //한 주동안 응답한 데일리카드 유무 조회
     @Query("SELECT (count(d1) > 0) FROM DailyCardUserAnswerEntity d1 JOIN DailyCardUserAnswerEntity d2 ON d1.coupleCardId = d2.coupleCardId " +
             "AND d1.userId = :userId1 AND d2.userId = :userId2 AND d1.userId != d2.userId " +
+            "JOIN CoupleDailyCardEntity cdc ON d1.coupleCardId = cdc.coupleCardId AND cdc.coupleId = :coupleId " +
             "WHERE d1.regDt BETWEEN :startDT AND :endDT AND d2.regDt BETWEEN :startDT AND :endDT AND d1.delYn = :delYn")
-    boolean existsSameDailyCardAnswerInPeriod(@Param("userId1") Long userId1,
+    boolean existsSameDailyCardAnswerInPeriod(@Param("coupleId") Long coupleId,
+                                              @Param("userId1") Long userId1,
                                               @Param("userId2") Long userId2,
                                               @Param("startDT") LocalDateTime startDT,
                                               @Param("endDT") LocalDateTime endDT,
@@ -47,28 +49,33 @@ public interface DailyCardUserAnswerRepository extends JpaRepository<DailyCardUs
     @Query("SELECT dc.cardId AS cardId, d1.coupleCardId AS coupleCardId, d1.answerId AS answerId1, d2.answerId AS answerId2, d1.answerContent AS answerContent1, d2.answerContent AS answerContent2 FROM DailyCardUserAnswerEntity d1 " +
             "JOIN DailyCardUserAnswerEntity d2 ON d1.cardId = d2.cardId " +
             "AND d1.userId = :userId1 AND d2.userId = :userId2  AND d1.questionNo = d2.questionNo " +
+            "JOIN CoupleDailyCardEntity cdc ON d1.coupleCardId = cdc.coupleCardId AND cdc.coupleId = :coupleId " +
             "JOIN DailyCardEntity dc ON d1.cardId = dc.cardId " +
             "JOIN DailyCardQuestionEntity dq ON dc.cardId = dq.cardId AND dq.questionNo = d1.questionNo " +
             "WHERE dc.subject = :subject AND dq.questionType = :questionType " +
             "AND d1.regDt BETWEEN :startDT AND :endDT AND d2.regDt BETWEEN :startDT AND :endDT AND d1.delYn = :delYn AND d2.delYn = :delYn")
     List<SyncAnswerDTO> findDailyCardAnswerBySubject(@Param("subject") CardSubject cardSubject,
-                                                          @Param("userId1") Long userId1,
-                                                          @Param("userId2") Long userId2,
-                                                          @Param("questionType") QuestionType questionType,
-                                                          @Param("startDT") LocalDateTime startDT,
-                                                          @Param("endDT") LocalDateTime endDT,
-                                                          @Param("delYn") String delYn);
+                                                     @Param("coupleId") Long coupleId,
+                                                     @Param("userId1") Long userId1,
+                                                     @Param("userId2") Long userId2,
+                                                     @Param("questionType") QuestionType questionType,
+                                                     @Param("startDT") LocalDateTime startDT,
+                                                     @Param("endDT") LocalDateTime endDT,
+                                                     @Param("delYn") String delYn);
 
     //모두 응답한 데일리카드 총 개수
     @Query("SELECT count(*) FROM DailyCardUserAnswerEntity d1 JOIN DailyCardUserAnswerEntity d2 ON d1.coupleCardId = d2.coupleCardId " +
-            "AND d1.userId = :userId1 AND d2.userId = :userId2 AND d1.questionNo = d2.questionNo JOIN DailyCardEntity dc ON d1.cardId = dc.cardId " +
+            "AND d1.userId = :userId1 AND d2.userId = :userId2 AND d1.questionNo = d2.questionNo " +
+            "JOIN CoupleDailyCardEntity cdc ON d1.coupleCardId = cdc.coupleCardId AND cdc.coupleId = :coupleId " +
+            "JOIN DailyCardEntity dc ON d1.cardId = dc.cardId " +
             "JOIN DailyCardQuestionEntity dq ON dc.cardId = dq.cardId AND dq.questionNo = d1.questionNo " +
             "WHERE dq.questionType = :questionType " +
             "AND d1.delYn = :delYn AND d2.delYn = :delYn")
-    int findAllDailyCardAnswer(@Param("userId1") Long userId1,
-                                                     @Param("userId2") Long userId2,
-                                                     @Param("questionType") QuestionType questionType,
-                                                     @Param("delYn") String delYn);
+    int findAllDailyCardAnswer(@Param("coupleId") Long coupleId,
+                               @Param("userId1") Long userId1,
+                               @Param("userId2") Long userId2,
+                               @Param("questionType") QuestionType questionType,
+                               @Param("delYn") String delYn);
 
 
     @Query("SELECT DISTINCT a.cardId FROM DailyCardUserAnswerEntity a " +
