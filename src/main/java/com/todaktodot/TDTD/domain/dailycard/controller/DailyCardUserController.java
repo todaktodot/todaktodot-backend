@@ -5,7 +5,6 @@ import com.todaktodot.TDTD.domain.dailycard.dto.request.SelectCardTypeRequestDTO
 import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.GrassResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryDetailResponseDTO;
@@ -95,20 +94,6 @@ public class DailyCardUserController {
 
         Long userId = userPrincipal.getId();
         SelectCardTypeResponseDTO response = dailyCardService.selectCardType(userId, requestDTO);
-        return ResponseEntity.ok(response);
-    }
-
-    @Operation(summary = "데일리카드 답변 잔디 조회",
-               description = "날짜 범위 내 현재 사용자와 상대방의 데일리카드 답변 참여 상태를 일자별로 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "조회 성공")
-    @GetMapping("/grass")
-    public ResponseEntity<GrassResponseDTO> getGrass(
-            @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-        Long userId = userPrincipal.getId();
-        GrassResponseDTO response = dailyCardService.getGrass(userId, startDate, endDate);
         return ResponseEntity.ok(response);
     }
 

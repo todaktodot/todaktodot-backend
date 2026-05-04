@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -54,7 +55,6 @@ public class InsightServiceImpl implements InsightService{
     public GenerateInsightResponseDTO generateInsight(GenerateInsightRequestDTO requestDTO) {
         // 1단계. 한 주간 응답 데이터 조회
         CoupleEntity couple = coupleRepository.findById(requestDTO.getCoupleId()).orElseThrow(() -> new IllegalStateException("존재하지 않는 커플입니다."));
-        Long coupleId = couple.getCoupleId();
 
         if (couple.isSolo()) {
             throw new IllegalStateException("혼자 둘러보기는 해당 기능을 사용할 수 없습니다.");
@@ -72,10 +72,10 @@ public class InsightServiceImpl implements InsightService{
         LocalDateTime strtDt = endDate.minusWeeks(1).atTime(8, 0, 0);
 
         //중복시 리턴
-        checkDuplicate(coupleId, strtDt.toLocalDate(), endDate.minusDays(1));
+        checkDuplicate(couple.getCoupleId(),strtDt.toLocalDate(), endDate.minusDays(1));
 
         //둘다 답변한 데일리카드 존재하지 않는 경우
-        boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(coupleId, couple.getUserId1(), couple.getUserId2(), strtDt, endDt, "N");
+        boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(couple.getUserId1(), couple.getUserId2(), strtDt, endDt, "N");
         if (!isCreatable) {
             throw new IllegalStateException("모두 응답한 데일리카드가 존재하지 않습니다.");
         }
@@ -126,7 +126,6 @@ public class InsightServiceImpl implements InsightService{
     }
     //인사이트 생성에 필요한 응답 정보
     private GenerateInsightContext loadInsightContext(CoupleEntity couple, LocalDateTime startDt, LocalDateTime endDt) {
-        Long coupleId = couple.getCoupleId();
         Long userId1 = couple.getUserId1();
         Long userId2 = couple.getUserId2();
         if (userId1 == null || userId2 == null) {
@@ -135,7 +134,7 @@ public class InsightServiceImpl implements InsightService{
 
         //한 주동안 둘다 응답 데이터 주제별로 수집
         // 1. 경재관
-        List<InsightNeedDataDTO> economyData = insightRepository.findInsightDataByCouple(CardSubject.ECONOMY.name(), coupleId, userId1, userId2, startDt, endDt);
+        List<InsightNeedDataDTO> economyData = insightRepository.findInsightDataByCouple(CardSubject.ECONOMY.name(), userId1, userId2, startDt, endDt);
         Map<Long, List<InsightNeedDataDTO>> economyByCard = economyData.stream()
                 .collect(Collectors.groupingBy(
                         InsightNeedDataDTO::cardId,
@@ -143,7 +142,7 @@ public class InsightServiceImpl implements InsightService{
                         Collectors.toList()
                 ));
         // 2. 생활관
-        List<InsightNeedDataDTO> lifestyleData = insightRepository.findInsightDataByCouple(CardSubject.LIFESTYLE.name(), coupleId, userId1, userId2, startDt, endDt);
+        List<InsightNeedDataDTO> lifestyleData = insightRepository.findInsightDataByCouple(CardSubject.LIFESTYLE.name(), userId1, userId2, startDt, endDt);
         Map<Long, List<InsightNeedDataDTO>> lifeStyleByCard = lifestyleData.stream()
                 .collect(Collectors.groupingBy(
                         InsightNeedDataDTO::cardId,
@@ -151,7 +150,7 @@ public class InsightServiceImpl implements InsightService{
                         Collectors.toList()
                 ));
         // 3. 연애관
-        List<InsightNeedDataDTO> loveData = insightRepository.findInsightDataByCouple(CardSubject.LOVE.name(), coupleId, userId1, userId2, startDt, endDt);
+        List<InsightNeedDataDTO> loveData = insightRepository.findInsightDataByCouple(CardSubject.LOVE.name(), userId1, userId2, startDt, endDt);
         Map<Long, List<InsightNeedDataDTO>> loveByCard = loveData.stream()
                 .collect(Collectors.groupingBy(
                         InsightNeedDataDTO::cardId,

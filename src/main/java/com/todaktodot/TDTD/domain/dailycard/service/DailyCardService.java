@@ -8,7 +8,6 @@ import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.GrassResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryDetailResponseDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
@@ -134,17 +133,6 @@ public interface DailyCardService {
     HistoryDetailResponseDTO getHistoryDetailCards(Long userId, LocalDate startDate, LocalDate endDate);
 
     HistoryDetailResponseDTO getHistoryDetailCard(Long userId, Long coupleCardId);
-
-    /**
-     * 데일리카드 답변 잔디 조회
-     * 날짜별 현재 사용자와 상대방의 답변 참여 상태를 조회한다.
-     *
-     * @param userId 요청 사용자 ID
-     * @param startDate 조회 시작일
-     * @param endDate 조회 종료일
-     * @return 일자별 답변 상태
-     */
-    GrassResponseDTO getGrass(Long userId, LocalDate startDate, LocalDate endDate);
 
     /**
      * 데일리카드 콕 찌르기
