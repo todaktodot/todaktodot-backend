@@ -177,6 +177,7 @@ public class ReportServiceImpl implements ReportService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Report createReport(CoupleEntity coupleEntity, Long insightId, LocalDate startD, LocalDate endD) {
+        Long coupleId = coupleEntity.getCoupleId();
         Long userId1 = coupleEntity.getUserId1();
         Long userId2 = coupleEntity.getUserId2();
 
@@ -195,14 +196,14 @@ public class ReportServiceImpl implements ReportService {
         LocalDateTime endDt = endD.atTime(4, 30, 0);
 
         //둘다 답변한 데일리카드 존재하지 않아서 생성 불가
-        boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(userId1, userId2, startDt, endDt, "N");
+        boolean isCreatable = dailyCardUserAnswerRepository.existsSameDailyCardAnswerInPeriod(coupleId, userId1, userId2, startDt, endDt, "N");
         if (!isCreatable) {
             throw new IllegalStateException("모두 응답한 데일리카드가 존재하지 않습니다.");
         }
 
         //주간 일자
         //모두 응답한 데일리 카드 중 경제관인 것
-        List<SyncAnswerDTO> economyCardAnswerList = dailyCardUserAnswerRepository.findDailyCardAnswerBySubject(CardSubject.ECONOMY, userId1, userId2,QuestionType.MULTIPLE_CHOICE, startDt, endDt, "N");
+        List<SyncAnswerDTO> economyCardAnswerList = dailyCardUserAnswerRepository.findDailyCardAnswerBySubject(CardSubject.ECONOMY, coupleId, userId1, userId2,QuestionType.MULTIPLE_CHOICE, startDt, endDt, "N");
         int totalCntOfEconomyCard = economyCardAnswerList.size();
         int sameAnswerOfEconomyCard = economyCardAnswerList.stream().filter(a-> Objects.equals(a.answerContent1(), a.answerContent2())).toList().size();
         //경제관 싱크로율 계산
@@ -216,7 +217,7 @@ public class ReportServiceImpl implements ReportService {
         }
 
         //모두 응답한 데일리 카드 중 생활관인 것
-        List<SyncAnswerDTO> lifeCardAnswerList = dailyCardUserAnswerRepository.findDailyCardAnswerBySubject(CardSubject.LIFESTYLE, userId1, userId2, QuestionType.MULTIPLE_CHOICE, startDt, endDt, "N");
+        List<SyncAnswerDTO> lifeCardAnswerList = dailyCardUserAnswerRepository.findDailyCardAnswerBySubject(CardSubject.LIFESTYLE, coupleId, userId1, userId2, QuestionType.MULTIPLE_CHOICE, startDt, endDt, "N");
         int totalCntOfLifeStyleCard = lifeCardAnswerList.size();
         int sameAnswerOfLifeStyleCard = lifeCardAnswerList.stream().filter(a-> Objects.equals(a.answerContent1(), a.answerContent2())).toList().size();
         //생활관 싱크로율 계산
@@ -231,7 +232,7 @@ public class ReportServiceImpl implements ReportService {
         }
 
         //모두 응답한 데일리 카드 중 연애관인 것
-        List<SyncAnswerDTO> loveCardAnswerList = dailyCardUserAnswerRepository.findDailyCardAnswerBySubject(CardSubject.LOVE, userId1, userId2,QuestionType.MULTIPLE_CHOICE, startDt, endDt, "N");
+        List<SyncAnswerDTO> loveCardAnswerList = dailyCardUserAnswerRepository.findDailyCardAnswerBySubject(CardSubject.LOVE, coupleId, userId1, userId2,QuestionType.MULTIPLE_CHOICE, startDt, endDt, "N");
         int totalCntOfLoveCard = loveCardAnswerList.size();
         int sameAnswerOfLoveCard = loveCardAnswerList.stream().filter(a-> Objects.equals(a.answerContent1(), a.answerContent2())).toList().size();
         //연애관 싱크로율 계산
@@ -263,7 +264,7 @@ public class ReportServiceImpl implements ReportService {
         String participationRate = String.valueOf(resultOfPaartipationRate.intValue());
         
         //대화누적자산
-        int bothAnswerCnt = dailyCardUserAnswerRepository.findAllDailyCardAnswer(userId1, userId2, QuestionType.MULTIPLE_CHOICE,"N");
+        int bothAnswerCnt = dailyCardUserAnswerRepository.findAllDailyCardAnswer(coupleId,userId1, userId2, QuestionType.MULTIPLE_CHOICE,"N");
 
         //비슷했던 주제
         List<SimilarAnswer> similarAnswerList = new ArrayList<>();
