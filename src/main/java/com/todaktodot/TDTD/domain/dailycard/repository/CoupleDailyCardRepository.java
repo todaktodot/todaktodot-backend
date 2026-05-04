@@ -3,6 +3,7 @@ package com.todaktodot.TDTD.domain.dailycard.repository;
 import com.todaktodot.TDTD.domain.aireport.dto.response.SyncAnswerDTO;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardSubject;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CoupleDailyCardEntity;
+import com.todaktodot.TDTD.domain.dailycard.repository.projection.GrassProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryCardProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryDetailProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.WeeklyCardProjection;
@@ -127,6 +128,35 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
             @Param("coupleId") Long coupleId,
             @Param("userId1") Long userId1,
             @Param("userId2") Long userId2,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    // 데일리카드 답변 잔디 조회 (일자별 내/상대 답변 여부)
+    @Query(value = """
+        SELECT cdc.ISSUED_DATE AS issuedDate,
+               MAX(CASE WHEN me.ANSWER_ID IS NOT NULL THEN 1 ELSE 0 END) AS meAnswered,
+               MAX(CASE WHEN partner.ANSWER_ID IS NOT NULL THEN 1 ELSE 0 END) AS partnerAnswered
+        FROM couple_daily_card cdc
+            LEFT JOIN daily_card_user_answer me
+                ON me.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
+               AND me.USER_ID = :userId
+               AND me.DEL_YN = 'N'
+            LEFT JOIN daily_card_user_answer partner
+                ON partner.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
+               AND partner.USER_ID = :partnerUserId
+               AND :partnerUserId IS NOT NULL
+               AND partner.DEL_YN = 'N'
+        WHERE cdc.COUPLE_ID = :coupleId
+          AND cdc.ISSUED_DATE BETWEEN :startDate AND :endDate
+          AND cdc.SELECTED_YN = 'Y'
+          AND cdc.DEL_YN = 'N'
+        GROUP BY cdc.ISSUED_DATE
+        ORDER BY cdc.ISSUED_DATE ASC
+        """, nativeQuery = true)
+    List<GrassProjection> findGrass(
+            @Param("coupleId") Long coupleId,
+            @Param("userId") Long userId,
+            @Param("partnerUserId") Long partnerUserId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
 
