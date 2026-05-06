@@ -111,10 +111,8 @@ public class AdminCoupleController {
 
         log.info("[Admin] 인사이트 생성 요청: coupleId={}, endDt={}", coupleId, requestDTO.getEndDt());
 
-        // 커플 정보 조회하여 userId1 획득 (검증 통과용)
-        CoupleDetailDTO couple = adminCoupleService.getCouple(coupleId);
-        //Long userId = couple.getUserId1();
-
+        //임시 - 어드민에서 생성하는 경우 일요일 -> 월요일로 조정
+        requestDTO.setEndDt(requestDTO.getEndDt().plusDays(1));
         GenerateInsightResponseDTO response = insightService.generateInsight(requestDTO);
 
         log.info("[Admin] 인사이트 생성 완료: coupleId={}, InsightId={}",

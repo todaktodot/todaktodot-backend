@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 
@@ -12,6 +13,7 @@ import java.time.LocalDate;
  * 인사이트 생성시 요청 DTO
  */
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "리포트 AI 인사이트 생성 요청")
