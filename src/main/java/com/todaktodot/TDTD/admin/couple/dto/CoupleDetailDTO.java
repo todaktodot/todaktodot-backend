@@ -81,12 +81,15 @@ public class CoupleDetailDTO {
         private final List<DailyCardQuestionDTO> questions;
         private final boolean bothAnswered;
         private final FeedbackSummaryDTO feedback;
+        private final String feedbackStatus;
+        private final String feedbackErrorMessage;
 
         public CoupleDailyCardDTO(Long coupleCardId, Long cardId, LocalDate issuedDate,
                                   String selectedYn, String delYn, CardMode mode,
                                   CardSubject subject, CardType type, String cardTitle,
                                   List<DailyCardQuestionDTO> questions,
-                                  boolean bothAnswered, FeedbackSummaryDTO feedback) {
+                                  boolean bothAnswered, FeedbackSummaryDTO feedback,
+                                  String feedbackStatus, String feedbackErrorMessage) {
             this.coupleCardId = coupleCardId;
             this.cardId = cardId;
             this.issuedDate = issuedDate;
@@ -99,6 +102,8 @@ public class CoupleDetailDTO {
             this.questions = questions;
             this.bothAnswered = bothAnswered;
             this.feedback = feedback;
+            this.feedbackStatus = feedbackStatus;
+            this.feedbackErrorMessage = feedbackErrorMessage;
         }
     }
 

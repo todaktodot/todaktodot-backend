@@ -4,18 +4,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.todaktodot.TDTD.admin.prompt.repository.AiPromptRepository;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
+import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
+import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
+import com.todaktodot.TDTD.domain.dailycard.repository.CoupleDailyCardRepository;
 import com.todaktodot.TDTD.domain.feedback.dto.ai.AiGeneratedFeedbackDTO;
 import com.todaktodot.TDTD.domain.feedback.dto.reqeust.GenerateFeedbackRequestDTO;
-import com.todaktodot.TDTD.domain.feedback.dto.response.GenerateFeedbackResponseDTO;
-import com.todaktodot.TDTD.domain.feedback.repository.AiCardFeedbackInfoRepository;
+import com.todaktodot.TDTD.domain.feedback.dto.response.FeedbackResponseDTO;
 import com.todaktodot.TDTD.domain.feedback.repository.AiFeedbackConfigRepository;
-import com.todaktodot.TDTD.domain.feedback.repository.CoupleDailyCardFeedbackRepository;
 import com.todaktodot.TDTD.domain.feedback.repository.DailyCardFeedbackRepository;
-import com.todaktodot.TDTD.domain.feedback.repository.entity.AiCardFeedbackInfoEntity;
 import com.todaktodot.TDTD.domain.feedback.repository.entity.AiFeedbackConfigEntity;
-import com.todaktodot.TDTD.domain.feedback.repository.entity.CoupleDailyCardFeedbackEntity;
 import com.todaktodot.TDTD.domain.feedback.repository.entity.DailyCardFeedbackEntity;
-import com.todaktodot.TDTD.domain.feedback.repository.entity.FeedbackStatus;
 import com.todaktodot.TDTD.domain.feedback.repository.projection.FeedbackDataProjection;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -31,9 +29,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 @RequiredArgsConstructor
@@ -42,13 +37,13 @@ public class FeedbackServiceImpl implements FeedbackService {
 
     private final ChatClient.Builder chatClientBuilder;
     private final DailyCardFeedbackRepository dailyCardFeedbackRepository;
-    private final AiCardFeedbackInfoRepository aiCardFeedbackInfoRepository;
-    private final CoupleDailyCardFeedbackRepository coupleDailyCardFeedbackRepository;
+    private final FeedbackMappingService feedbackMappingService;
+    private final FeedbackPersistenceService feedbackPersistenceService;
+    private final CoupleRepository coupleRepository;
+    private final CoupleDailyCardRepository coupleDailyCardRepository;
     private final AiFeedbackConfigRepository feedbackConfigRepository;
     private final AiPromptRepository aiPromptRepository;
     private final ObjectMapper objectMapper;
-    private final TransactionTemplate transactionTemplate;
-    private final PlatformTransactionManager transactionManager;
 
     private static final String QUESTION_TYPE_SUBJECTIVE = "SUBJECTIVE";
     private static final String ANSWER_REQUIRED = "Y";
@@ -96,104 +91,100 @@ public class FeedbackServiceImpl implements FeedbackService {
     ) {}
 
     @Override
-    public GenerateFeedbackResponseDTO generateFeedback(Long userId, GenerateFeedbackRequestDTO requestDTO) {
-        // ==================== 1단계: 조회 트랜잭션 ====================
-        // 중복 체크 + 컨텍스트 로드 + 캐시 조회를 한 트랜잭션에서 수행 후 커넥션 반환
-        FeedbackContextOrCachedResult contextOrCached = transactionTemplate.execute(status -> {
-            Long coupleCardId = requestDTO.getCoupleCardId();
+    public FeedbackResponseDTO generateFeedback(Long userId, GenerateFeedbackRequestDTO requestDTO) {
+        FeedbackContext context = loadFeedbackContext(userId, requestDTO);
 
-            // 중복 피드백 요청 시 리턴
-            checkDuplicateFeedbackRequest(coupleCardId);
+        FeedbackResponseDTO existingResponse = claimGenerationOrReturnExisting(context.coupleCardId(), userId);
+        if (existingResponse != null) {
+            return existingResponse;
+        }
 
-            FeedbackContext context = loadFeedbackContext(userId, requestDTO);
+        if (!context.hasSubjectiveAnswer()) {
+            DailyCardFeedbackEntity cachedFeedback = dailyCardFeedbackRepository
+                    .findByCardIdAndChoiceCombinationHashAndHasSubjectiveAndDelYn(
+                            context.cardId(), context.combinationHash(), "N", "N")
+                    .orElse(null);
 
-            // 객관식만 있을 경우 캐시 조회
-            if (!context.hasSubjectiveAnswer()) {
-                DailyCardFeedbackEntity cachedFeedback = dailyCardFeedbackRepository
-                        .findByCardIdAndChoiceCombinationHashAndHasSubjectiveAndDelYn(
-                                context.cardId(), context.combinationHash(), "N", "N")
-                        .orElse(null);
+            if (cachedFeedback != null) {
+                return feedbackMappingService.markCompletedIfGenerating(
+                        context.coupleCardId(), cachedFeedback.getFeedbackId(), userId);
+            }
+        }
 
-                if (cachedFeedback != null) {
-                    // 캐시 히트 시 매핑 저장 후 캐시된 피드백 반환
-                    saveOrUpdateCoupleFeedbackMapping(context.coupleCardId(), cachedFeedback.getFeedbackId(), userId);
-                    return FeedbackContextOrCachedResult.cached(cachedFeedback);
-                }
+        try {
+            AiFeedbackConfigEntity config = feedbackConfigRepository
+                    .findTopByDelYnOrderByConfigIdDesc("N")
+                    .orElseThrow(() -> new IllegalStateException("피드백 생성 설정이 없습니다. Admin에서 설정해주세요."));
+
+            if (config.getPromptId() == null) {
+                throw new IllegalStateException("적용 중인 피드백 프롬프트가 없습니다. Admin에서 프롬프트를 설정해주세요.");
             }
 
-            return FeedbackContextOrCachedResult.needsGeneration(context);
-        });
+            AiPromptEntity promptEntity = aiPromptRepository.findById(config.getPromptId())
+                    .orElseThrow(() -> new IllegalStateException("설정된 프롬프트(ID: " + config.getPromptId() + ")를 찾을 수 없습니다."));
 
-        if (contextOrCached == null) {
-            throw new IllegalStateException("피드백 컨텍스트 조회에 실패했습니다.");
-        }
+            String aiModel = config.getAiModel();
+            double temperature = config.getTemperature().doubleValue();
+            FeedbackGenerationResult feedbackResult = callAiForFeedback(context, promptEntity.getPromptContent(), aiModel, temperature);
 
-        // 캐시 히트인 경우 바로 반환
-        if (contextOrCached.isCached()) {
-            return GenerateFeedbackResponseDTO.from(contextOrCached.cachedFeedback());
-        }
-
-        FeedbackContext context = contextOrCached.context();
-
-        // ==================== 2단계: AI 호출 ====================
-        AiFeedbackConfigEntity config = feedbackConfigRepository
-                .findTopByDelYnOrderByConfigIdDesc("N")
-                .orElseThrow(() -> new IllegalStateException("피드백 생성 설정이 없습니다. Admin에서 설정해주세요."));
-
-        if (config.getPromptId() == null) {
-            throw new IllegalStateException("적용 중인 피드백 프롬프트가 없습니다. Admin에서 프롬프트를 설정해주세요.");
-        }
-
-        AiPromptEntity promptEntity = aiPromptRepository.findById(config.getPromptId())
-                .orElseThrow(() -> new IllegalStateException("설정된 프롬프트(ID: " + config.getPromptId() + ")를 찾을 수 없습니다."));
-
-        String aiModel = config.getAiModel();
-        double temperature = config.getTemperature().doubleValue();
-        FeedbackGenerationResult feedbackResult = callAiForFeedback(context, promptEntity.getPromptContent(), aiModel, temperature);
-
-        // ==================== 3단계: 저장 트랜잭션 ====================
-        return transactionTemplate.execute(status -> {
-            try {
-                return saveFeedbackResult(userId, context, feedbackResult, aiModel, config.getPromptId());
-            } catch (DataIntegrityViolationException e) {
-                status.setRollbackOnly();
-                log.warn("피드백 중복 저장 시도 감지, 기존 레코드 조회: cardId={}, hash={}",
-                        context.cardId(), context.combinationHash());
-                return recoverFromDuplicateFeedbackInsert(userId, context, e);
-            }
-        });
-    }
-
-    /**
-     * 조회 단계의 결과를 담는 컨테이너.
-     * 캐시 히트 시 cachedFeedback을, 캐시 미스 시 context를 반환.
-     */
-    private record FeedbackContextOrCachedResult(
-            FeedbackContext context,
-            DailyCardFeedbackEntity cachedFeedback
-    ) {
-        static FeedbackContextOrCachedResult cached(DailyCardFeedbackEntity feedback) {
-            return new FeedbackContextOrCachedResult(null, feedback);
-        }
-
-        static FeedbackContextOrCachedResult needsGeneration(FeedbackContext context) {
-            return new FeedbackContextOrCachedResult(context, null);
-        }
-
-        boolean isCached() {
-            return cachedFeedback != null;
+            DailyCardFeedbackEntity feedback = saveFeedbackResultOrLoadExisting(userId, context, feedbackResult, aiModel, config.getPromptId());
+            return feedbackMappingService.markCompletedIfGenerating(context.coupleCardId(), feedback.getFeedbackId(), userId);
+        } catch (RuntimeException e) {
+            feedbackMappingService.markFailedIfGenerating(context.coupleCardId(), e, userId);
+            throw e;
         }
     }
 
-
-    private void checkDuplicateFeedbackRequest(Long coupleCardId) {
-        boolean alreadyExists = coupleDailyCardFeedbackRepository
-                .findByCoupleCardIdAndDelYn(coupleCardId, "N")
-                .isPresent();
-
-        if (alreadyExists) {
-            throw new IllegalStateException("이미 해당 카드에 대한 피드백이 발급되었습니다.");
+    private FeedbackResponseDTO claimGenerationOrReturnExisting(Long coupleCardId, Long userId) {
+        try {
+            return feedbackMappingService.createGeneratingOrReturnExisting(coupleCardId, userId);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("피드백 생성 매핑 중복 선점 감지, 기존 매핑 조회: coupleCardId={}", coupleCardId);
+            return feedbackMappingService.retryClaimNotStartedOrReturnExisting(coupleCardId, userId);
         }
+    }
+
+    private DailyCardFeedbackEntity saveFeedbackResultOrLoadExisting(Long userId, FeedbackContext context,
+                                                                     FeedbackGenerationResult feedbackResult,
+                                                                     String aiModel, Long promptId) {
+        try {
+            return feedbackPersistenceService.saveFeedbackResult(new FeedbackPersistenceService.SaveFeedbackCommand(
+                    userId,
+                    context.cardId(),
+                    context.combinationHash(),
+                    context.rawCombination(),
+                    context.hasSubjectiveAnswer() ? "Y" : "N",
+                    feedbackResult.parsedResponse(),
+                    aiModel,
+                    promptId,
+                    feedbackResult.finalPrompt(),
+                    feedbackResult.rawResponse(),
+                    feedbackResult.actualTemperature()
+            ));
+        } catch (DataIntegrityViolationException e) {
+            log.warn("피드백 중복 저장 시도 감지, 기존 레코드 조회: cardId={}, hash={}",
+                    context.cardId(), context.combinationHash());
+            return feedbackPersistenceService.loadExistingFeedback(
+                    context.cardId(),
+                    context.combinationHash(),
+                    context.hasSubjectiveAnswer() ? "Y" : "N");
+        }
+    }
+
+    @Override
+    public FeedbackResponseDTO getFeedback(Long userId, Long coupleCardId) {
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        if (couple.getUserId2() == null) {
+            throw new IllegalStateException("커플이 아닙니다.");
+        }
+
+        coupleDailyCardRepository.findByCoupleIdAndCoupleCardIdAndDelYn(
+                        couple.getCoupleId(), coupleCardId, "N")
+                .orElseThrow(() -> new IllegalStateException("접근 권한이 없거나 카드가 존재하지 않습니다."));
+
+        return feedbackMappingService.getFeedbackResponseForGet(coupleCardId);
     }
 
     private FeedbackContext loadFeedbackContext(Long userId, GenerateFeedbackRequestDTO requestDTO) {
@@ -311,90 +302,6 @@ public class FeedbackServiceImpl implements FeedbackService {
                 combinationHash
         );
     }
-
-    private void saveOrUpdateCoupleFeedbackMapping(Long coupleCardId, Long feedbackId, Long userId) {
-        coupleDailyCardFeedbackRepository.findByCoupleCardIdAndDelYn(coupleCardId, "N")
-                .ifPresentOrElse(
-                        mapping -> mapping.updateFeedback(feedbackId, userId),
-                        () -> coupleDailyCardFeedbackRepository.save(
-                                CoupleDailyCardFeedbackEntity.builder()
-                                        .coupleCardId(coupleCardId)
-                                        .feedbackId(feedbackId)
-                                        .regrId(userId)
-                                        .updrId(userId)
-                                        .build()));
-    }
-
-    private GenerateFeedbackResponseDTO saveFeedbackResult(Long userId, FeedbackContext context,
-                                                           FeedbackGenerationResult feedbackResult, String aiModel, Long promptId) {
-        AiGeneratedFeedbackDTO aiFeedback = feedbackResult.parsedResponse();
-
-        String matchPointsText = toText(aiFeedback.getMatchPoints());
-        String differencesText = toText(aiFeedback.getDifferences());
-        String hasSubjectiveFlag = context.hasSubjectiveAnswer() ? "Y" : "N";
-
-        DailyCardFeedbackEntity feedback = dailyCardFeedbackRepository.save(
-                DailyCardFeedbackEntity.builder()
-                        .cardId(context.cardId())
-                        .choiceCombinationHash(context.combinationHash())
-                        .choiceCombinationRaw(context.rawCombination())
-                        .hasSubjective(hasSubjectiveFlag)
-                        .summary(aiFeedback.getSummary())
-                        .matchPoints(matchPointsText)
-                        .differences(differencesText)
-                        .conversationStarter(aiFeedback.getConversationStarter())
-                        .regrId(userId)
-                        .updrId(userId)
-                        .build());
-
-        aiCardFeedbackInfoRepository.save(
-                AiCardFeedbackInfoEntity.builder()
-                        .feedbackId(feedback.getFeedbackId())
-                        .promptId(promptId)
-                        .aiModel(aiModel)
-                        .temperature(String.valueOf(feedbackResult.actualTemperature()))
-                        .finalPrompt(feedbackResult.finalPrompt())
-                        .aiResponseRaw(feedbackResult.rawResponse())
-                        .status(FeedbackStatus.SUCCESS.name())
-                        .regrId(userId)
-                        .updrId(userId)
-                        .build());
-
-        coupleDailyCardFeedbackRepository.save(
-                CoupleDailyCardFeedbackEntity.builder()
-                        .coupleCardId(context.coupleCardId())
-                        .feedbackId(feedback.getFeedbackId())
-                        .regrId(userId)
-                        .updrId(userId)
-                        .build());
-
-        return GenerateFeedbackResponseDTO.from(feedback);
-    }
-
-    private GenerateFeedbackResponseDTO recoverFromDuplicateFeedbackInsert(Long userId, FeedbackContext context,
-                                                                           DataIntegrityViolationException cause) {
-        TransactionTemplate requiresNewTransaction = new TransactionTemplate(transactionManager);
-        requiresNewTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-
-        GenerateFeedbackResponseDTO response = requiresNewTransaction.execute(status -> {
-            String hasSubjectiveFlag = context.hasSubjectiveAnswer() ? "Y" : "N";
-
-            DailyCardFeedbackEntity feedback = dailyCardFeedbackRepository
-                    .findByCardIdAndChoiceCombinationHashAndHasSubjectiveAndDelYn(
-                            context.cardId(), context.combinationHash(), hasSubjectiveFlag, "N")
-                    .orElseThrow(() -> new IllegalStateException("피드백 저장에 실패했습니다.", cause));
-
-            saveOrUpdateCoupleFeedbackMapping(context.coupleCardId(), feedback.getFeedbackId(), userId);
-            return GenerateFeedbackResponseDTO.from(feedback);
-        });
-
-        if (response == null) {
-            throw new IllegalStateException("중복 피드백 복구에 실패했습니다.");
-        }
-
-        return response;
-    }
-
 
     private String buildChoiceCombinationRaw(List<QuestionData> questions, Long userId1, Long userId2) {
         StringBuilder builder = new StringBuilder();
@@ -545,12 +452,4 @@ public class FeedbackServiceImpl implements FeedbackService {
         return value != null && !value.isBlank();
     }
 
-    private String toText(List<String> items) {
-        if (items == null || items.isEmpty()) {
-            return "";
-        }
-        return items.stream()
-                .filter(this::isNonEmpty)
-                .collect(Collectors.joining("\n"));
-    }
 }
