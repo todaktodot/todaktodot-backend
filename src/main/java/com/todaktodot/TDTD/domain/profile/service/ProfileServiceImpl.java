@@ -6,6 +6,7 @@ import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleType;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
 import com.todaktodot.TDTD.domain.login.respository.entity.UserAccount;
+import com.todaktodot.TDTD.domain.login.service.SocialUserProvider;
 import com.todaktodot.TDTD.domain.notification.repository.DeviceTokenRepository;
 import com.todaktodot.TDTD.domain.notification.repository.entity.DeviceTokenEntity;
 import com.todaktodot.TDTD.domain.profile.dto.request.SetNicknameRequestDTO;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,7 @@ public class ProfileServiceImpl implements ProfileService {
     private final UserRepository userRepository;
     private final DeviceTokenRepository deviceTokenRepository;
     private final CoupleRepository coupleRepository;
+    private final SocialUserProvider socialUserProvider;
 
     @Override
     @Transactional
@@ -119,10 +122,13 @@ public class ProfileServiceImpl implements ProfileService {
         User loginUser = userRepository.findByIdAndDelYn(userId, "N")
                 .orElseThrow(() -> new IllegalArgumentException("[userID : " + userId +" ] 사용자를 찾을 수 없습니다"));
 
-        //계쩡 정보 삭제
+        //계정 정보 삭제
         List<UserAccount> socialAccounts = loginUser.getSocialAccounts();
+
         socialAccounts.forEach(acc -> {
             acc.softDelete(userId);
+            //소셜 계정 해제 (현재는 카카오, 애플)
+            socialUserProvider.revokeSocialUser(acc.getProvider(), acc.getProviderId(), acc.getAppleRefreshToken());
         });
 
         //회원 정보 삭제
@@ -135,12 +141,14 @@ public class ProfileServiceImpl implements ProfileService {
         });
 
         //커플 해지
-        CoupleEntity couple = coupleRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("커플 관계가 존재하지 않습니다"));
+        Optional<CoupleEntity> opCouple = coupleRepository.findByUserId(userId);
 
-        // DEL_YN = 'Y' 처리
-        couple.disconnect(userId);
-        coupleRepository.save(couple);
+        if (opCouple.isPresent()) {
+            CoupleEntity couple = opCouple.get();
+            // DEL_YN = 'Y' 처리
+            couple.disconnect(userId);
+            coupleRepository.save(couple);
+        }
     }
 
     /**

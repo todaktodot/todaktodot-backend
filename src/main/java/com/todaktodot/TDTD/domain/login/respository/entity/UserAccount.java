@@ -12,10 +12,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @Table(
-    name = "USER_ACCOUNT",
-    uniqueConstraints = {
-            @UniqueConstraint(columnNames = {"PROVIDER", "PROVIDER_ID"})
-    }
+    name = "USER_ACCOUNT"
 )
 public class UserAccount {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,6 +24,9 @@ public class UserAccount {
     @Column(name = "USER_NAME")
     private String name;
 
+    @Column(name = "KAKAO_NICKNAME")
+    private String kakaoNickname;
+
     @Column(name = "PROVIDER")
     private String provider; // GOOGLE, KAKAO, APPLE
 
@@ -35,6 +35,9 @@ public class UserAccount {
 
     @Column(name = "REFRESH_TOKEN")
     private String refreshToken;
+
+    @Column(name = "APPLE_REFRESH_TOKEN")
+    private String appleRefreshToken;
 
     @Column(name = "REG_DT", nullable = false, updatable = false)
     @CreationTimestamp

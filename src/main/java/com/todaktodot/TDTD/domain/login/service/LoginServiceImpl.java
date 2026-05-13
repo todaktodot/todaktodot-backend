@@ -39,17 +39,19 @@ public class LoginServiceImpl implements LoginService {
     @Transactional
     public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
         // 1. 소셜 플랫폼에 토큰 검증 요청 및 유저 정보 추출
-        SocialUserResponse socialUser = socialUserProvider.getLoginedSocialUser(loginRequestDTO.getProvider(), loginRequestDTO.getToken());
+        SocialUserResponse socialUser = socialUserProvider.getLoginedSocialUser(loginRequestDTO.getProvider(), loginRequestDTO.getToken(), loginRequestDTO.getAppleName());
 
         // 2. 가입된 소셜계정인지 확인
         UserAccount userAccount = userAccountRepository.findByProviderIdAndProviderAndDelYn(socialUser.getId(), socialUser.getProvider(), "N")
                 .orElseGet(() -> {
                     UserAccount newUserAccount = UserAccount.builder()
-                        .email(socialUser.getEmail())
-                        .name(socialUser.getName())
-                        .provider(socialUser.getProvider())
-                        .providerId(socialUser.getId())
-                        .build();
+                            .email(socialUser.getEmail())
+                            .name(socialUser.getName())
+                            .kakaoNickname(socialUser.getKakaoNickname())
+                            .appleRefreshToken(socialUser.getAppleRefreshToken())
+                            .provider(socialUser.getProvider())
+                            .providerId(socialUser.getId())
+                            .build();
 
                     User newUser = User.builder()
                             .role(Role.USER)
