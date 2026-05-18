@@ -19,6 +19,8 @@ public interface HistoryDetailProjection {
     Integer getOptionNo();
     String getOptionCnts();
     String getUser1Answer();
+    String getUser1Emoji();
     String getUser2Answer();
+    String getUser2Emoji();
     Long getSelectedByUserId();
 }

@@ -150,7 +150,9 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                do2.OPTION_NO AS optionNo,
                do2.OPTION_CNTS AS optionCnts,
                a1.ANSWER_CONTENT AS user1Answer,
-               a2.ANSWER_CONTENT AS user2Answer
+               r1.emoji_type AS user1Emoji,
+               a2.ANSWER_CONTENT AS user2Answer,
+               r2.emoji_type AS user2Emoji
         FROM couple_daily_card cdc
             JOIN daily_card dc ON dc.CARD_ID = cdc.CARD_ID AND dc.DEL_YN = 'N'
             JOIN daily_card_question dq ON dq.CARD_ID = dc.CARD_ID AND dq.DEL_YN = 'N'
@@ -167,6 +169,15 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                AND a2.USER_ID = :userId2
                AND :userId2 IS NOT NULL
                AND a2.DEL_YN = 'N'
+            LEFT JOIN daily_card_answer_reaction r1
+                ON r1.answer_id = a1.ANSWER_ID
+               AND r1.reactor_user_id = :userId2
+               AND :userId2 IS NOT NULL
+               AND r1.del_yn = 'N'
+            LEFT JOIN daily_card_answer_reaction r2
+                ON r2.answer_id = a2.ANSWER_ID
+               AND r2.reactor_user_id = :userId1
+               AND r2.del_yn = 'N'
         WHERE cdc.COUPLE_ID = :coupleId
           AND cdc.ISSUED_DATE BETWEEN :startDate AND :endDate
           AND cdc.DEL_YN = 'N'
@@ -205,7 +216,9 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                do2.OPTION_NO AS optionNo,
                do2.OPTION_CNTS AS optionCnts,
                a1.ANSWER_CONTENT AS user1Answer,
-               a2.ANSWER_CONTENT AS user2Answer
+               r1.emoji_type AS user1Emoji,
+               a2.ANSWER_CONTENT AS user2Answer,
+               r2.emoji_type AS user2Emoji
         FROM couple_daily_card cdc
             JOIN daily_card dc ON dc.CARD_ID = cdc.CARD_ID AND dc.DEL_YN = 'N'
             JOIN daily_card_question dq ON dq.CARD_ID = dc.CARD_ID AND dq.DEL_YN = 'N'
@@ -222,6 +235,15 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                AND a2.USER_ID = :userId2
                AND :userId2 IS NOT NULL
                AND a2.DEL_YN = 'N'
+            LEFT JOIN daily_card_answer_reaction r1
+                ON r1.answer_id = a1.ANSWER_ID
+               AND r1.reactor_user_id = :userId2
+               AND :userId2 IS NOT NULL
+               AND r1.del_yn = 'N'
+            LEFT JOIN daily_card_answer_reaction r2
+                ON r2.answer_id = a2.ANSWER_ID
+               AND r2.reactor_user_id = :userId1
+               AND r2.del_yn = 'N'
         WHERE cdc.couple_card_id  = :coupleCardId
           AND cdc.DEL_YN = 'N'
         ORDER BY dq.QUESTION_NO, do2.OPTION_NO
