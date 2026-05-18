@@ -1204,7 +1204,9 @@ public class DailyCardServiceImpl implements DailyCardService {
                             .answerRequired("Y".equals(qFirst.getAnswerReqYn()))
                             .options(options)
                             .user1Answer(u1Answer)
+                            .user1Emoji(EmojiType.from(qFirst.getUser1Emoji()))
                             .user2Answer(u2Answer)
+                            .user2Emoji(EmojiType.from(qFirst.getUser2Emoji()))
                             .build());
                 }
 
@@ -1335,7 +1337,9 @@ public class DailyCardServiceImpl implements DailyCardService {
                     .answerRequired("Y".equals(firstRow.getAnswerReqYn()))
                     .options(options)
                     .user1Answer(firstRow.getUser1Answer())
+                    .user1Emoji(EmojiType.from(firstRow.getUser1Emoji()))
                     .user2Answer(firstRow.getUser2Answer())
+                    .user2Emoji(EmojiType.from(firstRow.getUser2Emoji()))
                     .build());
         }
 

@@ -1,5 +1,6 @@
 package com.todaktodot.TDTD.domain.dailycard.dto.response;
 
+import com.todaktodot.TDTD.domain.dailycard.repository.entity.EmojiType;
 import com.todaktodot.TDTD.domain.feedback.repository.entity.FeedbackGenerationStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -30,7 +31,7 @@ public class HistoryDetailResponseDTO {
 
     @Getter
     @Builder
-    @Schema(description = "히스토리 카드 항목")
+    @Schema(name = "HistoryDetailCardItem", description = "히스토리 카드 항목")
     public static class HistoryDetailCardItem {
         @Schema(description = "배정 날짜")
         private LocalDate issuedDate;
@@ -87,7 +88,7 @@ public class HistoryDetailResponseDTO {
 
     @Getter
     @Builder
-    @Schema(description = "질문 항목")
+    @Schema(name = "HistoryDetailQuestionItem", description = "히스토리 상세 질문 항목")
     public static class QuestionItem {
         @Schema(description = "질문 번호")
         private Integer questionNo;
@@ -107,13 +108,19 @@ public class HistoryDetailResponseDTO {
         @Schema(description = "유저1 답변 (미답변 시 null)")
         private String user1Answer;
 
+        @Schema(description = "유저1 답변에 대해 유저2가 남긴 이모지 반응 (미선택 시 null). GOOD=좋아요, HEART=하트, SURPRISE=놀람, CRY=슬픔, ANGRY=화남, POOP=똥", example = "HEART")
+        private EmojiType user1Emoji;
+
         @Schema(description = "유저2 답변 (미답변 시 null)")
         private String user2Answer;
+
+        @Schema(description = "유저2 답변에 대해 유저1이 남긴 이모지 반응 (미선택 시 null). GOOD=좋아요, HEART=하트, SURPRISE=놀람, CRY=슬픔, ANGRY=화남, POOP=똥", example = "GOOD")
+        private EmojiType user2Emoji;
     }
 
     @Getter
     @Builder
-    @Schema(description = "선택지 항목")
+    @Schema(name = "HistoryDetailOptionItem", description = "히스토리 상세 선택지 항목")
     public static class OptionItem {
         @Schema(description = "선택지 번호")
         private Integer optionNo;
@@ -124,7 +131,7 @@ public class HistoryDetailResponseDTO {
 
     @Getter
     @Builder
-    @Schema(description = "AI 피드백")
+    @Schema(name = "HistoryDetailFeedbackItem", description = "히스토리 상세 AI 피드백")
     public static class FeedbackItem {
         @Schema(description = "피드백 ID")
         private Long feedbackId;
