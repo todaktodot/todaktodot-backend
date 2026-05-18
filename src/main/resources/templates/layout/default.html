@@ -22,6 +22,14 @@
             </div>
             <nav class="sidebar-nav">
                 <ul>
+                    <!-- 통계 -->
+                    <li>
+                        <a th:href="@{/admin/statistics}"
+                           th:classappend="${activeMenu == 'statistics'} ? 'active' : ''">
+                            <span class="icon">📊</span>
+                            <span>통계</span>
+                        </a>
+                    </li>
                     <!-- AI 프롬프트 관리 -->
                     <li>
                         <a th:href="@{/admin/prompt}"
