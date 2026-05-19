@@ -1425,7 +1425,7 @@ public class DailyCardServiceImpl implements DailyCardService {
         DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(coupleCardId, 1, userId, "Y")
                 .orElseThrow(() -> new IllegalStateException("응답한 데일리카드 답변이 존재하지 않습니다."));
 
-        //남긴 이모지가 존재하지 않는 경우
+        //남긴 이모지 조회
         DailyCardAnswerReactionEntity reactionEntity = dailyCardReactionRepository.findByReactorUserIdAndAnswerIdAndDelYn(userId, answerEntity.getAnswerId(), "N")
                 .orElseThrow(() -> new IllegalStateException("해당 데일리카드 답변에 이모지 반응이 존재하지 않습니다."));
 
