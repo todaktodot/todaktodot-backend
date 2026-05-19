@@ -55,7 +55,7 @@ public class KakaoClient {
      */
     public void revokeUser(String providerId) {
         if (!StringUtils.hasText(providerId)) {
-            throw new IllegalArgumentException("카카오 social Id가 없습니다.");
+            throw new IllegalArgumentException("카카오 provider Id가 없습니다.");
         }
 
         try {
@@ -63,7 +63,6 @@ public class KakaoClient {
                     .uri("https://kapi.kakao.com/v1/user/unlink")
                     .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + adminKey)
                     .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
-                    // target_id_type을 user_id로 지정하고, 회원가입 시 저장해둔 고유 ID를 넘깁니다.
                     .bodyValue("target_id_type=user_id&target_id=" + providerId)
                     .retrieve()
                     .bodyToMono(Void.class)
