@@ -13,5 +13,7 @@ public class SocialUserResponse {
     private String id;
     private String email;
     private String name;
+    private String kakaoNickname;
+    private String appleRefreshToken;
     private String provider;
 }

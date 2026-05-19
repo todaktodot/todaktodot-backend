@@ -39,17 +39,19 @@ public class LoginServiceImpl implements LoginService {
     @Transactional
     public LoginResponseDTO login(LoginRequestDTO loginRequestDTO) {
         // 1. 소셜 플랫폼에 토큰 검증 요청 및 유저 정보 추출
-        SocialUserResponse socialUser = socialUserProvider.getLoginedSocialUser(loginRequestDTO.getProvider(), loginRequestDTO.getToken());
+        SocialUserResponse socialUser = socialUserProvider.getLoginedSocialUser(loginRequestDTO.getProvider(), loginRequestDTO.getToken(), loginRequestDTO.getAppleName());
 
         // 2. 가입된 소셜계정인지 확인
         UserAccount userAccount = userAccountRepository.findByProviderIdAndProviderAndDelYn(socialUser.getId(), socialUser.getProvider(), "N")
                 .orElseGet(() -> {
                     UserAccount newUserAccount = UserAccount.builder()
-                        .email(socialUser.getEmail())
-                        .name(socialUser.getName())
-                        .provider(socialUser.getProvider())
-                        .providerId(socialUser.getId())
-                        .build();
+                            .email(socialUser.getEmail())
+                            .name(socialUser.getName())
+                            .kakaoNickname(socialUser.getKakaoNickname())
+                            .appleRefreshToken(socialUser.getAppleRefreshToken())
+                            .provider(socialUser.getProvider())
+                            .providerId(socialUser.getId())
+                            .build();
 
                     User newUser = User.builder()
                             .role(Role.USER)
@@ -147,17 +149,27 @@ public class LoginServiceImpl implements LoginService {
         String provider = userAccount.getProvider();
         String email = userAccount.getEmail();
         String name = userAccount.getName();
+        String kakaoNickname = userAccount.getKakaoNickname();
 
-        return String.format(
-            "**신규 가입자 발생**\n"
-                    + "- **사용자 ID**: %s\n"
-                    + "- **소셜 플랫폼**: %s\n"
-                    + "- **이메일**: %s\n"
-                    + "- **이름**: %s\n",
+        StringBuilder format = new StringBuilder(String.format(
+                "**신규 가입자 발생**\n"
+                        + "- **사용자 ID**: %s\n"
+                        + "- **소셜 플랫폼**: %s\n"
+                        + "- **이메일**: %s\n"
+                        + "- **이름**: %s\n",
                 userId != null ? userId : "ID 없음",
                 StringUtils.hasText(provider) ? provider : "플랫폼 없음",
                 StringUtils.hasText(email) ? email : "이메일 없음",
                 StringUtils.hasText(name) ? name : "이름 없음"
-        );
+        ));
+
+        if ("KAKAO".equalsIgnoreCase(provider)) {
+            format.append(String.format(
+                    "- **카카오 닉네임**: %s\n",
+                    StringUtils.hasText(kakaoNickname) ? kakaoNickname : "카카오 닉네임 없음"
+            ));
+        }
+
+        return format.toString();
     }
 }
