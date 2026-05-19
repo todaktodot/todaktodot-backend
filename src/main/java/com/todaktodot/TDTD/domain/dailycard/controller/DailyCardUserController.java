@@ -1,15 +1,10 @@
 package com.todaktodot.TDTD.domain.dailycard.controller;
 
 import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.SaveEmojiRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.SelectCardTypeRequestDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryDetailResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.*;
 import com.todaktodot.TDTD.domain.dailycard.service.DailyCardService;
 import com.todaktodot.TDTD.domain.login.respository.entity.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -148,6 +143,28 @@ public class DailyCardUserController {
             @RequestParam(name = "coupleCardId") Long coupleCardId) {
         Long userId = userPrincipal.getId();
         dailyCardService.pokeCoupleDailyCard(userId, coupleCardId);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @Operation(summary = "데일리카드 답변 이모지 저장/수정",
+            description = "데일리카드 답변에 이모지를 남깁니다.")
+    @ApiResponse(responseCode = "200", description = "이모지 저장/수정 성공")
+    @PostMapping("/history/emoji")
+    public ResponseEntity<SaveEmojiResponseDTO> setEmojiReaction(
+            @AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody SaveEmojiRequestDTO requestDTO) {
+        Long userId = userPrincipal.getId();
+        SaveEmojiResponseDTO response = dailyCardService.setEmojiReaction(userId, requestDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "데일리카드 이모지 삭제",
+            description = "데일리카드 답변에 남긴 이모지를 삭제합니다.")
+    @ApiResponse(responseCode = "200", description = "이모지 삭제 성공")
+    @DeleteMapping("/history/emoji")
+    public ResponseEntity<HttpStatus> deleteEmojiReaction(
+            @AuthenticationPrincipal UserPrincipal userPrincipal, @RequestParam(name = "coupleCardId") Long coupleCardId) {
+        Long userId = userPrincipal.getId();
+        dailyCardService.deleteEmojiReaction(userId, coupleCardId);
         return new ResponseEntity(HttpStatus.OK);
     }
 }

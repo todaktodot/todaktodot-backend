@@ -1,21 +1,11 @@
 package com.todaktodot.TDTD.domain.dailycard.service;
 
-import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.GenerateDailyCardRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SelectCardTypeRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryDetailResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.*;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.*;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardMode;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardSubject;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardType;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 
@@ -140,4 +130,18 @@ public interface DailyCardService {
      * @param coupleCardId 커플 데일리카드 ID
      */
     void pokeCoupleDailyCard(Long userId, Long coupleCardId);
+
+    /**
+     * 데일리카드 응답 이모지 반응 생성/수정
+     * @param userId 요청 사용자 ID
+     * @param requestDTO 데일리카드 ID + 이모지 종류
+     */
+    SaveEmojiResponseDTO setEmojiReaction(Long userId, SaveEmojiRequestDTO requestDTO);
+
+    /**
+     * 데일리카드 응답 이모지 반응 삭제
+     * @param userId 요청 사용자 ID
+     * @param coupleCardId 커플 데일리카드 ID
+     */
+    void deleteEmojiReaction(Long userId, Long coupleCardId);
 }
