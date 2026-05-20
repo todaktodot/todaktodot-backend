@@ -75,7 +75,10 @@
                         <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e1e8ed;">
                             <div><strong>ID:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.userId} : '-'">-</span></div>
                             <div><strong>이름:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.name} : '-'">-</span></div>
-                            <div><strong>닉네임:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.nickname} : '-'">-</span></div>
+                            <div th:if="${couple.user1 != null and couple.user1.provider == 'KAKAO'}">
+                                <strong>카카오 닉네임:</strong> <span th:text="${couple.user1.kakaoNickname}">-</span>
+                            </div>
+                            <div><strong>투닥투닷 닉네임:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.nickname} : '-'">-</span></div>
                             <div><strong>이메일:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.email} : '-'">-</span></div>
                             <div><strong>가입경로:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.provider} : '-'">-</span></div>
                             <div><strong>가입여부:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.joinYn} : '-'">-</span></div>
@@ -87,6 +90,9 @@
                         <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e1e8ed;">
                             <div><strong>ID:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.userId} : '-'">-</span></div>
                             <div><strong>이름:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.name} : '-'">-</span></div>
+                            <div th:if="${couple.user2 != null and couple.user2.provider == 'KAKAO'}">
+                                <strong>카카오 닉네임:</strong> <span th:text="${couple.user2.kakaoNickname}">-</span>
+                            </div>
                             <div><strong>닉네임:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.nickname} : '-'">-</span></div>
                             <div><strong>이메일:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.email} : '-'">-</span></div>
                             <div><strong>가입경로:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.provider} : '-'">-</span></div>
