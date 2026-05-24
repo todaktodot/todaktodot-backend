@@ -15,11 +15,20 @@ public class SocialUserProvider {
     private final GoogleClient googleClient;
     private final AppleClient appleClient;
 
-    public SocialUserResponse getLoginedSocialUser(String provider, String token) {
-        return switch (provider) {
+    public SocialUserResponse getLoginedSocialUser(String provider, String token, String appleName) {
+        return switch (provider.toUpperCase()) {
             case "KAKAO" -> kakaoClient.getUserInfo(token);
             case "GOOGLE" -> googleClient.getUserInfo(token);
-            case "APPLE" -> appleClient.getUserInfo(token);
+            case "APPLE" -> appleClient.getUserInfo(token, appleName);
+            default -> throw new IllegalArgumentException("Unknown provider: " + provider);
+        };
+    }
+
+    public void revokeSocialUser(String provider, String providerId, String refreshToken) {
+        switch (provider.toUpperCase()) {
+            case "KAKAO" -> kakaoClient.revokeUser(providerId);
+            case "GOOGLE" -> {}
+            case "APPLE" -> appleClient.revokeToken(refreshToken);
             default -> throw new IllegalArgumentException("Unknown provider: " + provider);
         };
     }
