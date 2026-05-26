@@ -1391,7 +1391,7 @@ public class DailyCardServiceImpl implements DailyCardService {
         if (couple.getUserId2() == null) throw new IllegalStateException("혼자 둘러보기의 경우 이모지 반응이 불가합니다.");
 
         //데일리카드 조회
-        DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(requestDTO.getCoupleCardId(), 1, userId, "Y")
+        DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(requestDTO.getCoupleCardId(), 1, userId, "N")
                 .orElseThrow(() -> new IllegalStateException("응답한 데일리카드 답변이 존재하지 않습니다."));
 
         Optional<DailyCardAnswerReactionEntity> reactionEntity = dailyCardReactionRepository.findByReactorUserIdAndAnswerIdAndDelYn(userId, answerEntity.getAnswerId(), "N");
@@ -1430,7 +1430,7 @@ public class DailyCardServiceImpl implements DailyCardService {
         if (couple.getUserId2() == null) throw new IllegalStateException("혼자 둘러보기의 경우 이모지 삭제가 불가합니다.");
 
         //데일리카드 조회
-        DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(coupleCardId, 1, userId, "Y")
+        DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(coupleCardId, 1, userId, "N")
                 .orElseThrow(() -> new IllegalStateException("응답한 데일리카드 답변이 존재하지 않습니다."));
 
         //남긴 이모지 조회
