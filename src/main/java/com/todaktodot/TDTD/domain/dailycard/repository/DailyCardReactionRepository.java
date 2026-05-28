@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface DailyCardReactionRepository extends JpaRepository<DailyCardAnswerReactionEntity, Long> {
     Optional<DailyCardAnswerReactionEntity> findByReactorUserIdAndAnswerIdAndDelYn(long reactorUserId, Long answerId, String delYn);
+
+    boolean existsByReactorUserIdAndAnswerIdAndDelYn(long reactorUserId, Long answerId, String delYn);
 }

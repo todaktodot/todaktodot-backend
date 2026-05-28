@@ -1390,9 +1390,12 @@ public class DailyCardServiceImpl implements DailyCardService {
         //커플이 아닌 경우
         if (couple.getUserId2() == null) throw new IllegalStateException("혼자 둘러보기의 경우 이모지 반응이 불가합니다.");
 
+        //상대방 ID
+        Long receiveUserId = couple.getUserId1().equals(userId) ? couple.getUserId2() : couple.getUserId1();
+
         //데일리카드 조회
-        DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(requestDTO.getCoupleCardId(), 1, userId, "N")
-                .orElseThrow(() -> new IllegalStateException("응답한 데일리카드 답변이 존재하지 않습니다."));
+        DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(requestDTO.getCoupleCardId(), 1, receiveUserId, "N")
+                .orElseThrow(() -> new IllegalStateException("상대방의 응답한 데일리카드 답변이 존재하지 않습니다."));
 
         Optional<DailyCardAnswerReactionEntity> reactionEntity = dailyCardReactionRepository.findByReactorUserIdAndAnswerIdAndDelYn(userId, answerEntity.getAnswerId(), "N");
 
@@ -1414,6 +1417,11 @@ public class DailyCardServiceImpl implements DailyCardService {
                     .build();
 
             savedReaction = dailyCardReactionRepository.save(newAnswerReaction);
+
+            //최초 1회 이모지 푸시알림
+            if (!dailyCardReactionRepository.existsByReactorUserIdAndAnswerIdAndDelYn(userId, answerEntity.getAnswerId(), "Y")) {
+                emojiReactionPushAlarm(requestDTO.getCoupleCardId(), receiveUserId, couple);
+            }
         }
 
         return new SaveEmojiResponseDTO(userId, requestDTO.getCoupleCardId(), savedReaction.getEmojiType().name(), 1, savedReaction.getUpdDt());
@@ -1429,9 +1437,12 @@ public class DailyCardServiceImpl implements DailyCardService {
         //커플이 아닌 경우
         if (couple.getUserId2() == null) throw new IllegalStateException("혼자 둘러보기의 경우 이모지 삭제가 불가합니다.");
 
+        //상대방 ID
+        Long receiveUserId = couple.getUserId1().equals(userId) ? couple.getUserId2() : couple.getUserId1();
+
         //데일리카드 조회
-        DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(coupleCardId, 1, userId, "N")
-                .orElseThrow(() -> new IllegalStateException("응답한 데일리카드 답변이 존재하지 않습니다."));
+        DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(coupleCardId, 1, receiveUserId, "N")
+                .orElseThrow(() -> new IllegalStateException("상대방의 응답한 데일리카드 답변이 존재하지 않습니다."));
 
         //남긴 이모지 조회
         DailyCardAnswerReactionEntity reactionEntity = dailyCardReactionRepository.findByReactorUserIdAndAnswerIdAndDelYn(userId, answerEntity.getAnswerId(), "N")
@@ -1496,6 +1507,12 @@ public class DailyCardServiceImpl implements DailyCardService {
             PushMessage pushMessage = PushMessage.partnerAnswer(couple.getCoupleId(), coupleCardId);
             fcmService.sendToUser(receiveUserId, pushMessage);
         }
+    }
+
+    //이모지 반응 시 푸시알림 전송
+    private void emojiReactionPushAlarm(Long coupleCardId, Long receiveUserId, CoupleEntity couple) {
+        PushMessage pushMessage = PushMessage.emojiReaction(couple.getCoupleId(), coupleCardId);
+        fcmService.sendToUser(receiveUserId, pushMessage);
     }
 
 }
