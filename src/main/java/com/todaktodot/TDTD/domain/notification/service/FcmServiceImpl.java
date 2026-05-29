@@ -316,6 +316,20 @@ public class FcmServiceImpl implements FcmService {
             builder.putAllData(data);
         }
 
+        // 2. iOS(애플)를 위한 사일런트 푸시 설정 추가
+        ApnsConfig apnsConfig = ApnsConfig.builder()
+                // APNs 헤더 설정
+                .putHeader("apns-push-type", "background")
+                .putHeader("apns-priority", "5")
+                // aps 페이로드 설정
+                .setAps(Aps.builder()
+                        .setContentAvailable(true)
+                        .build())
+                .build();
+
+        // 빌더에 APNs 설정 반영
+        builder.setApnsConfig(apnsConfig);
+
         try {
             BatchResponse response = FirebaseMessaging.getInstance()
                     .sendEachForMulticast(builder.build());
