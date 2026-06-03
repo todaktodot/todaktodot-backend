@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>통계</title>
+</head>
+<body>
+<div layout:fragment="pageTitle">통계</div>
+<div layout:fragment="content">
+    <section class="statistics-hero">
+        <div>
+            <p class="statistics-eyebrow">투닥투닷 통계</p>
+            <h3>주간 핵심 지표 대시보드</h3>
+            <p class="statistics-description">
+                런칭 이후 수요일~화요일 주차 기준으로 유저, 커플, 데일리카드 답변, AI 피드백 지표를 확인합니다.
+            </p>
+        </div>
+        <div class="statistics-period-badge" th:if="${page.latestWeek != null}">
+            <span>최근 주차</span>
+            <strong th:text="${page.latestWeek.periodLabel}">04.29 ~ 05.05</strong>
+        </div>
+    </section>
+
+    <section class="filter-section statistics-filter-section">
+        <form th:action="@{/admin/statistics}" method="get">
+            <div class="filter-row statistics-filter-row">
+                <div class="filter-group">
+                    <label for="startDate">시작일</label>
+                    <input type="date" id="startDate" name="startDate" th:value="${page.startDate}">
+                </div>
+                <div class="filter-group">
+                    <label for="endDate">종료일</label>
+                    <input type="date" id="endDate" name="endDate" th:value="${page.endDate}">
+                </div>
+                <button type="submit" class="btn btn-primary statistics-search-btn">조회</button>
+                <a class="btn btn-secondary statistics-download-btn"
+                   th:href="@{/admin/statistics/export.csv(startDate=${page.startDate}, endDate=${page.endDate})}">
+                    CSV 다운로드
+                </a>
+            </div>
+            <div class="quick-periods" aria-label="빠른 기간 선택">
+                <a class="quick-period-chip" th:href="@{/admin/statistics(startDate='2026-04-18', endDate='2026-04-21')}">런칭~04.21</a>
+                <a class="quick-period-chip" th:href="@{/admin/statistics(startDate='2026-04-22', endDate='2026-04-28')}">04.22~04.28</a>
+                <a class="quick-period-chip" th:href="@{/admin/statistics(startDate='2026-04-29', endDate='2026-05-05')}">04.29~05.05</a>
+                <a class="quick-period-chip" th:href="@{/admin/statistics(startDate='2026-04-18', endDate='2026-05-05')}">요청 전체</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="statistics-kpi-grid" th:if="${page.latestWeek != null}">
+        <article class="statistics-kpi-card kpi-users">
+            <span class="kpi-icon">👥</span>
+            <div>
+                <p>전체 유저 수</p>
+                <strong th:text="${#numbers.formatInteger(page.latestWeek.totalUserCount, 0, 'COMMA')}">0</strong>
+                <small>누적 가입 유저</small>
+            </div>
+        </article>
+        <article class="statistics-kpi-card kpi-couples">
+            <span class="kpi-icon">💑</span>
+            <div>
+                <p>전체 커플 수</p>
+                <strong th:text="${#numbers.formatInteger(page.latestWeek.totalCoupleCount, 0, 'COMMA')}">0</strong>
+                <small>연결 완료 커플 누적</small>
+            </div>
+        </article>
+        <article class="statistics-kpi-card kpi-personal-rate">
+            <span class="kpi-icon">✍️</span>
+            <div>
+                <p>개인 답변 완료율</p>
+                <strong th:text="|${page.latestWeek.personalAnswerRate}%|">0%</strong>
+                <small>답변 수 / 답변 기회</small>
+            </div>
+        </article>
+        <article class="statistics-kpi-card kpi-couple-rate">
+            <span class="kpi-icon">✨</span>
+            <div>
+                <p>커플 둘 다 완료율</p>
+                <strong th:text="|${page.latestWeek.coupleBothAnswerRate}%|">0%</strong>
+                <small>양쪽 답변 카드 / 선택 카드</small>
+            </div>
+        </article>
+    </section>
+
+    <section class="statistics-chart-grid">
+        <article class="card statistics-chart-card">
+            <div class="card-header statistics-card-header">
+                <div>
+                    <h3>누적 유저 / 커플 추이</h3>
+                    <p>각 주차 종료일 기준 누적 수치입니다.</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="userCoupleChart" class="statistics-chart"></div>
+            </div>
+        </article>
+
+        <article class="card statistics-chart-card">
+            <div class="card-header statistics-card-header">
+                <div>
+                    <h3>데일리카드 답변 규모</h3>
+                    <p>주차별 선택 완료 데일리카드 수와 답변 완료 유저 수입니다.</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="answerVolumeChart" class="statistics-chart"></div>
+            </div>
+        </article>
+
+        <article class="card statistics-chart-card">
+            <div class="card-header statistics-card-header">
+                <div>
+                    <h3>답변 완료율 추이</h3>
+                    <p>개인 답변 완료율과 커플 둘 다 완료율을 비교합니다.</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="answerRateChart" class="statistics-chart"></div>
+            </div>
+        </article>
+
+        <article class="card statistics-chart-card">
+            <div class="card-header statistics-card-header">
+                <div>
+                    <h3>AI 피드백 생성 수</h3>
+                    <p>주차별 완료 상태의 AI 피드백 생성 건수입니다. 완료율 산식과는 별도로 표시합니다.</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="feedbackChart" class="statistics-chart"></div>
+            </div>
+        </article>
+    </section>
+
+    <section class="card statistics-table-card">
+        <div class="card-header statistics-card-header">
+            <div>
+                <h3>주차별 상세 지표</h3>
+                <p>선택 완료 데일리카드 기준의 원천 수치와 비율입니다.</p>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="statistics-note">
+                개인 답변 완료율은 답변한 유저-카드 수 / 선택 완료 카드의 답변 기회 수 기준입니다. 커플 완료율은 같은 주차에 발급된 선택 완료 카드 중 양쪽 모두 답변한 카드 비율입니다.
+            </div>
+            <div class="table-container statistics-table-container">
+                <table class="statistics-table">
+                    <thead>
+                    <tr>
+                        <th>기간</th>
+                        <th>전체 유저</th>
+                        <th>전체 커플</th>
+                        <th>선택 카드</th>
+                        <th>답변 유저</th>
+                        <th>개인 완료율</th>
+                        <th>히스토리카드</th>
+                        <th>AI 피드백</th>
+                        <th>커플 완료율</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="stat : ${page.weeklyStatistics}">
+                        <td>
+                            <strong th:text="${stat.periodLabel}">04.18 ~ 04.21</strong>
+                            <small th:text="|${stat.periodStartDate} ~ ${stat.periodEndDate}|">2026-04-18 ~ 2026-04-21</small>
+                        </td>
+                        <td th:text="${#numbers.formatInteger(stat.totalUserCount, 0, 'COMMA')}">0</td>
+                        <td th:text="${#numbers.formatInteger(stat.totalCoupleCount, 0, 'COMMA')}">0</td>
+                        <td th:text="${#numbers.formatInteger(stat.dailyCardCount, 0, 'COMMA')}">0</td>
+                        <td th:text="${#numbers.formatInteger(stat.answeredUserCount, 0, 'COMMA')}">0</td>
+                        <td><span class="rate-pill" th:text="|${stat.personalAnswerRate}%|">0%</span></td>
+                        <td th:text="${#numbers.formatInteger(stat.historyCardCount, 0, 'COMMA')}">0</td>
+                        <td th:text="${#numbers.formatInteger(stat.aiFeedbackCount, 0, 'COMMA')}">0</td>
+                        <td><span class="rate-pill rate-pill-purple" th:text="|${stat.coupleBothAnswerRate}%|">0%</span></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(page.weeklyStatistics)}">
+                        <td colspan="9" class="statistics-empty-cell">조회된 통계가 없습니다.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <script th:inline="javascript">
+        window.statisticsChartData = JSON.parse(/*[[${page.chartDataJson}]]*/ '{}');
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <script th:src="@{/js/admin-statistics.js}"></script>
+</div>
+</body>
+</html>
