@@ -1101,6 +1101,7 @@ public class DailyCardServiceImpl implements DailyCardService {
 
         // 5. 피드백 배치 조회
         Map<Long, HistoryDetailResponseDTO.FeedbackItem> feedbackMap = new LinkedHashMap<>();
+        Map<Long, String> feedbackStatusMap = new LinkedHashMap<>();
         if (!selectedCoupleCardIds.isEmpty()) {
             List<CoupleDailyCardFeedbackEntity> feedbackMappings =
                     coupleDailyCardFeedbackRepository.findAllByCoupleCardIdInAndDelYn(selectedCoupleCardIds, "N");
@@ -1108,6 +1109,7 @@ public class DailyCardServiceImpl implements DailyCardService {
             if (!feedbackMappings.isEmpty()) {
                 List<Long> feedbackIds = feedbackMappings.stream()
                         .map(CoupleDailyCardFeedbackEntity::getFeedbackId)
+                        .filter(Objects::nonNull)
                         .distinct()
                         .toList();
                 Map<Long, DailyCardFeedbackEntity> feedbackEntities = new LinkedHashMap<>();
@@ -1115,6 +1117,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                         .forEach(fb -> feedbackEntities.put(fb.getFeedbackId(), fb));
 
                 for (CoupleDailyCardFeedbackEntity mapping : feedbackMappings) {
+                    feedbackStatusMap.put(mapping.getCoupleCardId(), mapping.resolveStatus().name());
                     DailyCardFeedbackEntity fb = feedbackEntities.get(mapping.getFeedbackId());
                     if (fb != null && "N".equals(fb.getDelYn())) {
                         feedbackMap.put(mapping.getCoupleCardId(),
@@ -1207,6 +1210,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                         .user2Answered(user2HasAnswer)
                         .questions(questions)
                         .feedback(feedbackMap.get(first.getCoupleCardId()))
+                        .feedbackStatus(feedbackStatusMap.getOrDefault(first.getCoupleCardId(), "NOT_STARTED"))
                         .isPocked(notification != null)
                         .build());
             } else {
@@ -1249,6 +1253,7 @@ public class DailyCardServiceImpl implements DailyCardService {
 
         // 2. 피드백 배치 조회
         Map<Long, HistoryDetailResponseDTO.FeedbackItem> feedbackMap = new LinkedHashMap<>();
+        Map<Long, String> feedbackStatusMap = new LinkedHashMap<>();
         List<Long> selectedCoupleCardIds = new ArrayList<>();
         selectedCoupleCardIds.add(coupleCardId);
 
@@ -1258,6 +1263,7 @@ public class DailyCardServiceImpl implements DailyCardService {
         if (!feedbackMappings.isEmpty()) {
             List<Long> feedbackIds = feedbackMappings.stream()
                     .map(CoupleDailyCardFeedbackEntity::getFeedbackId)
+                    .filter(Objects::nonNull)
                     .distinct()
                     .toList();
             Map<Long, DailyCardFeedbackEntity> feedbackEntities = new LinkedHashMap<>();
@@ -1265,6 +1271,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                     .forEach(fb -> feedbackEntities.put(fb.getFeedbackId(), fb));
 
             for (CoupleDailyCardFeedbackEntity mapping : feedbackMappings) {
+                feedbackStatusMap.put(mapping.getCoupleCardId(), mapping.resolveStatus().name());
                 DailyCardFeedbackEntity fb = feedbackEntities.get(mapping.getFeedbackId());
                 if (fb != null && "N".equals(fb.getDelYn())) {
                     feedbackMap.put(mapping.getCoupleCardId(),
@@ -1336,6 +1343,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .user2Answered(true)
                 .questions(questions)
                 .feedback(feedbackMap.get(first.getCoupleCardId()))
+                .feedbackStatus(feedbackStatusMap.getOrDefault(first.getCoupleCardId(), "NOT_STARTED"))
                 .build());
 
 

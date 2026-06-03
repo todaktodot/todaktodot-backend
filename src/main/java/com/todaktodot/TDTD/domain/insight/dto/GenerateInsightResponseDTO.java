@@ -1,7 +1,5 @@
 package com.todaktodot.TDTD.domain.insight.dto;
 
-import com.todaktodot.TDTD.domain.feedback.dto.response.GenerateFeedbackResponseDTO;
-import com.todaktodot.TDTD.domain.feedback.repository.entity.DailyCardFeedbackEntity;
 import com.todaktodot.TDTD.domain.insight.repository.entity.Insight;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

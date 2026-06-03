@@ -1,5 +1,6 @@
 package com.todaktodot.TDTD.domain.dailycard.dto.response;
 
+import com.todaktodot.TDTD.domain.feedback.repository.entity.FeedbackGenerationStatus;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.EmojiType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -73,6 +74,13 @@ public class HistoryDetailResponseDTO {
 
         @Schema(description = "AI 피드백 (미생성 시 null)")
         private FeedbackItem feedback;
+
+        @Schema(
+                description = FeedbackGenerationStatus.SWAGGER_DESCRIPTION,
+                allowableValues = {"NOT_STARTED", "GENERATING", "COMPLETED", "FAILED"},
+                example = "NOT_STARTED"
+        )
+        private String feedbackStatus;
 
         @Schema(description = "콕 찌르기 여부 (이미 찌른경우 true)")
         private boolean isPocked;
