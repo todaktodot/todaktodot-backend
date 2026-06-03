@@ -127,4 +127,20 @@ public class PushMessage {
                 ))
                 .build();
     }
+
+    /**
+     * 이모지 알림 생성
+     */
+    public static PushMessage emojiReaction(Long coupleId, Long coupleCardId) {
+        return PushMessage.builder()
+                .title("💬연인이 내 답변에 반응했어요!")
+                .body("지금 바로 확인해볼까요?")
+                .pushType(PushType.EMOJI_REACTION)
+                .data(Map.of(
+                        "type", PushType.EMOJI_REACTION.getCode(),
+                        "coupleId", String.valueOf(coupleId),
+                        "coupleCardId", String.valueOf(coupleCardId)
+                ))
+                .build();
+    }
 }

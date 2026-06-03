@@ -3,19 +3,9 @@ package com.todaktodot.TDTD.domain.dailycard.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.todaktodot.TDTD.domain.dailycard.dto.ai.AiGeneratedCardDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.GenerateDailyCardRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SelectCardTypeRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryDetailResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.*;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.*;
+import com.todaktodot.TDTD.domain.dailycard.repository.*;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryCardProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryDetailProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.WeeklyCardProjection;
@@ -25,12 +15,6 @@ import com.todaktodot.TDTD.domain.feedback.repository.entity.CoupleDailyCardFeed
 import com.todaktodot.TDTD.domain.feedback.repository.entity.DailyCardFeedbackEntity;
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
-import com.todaktodot.TDTD.domain.dailycard.repository.AiCardGenerationInfoRepository;
-import com.todaktodot.TDTD.domain.dailycard.repository.CoupleDailyCardRepository;
-import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardUserAnswerRepository;
-import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardOptionRepository;
-import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardQuestionRepository;
-import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.*;
 
 import java.math.BigDecimal;
@@ -85,6 +69,7 @@ public class DailyCardServiceImpl implements DailyCardService {
     private final CoupleDailyCardFeedbackRepository coupleDailyCardFeedbackRepository;
     private final DailyCardFeedbackRepository dailyCardFeedbackRepository;
     private final NotificationRepository notificationRepository;
+    private final DailyCardReactionRepository dailyCardReactionRepository;
     private final UserRepository userRepository;
     private final FcmService fcmService;
     private final ObjectMapper objectMapper;
@@ -1201,7 +1186,9 @@ public class DailyCardServiceImpl implements DailyCardService {
                             .answerRequired("Y".equals(qFirst.getAnswerReqYn()))
                             .options(options)
                             .user1Answer(u1Answer)
+                            .user1Emoji(EmojiType.from(qFirst.getUser1Emoji()))
                             .user2Answer(u2Answer)
+                            .user2Emoji(EmojiType.from(qFirst.getUser2Emoji()))
                             .build());
                 }
 
@@ -1328,7 +1315,9 @@ public class DailyCardServiceImpl implements DailyCardService {
                     .answerRequired("Y".equals(firstRow.getAnswerReqYn()))
                     .options(options)
                     .user1Answer(firstRow.getUser1Answer())
+                    .user1Emoji(EmojiType.from(firstRow.getUser1Emoji()))
                     .user2Answer(firstRow.getUser2Answer())
+                    .user2Emoji(EmojiType.from(firstRow.getUser2Emoji()))
                     .build());
         }
 
@@ -1381,6 +1370,78 @@ public class DailyCardServiceImpl implements DailyCardService {
         //TODO : 알림 전송
         PushMessage pokePushMessage = PushMessage.poke(user.getNickname(), coupleCardId);
         fcmService.sendToUser(Objects.equals(couple.getUserId1(), userId) ? couple.getUserId2() : couple.getUserId1(), pokePushMessage);
+    }
+
+    @Override
+    @Transactional
+    public SaveEmojiResponseDTO setEmojiReaction(Long userId, SaveEmojiRequestDTO requestDTO) {
+        //커플 조회
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("혼자 둘러보기 혹은 커플 연결이 되어있지 않습니다."));
+
+        //커플이 아닌 경우
+        if (couple.getUserId2() == null) throw new IllegalStateException("혼자 둘러보기의 경우 이모지 반응이 불가합니다.");
+
+        //상대방 ID
+        Long receiveUserId = couple.getUserId1().equals(userId) ? couple.getUserId2() : couple.getUserId1();
+
+        //데일리카드 조회
+        DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(requestDTO.getCoupleCardId(), 1, receiveUserId, "N")
+                .orElseThrow(() -> new IllegalStateException("상대방의 응답한 데일리카드 답변이 존재하지 않습니다."));
+
+        Optional<DailyCardAnswerReactionEntity> reactionEntity = dailyCardReactionRepository.findByReactorUserIdAndAnswerIdAndDelYn(userId, answerEntity.getAnswerId(), "N");
+
+        DailyCardAnswerReactionEntity savedReaction = null;
+        //이미 존재하는 경우
+        if (reactionEntity.isPresent()) {
+            DailyCardAnswerReactionEntity reaction = reactionEntity.get();
+
+            //이모지 교체
+            reaction.updateEmojiType(requestDTO.getEmojiType(), userId);
+            savedReaction = dailyCardReactionRepository.save(reaction);
+        }
+        else {
+            DailyCardAnswerReactionEntity newAnswerReaction = DailyCardAnswerReactionEntity.builder()
+                    .emojiType(requestDTO.getEmojiType())
+                    .reactorUserId(userId)
+                    .answerId(answerEntity.getAnswerId())
+                    .regrId(userId)
+                    .build();
+
+            savedReaction = dailyCardReactionRepository.save(newAnswerReaction);
+
+            //최초 1회 이모지 푸시알림
+            if (!dailyCardReactionRepository.existsByReactorUserIdAndAnswerIdAndDelYn(userId, answerEntity.getAnswerId(), "Y")) {
+                emojiReactionPushAlarm(requestDTO.getCoupleCardId(), receiveUserId, couple);
+            }
+        }
+
+        return new SaveEmojiResponseDTO(userId, requestDTO.getCoupleCardId(), savedReaction.getEmojiType().name(), 1, savedReaction.getUpdDt());
+    }
+
+    @Override
+    @Transactional
+    public void deleteEmojiReaction(Long userId, Long coupleCardId) {
+        //커플 조회
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("혼자 둘러보기 혹은 커플 연결이 되어있지 않습니다."));
+
+        //커플이 아닌 경우
+        if (couple.getUserId2() == null) throw new IllegalStateException("혼자 둘러보기의 경우 이모지 삭제가 불가합니다.");
+
+        //상대방 ID
+        Long receiveUserId = couple.getUserId1().equals(userId) ? couple.getUserId2() : couple.getUserId1();
+
+        //데일리카드 조회
+        DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(coupleCardId, 1, receiveUserId, "N")
+                .orElseThrow(() -> new IllegalStateException("상대방의 응답한 데일리카드 답변이 존재하지 않습니다."));
+
+        //남긴 이모지 조회
+        DailyCardAnswerReactionEntity reactionEntity = dailyCardReactionRepository.findByReactorUserIdAndAnswerIdAndDelYn(userId, answerEntity.getAnswerId(), "N")
+                .orElseThrow(() -> new IllegalStateException("해당 데일리카드 답변에 이모지 반응이 존재하지 않습니다."));
+
+        reactionEntity.updateDelYn(userId);
+        dailyCardReactionRepository.save(reactionEntity);
     }
 
     private CardMode advanceMode(CardMode startMode, int offset) {
@@ -1438,6 +1499,12 @@ public class DailyCardServiceImpl implements DailyCardService {
             PushMessage pushMessage = PushMessage.partnerAnswer(couple.getCoupleId(), coupleCardId);
             fcmService.sendToUser(receiveUserId, pushMessage);
         }
+    }
+
+    //이모지 반응 시 푸시알림 전송
+    private void emojiReactionPushAlarm(Long coupleCardId, Long receiveUserId, CoupleEntity couple) {
+        PushMessage pushMessage = PushMessage.emojiReaction(couple.getCoupleId(), coupleCardId);
+        fcmService.sendToUser(receiveUserId, pushMessage);
     }
 
 }
