@@ -10,6 +10,7 @@ import com.todaktodot.TDTD.domain.notification.dto.PushMessage;
 import com.todaktodot.TDTD.domain.notification.dto.reqeust.NotificationSaveRequest;
 import com.todaktodot.TDTD.domain.notification.repository.DeviceTokenRepository;
 import com.todaktodot.TDTD.domain.notification.repository.entity.DeviceTokenEntity;
+import com.todaktodot.TDTD.domain.notification.repository.entity.PushType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -50,7 +51,11 @@ public class FcmServiceImpl implements FcmService {
     @Async
     public void sendToUser(Long userId, PushMessage message) {
         if (!isFirebaseInitialized()) return;
-        if (!isNotificationEnabled(userId)) return;
+
+        boolean notificationEnabled = isNotificationEnabled(userId);
+        if (!notificationEnabled) {
+            if (!PushType.CONNECT_COUPLE.equals(message.getPushType())) return;
+        }
         if (!canSendPush(userId, message)) return;
 
         List<String> fcmTokens = getActiveTokens(userId);
@@ -61,8 +66,13 @@ public class FcmServiceImpl implements FcmService {
             saveRequestList.add(mappingToSaveRequest(fcmToken, userId, message));
         }
 
-        String title = buildTitle(message);
-        sendMulticast(fcmTokens, title, message.getBody(), message.getData(), userId, saveRequestList);
+        if (!notificationEnabled) {
+            // 알림 비동의이지만 '커플 연결 푸시'인 경우 -> Silent 푸시
+            sendMulticastSlient(fcmTokens, message.getData(), userId, saveRequestList);
+        } else {
+            String title = buildTitle(message);
+            sendMulticast(fcmTokens, title, message.getBody(), message.getData(), userId, saveRequestList);
+        }
     }
 
     @Override
@@ -279,6 +289,46 @@ public class FcmServiceImpl implements FcmService {
         if (data != null && !data.isEmpty()) {
             builder.putAllData(data);
         }
+
+        try {
+            BatchResponse response = FirebaseMessaging.getInstance()
+                    .sendEachForMulticast(builder.build());
+            log.info("푸시 발송 완료 - 성공: {}, 실패: {}",
+                    response.getSuccessCount(), response.getFailureCount());
+
+            if (response.getFailureCount() > 0) {
+                handleFailedTokens(fcmTokens, response, saveRequest);
+            }
+            savePushAlarm(saveRequest);
+        } catch (FirebaseMessagingException e) {
+            log.error("푸시 멀티캐스트 발송 실패 - userId: {}, error: {}", userId, e.getMessage());
+        }
+    }
+
+    private void sendMulticastSlient(List<String> fcmTokens,
+                               Map<String, String> data, Long userId, List<NotificationSaveRequest> saveRequest) {
+
+        MulticastMessage.Builder builder = MulticastMessage.builder()
+                .addAllTokens(fcmTokens);
+
+        // Data payload 추가
+        if (data != null && !data.isEmpty()) {
+            builder.putAllData(data);
+        }
+
+        // 2. iOS(애플)를 위한 사일런트 푸시 설정 추가
+        ApnsConfig apnsConfig = ApnsConfig.builder()
+                // APNs 헤더 설정
+                .putHeader("apns-push-type", "background")
+                .putHeader("apns-priority", "5")
+                // aps 페이로드 설정
+                .setAps(Aps.builder()
+                        .setContentAvailable(true)
+                        .build())
+                .build();
+
+        // 빌더에 APNs 설정 반영
+        builder.setApnsConfig(apnsConfig);
 
         try {
             BatchResponse response = FirebaseMessaging.getInstance()
