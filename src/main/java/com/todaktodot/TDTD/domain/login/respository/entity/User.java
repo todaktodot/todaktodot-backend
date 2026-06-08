@@ -115,4 +115,12 @@ public class User {
         this.delYn = "Y";
         this.updrId = userId;
     }
+
+    /**
+     * 닉네임 초기화
+     */
+    public void nicknameClear(long userId) {
+        this.nickname = null;
+        this.updrId = userId;
+    }
 }

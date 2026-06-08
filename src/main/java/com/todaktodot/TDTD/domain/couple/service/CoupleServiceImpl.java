@@ -4,6 +4,8 @@ import com.todaktodot.TDTD.domain.couple.dto.request.UpdateCoupleInfoRequestDTO;
 import com.todaktodot.TDTD.domain.couple.dto.response.CoupleInfoResponseDTO;
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
+import com.todaktodot.TDTD.domain.login.respository.UserRepository;
+import com.todaktodot.TDTD.domain.login.respository.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CoupleServiceImpl implements CoupleService {
 
     private final CoupleRepository coupleRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -62,6 +65,21 @@ public class CoupleServiceImpl implements CoupleService {
         // 2. DEL_YN = 'Y' 처리
         couple.disconnect(userId);
         coupleRepository.save(couple);
+
+        //3. 닉네임 초기화
+        Long userId1 = couple.getUserId1();
+        Long userId2 = couple.getUserId2();
+
+        User firstUser = userRepository.findByIdAndDelYn(userId1, "N")
+                .orElseThrow(() -> new IllegalStateException(userId1 + " 사용자가 존재하지 않습니다."));
+        firstUser.nicknameClear(userId1);
+
+        User secondUser = userRepository.findByIdAndDelYn(userId2, "N")
+                .orElseThrow(() -> new IllegalStateException(userId2 + " 사용자가 존재하지 않습니다."));
+        secondUser.nicknameClear(userId2);
+
+        userRepository.save(firstUser);
+        userRepository.save(secondUser);
 
         log.info("========================================");
         log.info("커플 해지 완료");
