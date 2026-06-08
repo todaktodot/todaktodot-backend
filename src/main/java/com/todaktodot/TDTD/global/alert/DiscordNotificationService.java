@@ -35,6 +35,9 @@ public class DiscordNotificationService {
     @Value("${discord.webhook.batch-url:}")
     private String discordBatchWebhookUrl;
 
+    @Value("${discord.webhook.statistics-url:}")
+    private String discordStatisticsWebhookUrl;
+
     @Value("${discord.webhook.signup-url:}")
     private String discordSignUpWebhookUrl;
 
@@ -43,6 +46,9 @@ public class DiscordNotificationService {
 
     @Value("${discord.webhook.extra-batch-urls:}")
     private String extraBatchWebhookUrls;
+
+    @Value("${discord.webhook.extra-statistics-urls:}")
+    private String extraStatisticsWebhookUrls;
 
 
     @Value("${discord.webhook.profile:local}")
@@ -141,6 +147,22 @@ public class DiscordNotificationService {
         sendNotification(resolveWebhookUrls(discordBatchWebhookUrl, extraBatchWebhookUrls), payload, "BATCH_SUCCESS");
     }
 
+    public void sendStatisticsReport(String title, String description, List<DiscordEmbedField> fields) {
+        DiscordWebhookPayload payload = new DiscordWebhookPayload(
+                buildStatisticsUsername(),
+                List.of(new DiscordEmbed(
+                        title,
+                        description,
+                        0x7740AE,
+                        fields,
+                        new DiscordEmbedFooter(discordWebhookProfile + " • WEEKLY STATISTICS"),
+                        OffsetDateTime.now().toString()
+                ))
+        );
+
+        sendNotification(resolveWebhookUrls(discordStatisticsWebhookUrl, extraStatisticsWebhookUrls), payload, "WEEKLY_STATISTICS");
+    }
+
     public void sendSuccessNotificationForNewUser(String message) {
         DiscordWebhookPayload payload = new DiscordWebhookPayload(
                 buildUsername(),
@@ -236,6 +258,12 @@ public class DiscordNotificationService {
         return StringUtils.hasText(discordWebhookProfile)
                 ? discordWebhookProfile + " 오류 전달"
                 : "오류전달";
+    }
+
+    private String buildStatisticsUsername() {
+        return StringUtils.hasText(discordWebhookProfile)
+                ? discordWebhookProfile + " 통계 리포트"
+                : "통계 리포트";
     }
 
     private String formatCodeBlock(String value) {
