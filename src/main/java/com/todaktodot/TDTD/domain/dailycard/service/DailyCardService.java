@@ -98,6 +98,17 @@ public interface DailyCardService {
     SelectCardTypeResponseDTO selectCardType(Long userId, SelectCardTypeRequestDTO request);
 
     /**
+     * 데일리카드 답변 잔디 조회
+     * 날짜별 현재 사용자와 상대방의 답변 참여 상태를 조회한다.
+     *
+     * @param userId 요청 사용자 ID
+     * @param startDate 조회 시작일
+     * @param endDate 조회 종료일
+     * @return 일자별 답변 상태
+     */
+    GrassResponseDTO getGrass(Long userId, LocalDate startDate, LocalDate endDate);
+
+    /**
      * 히스토리 카드 리스트 조회
      * 날짜 범위 내 배정된 데일리카드를 일자별로 조회.
      * 유형 선택 완료 시 전체 정보, 미선택 시 모드/주제만 노출
