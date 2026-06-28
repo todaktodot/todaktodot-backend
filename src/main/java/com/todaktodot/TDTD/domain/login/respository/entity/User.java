@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,13 @@ public class User {
 
     @Column(name = "NICK_NAME", length = 20)
     private String nickname;
+
+    @Column(name = "BIRTH_DATE")
+    private LocalDate birthDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Gender gender;
 
     @Column(name = "USER_ROLE")
     @Enumerated(EnumType.STRING)
@@ -76,6 +84,12 @@ public class User {
 //        this.joinYN = joinYN;
 //        this.socialAccounts.add(userAccount);
 //    }
+
+    public void updateUserInfo(String nickname, LocalDate birthDate, Gender gender) {
+        this.nickname = nickname;
+        this.birthDate = birthDate;
+        this.gender = gender;
+    }
 
     public void updateNickname(String nickname) {
         this.nickname = nickname;
