@@ -3,7 +3,9 @@ package com.todaktodot.TDTD.domain.profile.controller;
 import com.todaktodot.TDTD.domain.login.dto.request.LoginRequestDTO;
 import com.todaktodot.TDTD.domain.login.respository.entity.UserPrincipal;
 import com.todaktodot.TDTD.domain.profile.dto.request.SetNicknameRequestDTO;
+import com.todaktodot.TDTD.domain.profile.dto.request.SetOnboardingRequestDTO;
 import com.todaktodot.TDTD.domain.profile.dto.response.SetNicknameResponseDTO;
+import com.todaktodot.TDTD.domain.profile.dto.response.SetOnboardingResponseDTO;
 import com.todaktodot.TDTD.domain.profile.dto.response.UserDetailResponseDTO;
 import com.todaktodot.TDTD.domain.profile.service.ProfileService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +27,17 @@ import org.springframework.web.bind.annotation.*;
 public class ProfileController {
 
     private final ProfileService profileService;
+
+    @Operation(summary = "온보딩 - 닉네임, 생년월일, 성별 설정", description = "로그인한 회원의 닉네임, 생년월일, 성별을 설정합니다")
+    @ApiResponse(responseCode = "200", description = "온보딩 정보 설정 성공")
+    @PatchMapping("/onboarding")
+    public ResponseEntity<SetOnboardingResponseDTO> setNickname(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @Valid @RequestBody SetOnboardingRequestDTO requestDTO) {
+
+        SetOnboardingResponseDTO response = profileService.setOnboarding(userPrincipal.getId(), requestDTO);
+        return ResponseEntity.ok(response);
+    }
 
     @Operation(summary = "닉네임 설정", description = "로그인한 회원의 닉네임을 설정합니다")
     @ApiResponse(responseCode = "200", description = "닉네임 설정 성공")
