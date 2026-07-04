@@ -107,7 +107,7 @@ public class SecurityConfig {
                         // Swagger
                         .requestMatchers("/v3/api-docs/**", "/swagger-resources/**", "/swagger-ui/**").permitAll()
                         // Static Resources
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/image/**", "/favicon.ico", "/share.html").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/image/**", "/favicon.ico", "/share.html", "/.well-known/apple-app-site-association", "/.well-known/assetlinks.json").permitAll()
                         // Error Page
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
