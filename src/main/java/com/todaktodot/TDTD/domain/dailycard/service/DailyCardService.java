@@ -155,4 +155,18 @@ public interface DailyCardService {
      * @param coupleCardId 커플 데일리카드 ID
      */
     void deleteEmojiReaction(Long userId, Long coupleCardId);
+
+    /**
+     * 히스토리 카드 공유링크 생성
+     * @param userId 요청 사용자 ID
+     * @param requestDTO  커플 데일리카드 ID
+     */
+    HistoryCardShareLinkResponseDTO setHistoryCardShareLink(Long userId, HistoryCardShareLinkRequestDTO requestDTO);
+
+    /**
+     * 히스토리 카드 공유링크 검증
+     * @param userId 요청 사용자 ID
+     * @param requestDTO  공유된 토큰
+     */
+    HistoryCardShareLinkValidateResponseDTO validateHistoryCardShareLink(Long userId, HistoryCardShareLinkValidateRequestDTO requestDTO);
 }
