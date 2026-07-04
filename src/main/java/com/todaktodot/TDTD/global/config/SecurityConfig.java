@@ -101,13 +101,13 @@ public class SecurityConfig {
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/login", "/login/test*", "/api/reissue", "/api/guide").permitAll()
+                        .requestMatchers("/api/login", "/login/test*", "/api/reissue", "/api/guide" , "/share/card", "/share/card/**").permitAll()
                         // WebSocket
                         .requestMatchers("/ws/**").permitAll()
                         // Swagger
                         .requestMatchers("/v3/api-docs/**", "/swagger-resources/**", "/swagger-ui/**").permitAll()
                         // Static Resources
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/image/**", "/favicon.ico").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/image/**", "/favicon.ico", "/share.html").permitAll()
                         // Error Page
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()

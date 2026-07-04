@@ -1,9 +1,6 @@
 package com.todaktodot.TDTD.domain.dailycard.controller;
 
-import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SaveEmojiRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SelectCardTypeRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.*;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.*;
 import com.todaktodot.TDTD.domain.dailycard.service.DailyCardService;
 import com.todaktodot.TDTD.domain.login.respository.entity.UserPrincipal;
@@ -166,5 +163,28 @@ public class DailyCardUserController {
         Long userId = userPrincipal.getId();
         dailyCardService.deleteEmojiReaction(userId, coupleCardId);
         return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @Operation(summary = "히스토리 카드 공유 링크 생성",
+            description = "히스토리 카드 '공유하기' 링크를 생성합니다.")
+    @ApiResponse(responseCode = "200", description = "히스토리 카드 공유 링크 생성 성공")
+    @PostMapping("/history/share-link")
+    public ResponseEntity<HistoryCardShareLinkResponseDTO> setHistoryCardShareLink(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestBody HistoryCardShareLinkRequestDTO requestDTO) {
+        Long userId = userPrincipal.getId();
+        HistoryCardShareLinkResponseDTO response = dailyCardService.setHistoryCardShareLink(userId, requestDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "히스토리 카드 공유 링크 검증",
+            description = "히스토리 카드 공유하기 링크를 검증합니다.")
+    @ApiResponse(responseCode = "200", description = "히스토리 카드 공유 링크 검증 성공")
+    @PostMapping("/history/share-link/validate")
+    public HistoryCardShareLinkValidateResponseDTO validateHistoryCardShareLink(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestBody HistoryCardShareLinkValidateRequestDTO requestDTO) {
+        Long userId = userPrincipal.getId();
+        return dailyCardService.validateHistoryCardShareLink(userId, requestDTO);
     }
 }
