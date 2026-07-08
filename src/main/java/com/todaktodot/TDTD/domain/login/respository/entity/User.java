@@ -29,7 +29,6 @@ public class User {
     private LocalDate birthDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private Gender gender;
 
     @Column(name = "USER_ROLE")
