@@ -6,6 +6,7 @@ import com.todaktodot.TDTD.domain.dailycard.dto.ai.AiGeneratedCardDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.*;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.*;
 import com.todaktodot.TDTD.domain.dailycard.repository.*;
+import com.todaktodot.TDTD.domain.dailycard.repository.projection.GrassProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryCardProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryDetailProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.WeeklyCardProjection;
@@ -1007,6 +1008,85 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .forEach(card -> card.softDelete(userId));
 
         return SelectCardTypeResponseDTO.from(selectedCard);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GrassResponseDTO getGrass(Long userId, LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("조회 시작일과 종료일은 필수입니다.");
+        }
+
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("조회 시작일은 종료일보다 이후일 수 없습니다.");
+        }
+
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        Long partnerUserId = resolvePartnerUserId(couple, userId);
+        List<GrassProjection> rows = coupleDailyCardRepository.findGrass(
+                couple.getCoupleId(), userId, partnerUserId, startDate, endDate);
+
+        Map<LocalDate, GrassAnsweredState> answeredByDate = new HashMap<>();
+        for (GrassProjection row : rows) {
+            answeredByDate.put(
+                    row.getIssuedDate(),
+                    new GrassAnsweredState(isAnswered(row.getMeAnswered()), isAnswered(row.getPartnerAnswered()))
+            );
+        }
+
+        List<GrassDayDTO> days = new ArrayList<>();
+        LocalDate currentDate = startDate;
+        while (!currentDate.isAfter(endDate)) {
+            GrassAnsweredState state = answeredByDate.getOrDefault(currentDate, GrassAnsweredState.NONE);
+            days.add(GrassDayDTO.builder()
+                    .date(currentDate)
+                    .status(resolveGrassStatus(state.meAnswered(), state.partnerAnswered()))
+                    .build());
+            currentDate = currentDate.plusDays(1);
+        }
+
+        return GrassResponseDTO.builder()
+                .startDate(startDate)
+                .endDate(endDate)
+                .days(days)
+                .build();
+    }
+
+    private Long resolvePartnerUserId(CoupleEntity couple, Long userId) {
+        if (Objects.equals(couple.getUserId1(), userId)) {
+            return couple.getUserId2();
+        }
+
+        if (Objects.equals(couple.getUserId2(), userId)) {
+            return couple.getUserId1();
+        }
+
+        throw new IllegalStateException("해당 커플에 속한 사용자가 아닙니다.");
+    }
+
+    private boolean isAnswered(Long value) {
+        return value != null && value == 1L;
+    }
+
+    private GrassStatus resolveGrassStatus(boolean meAnswered, boolean partnerAnswered) {
+        if (meAnswered && partnerAnswered) {
+            return GrassStatus.BOTH;
+        }
+
+        if (meAnswered) {
+            return GrassStatus.ME_ONLY;
+        }
+
+        if (partnerAnswered) {
+            return GrassStatus.PARTNER_ONLY;
+        }
+
+        return GrassStatus.NONE;
+    }
+    private record GrassAnsweredState(boolean meAnswered, boolean partnerAnswered) {
+        private static final GrassAnsweredState NONE = new GrassAnsweredState(false, false);
     }
 
     @Override

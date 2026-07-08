@@ -92,6 +92,20 @@ public class DailyCardUserController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "데일리카드 답변 잔디 조회",
+            description = "날짜 범위 내 현재 사용자와 상대방의 데일리카드 답변 참여 상태를 일자별로 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/grass")
+    public ResponseEntity<GrassResponseDTO> getGrass(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        Long userId = userPrincipal.getId();
+        GrassResponseDTO response = dailyCardService.getGrass(userId, startDate, endDate);
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary = "히스토리 카드 리스트 조회",
                description = "날짜 범위 내 배정된 데일리카드를 일자별로 조회합니다. 유형 선택 여부에 따라 노출 정보가 달라집니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")

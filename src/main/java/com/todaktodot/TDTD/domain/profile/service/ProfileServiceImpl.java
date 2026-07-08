@@ -4,13 +4,16 @@ import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleType;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
+import com.todaktodot.TDTD.domain.login.respository.entity.Gender;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
 import com.todaktodot.TDTD.domain.login.respository.entity.UserAccount;
 import com.todaktodot.TDTD.domain.login.service.SocialUserProvider;
 import com.todaktodot.TDTD.domain.notification.repository.DeviceTokenRepository;
 import com.todaktodot.TDTD.domain.notification.repository.entity.DeviceTokenEntity;
 import com.todaktodot.TDTD.domain.profile.dto.request.SetNicknameRequestDTO;
+import com.todaktodot.TDTD.domain.profile.dto.request.SetOnboardingRequestDTO;
 import com.todaktodot.TDTD.domain.profile.dto.response.SetNicknameResponseDTO;
+import com.todaktodot.TDTD.domain.profile.dto.response.SetOnboardingResponseDTO;
 import com.todaktodot.TDTD.domain.profile.dto.response.UserDetailResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +32,18 @@ public class ProfileServiceImpl implements ProfileService {
     private final DeviceTokenRepository deviceTokenRepository;
     private final CoupleRepository coupleRepository;
     private final SocialUserProvider socialUserProvider;
+
+    @Override
+    @Transactional
+    public SetOnboardingResponseDTO setOnboarding(Long userId, SetOnboardingRequestDTO requestDTO) {
+        User user = userRepository.findByIdAndDelYn(userId, "N")
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+
+        Gender gender = Gender.fromCode(requestDTO.getGender());
+        user.updateUserInfo(requestDTO.getNickname(), requestDTO.getBirthDate(), gender);
+
+        return SetOnboardingResponseDTO.of(user.getId(), user.getNickname(), user.getBirthDate(), user.getGender().getCode());
+    }
 
     @Override
     @Transactional
