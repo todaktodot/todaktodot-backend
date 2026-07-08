@@ -2,6 +2,7 @@ package com.todaktodot.TDTD.domain.dailycard.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardShareLinkReposittory;
 import com.todaktodot.TDTD.domain.dailycard.dto.ai.AiGeneratedCardDTO;
 import com.todaktodot.TDTD.domain.dailycard.dto.request.*;
 import com.todaktodot.TDTD.domain.dailycard.dto.response.*;
@@ -24,6 +25,7 @@ import com.todaktodot.TDTD.admin.prompt.repository.SituationCategoryRepository;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.SituationCategoryEntity;
 
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -46,6 +48,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.PessimisticLockingFailureException;
@@ -71,6 +74,7 @@ public class DailyCardServiceImpl implements DailyCardService {
     private final DailyCardFeedbackRepository dailyCardFeedbackRepository;
     private final NotificationRepository notificationRepository;
     private final DailyCardReactionRepository dailyCardReactionRepository;
+    private final DailyCardShareLinkReposittory dailyCardShareLinkReposittory;
     private final UserRepository userRepository;
     private final FcmService fcmService;
     private final ObjectMapper objectMapper;
@@ -81,6 +85,9 @@ public class DailyCardServiceImpl implements DailyCardService {
     private static final LocalTime DAILY_CARD_ANSWER_OPEN_TIME = LocalTime.of(8, 0);
     private static final LocalTime DAILY_CARD_ANSWER_CLOSE_TIME = LocalTime.of(4, 0);
     private static final String UNKNOWN_NICKNAME = "-";
+
+    @Value("${share-link.base-url}")
+    private String shareLinkBaseUrl;
 
     /**
      * AI 생성 결과를 담는 record
@@ -1530,6 +1537,117 @@ public class DailyCardServiceImpl implements DailyCardService {
 
         reactionEntity.updateDelYn(userId);
         dailyCardReactionRepository.save(reactionEntity);
+    }
+
+    @Override
+    public HistoryCardShareLinkResponseDTO setHistoryCardShareLink(Long userId, HistoryCardShareLinkRequestDTO requestDTO) {
+        // 1. 커플 연결 여부 검증
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        // 2. 선택할 카드 조회 + dailyCard EAGER 로드
+        CoupleDailyCardEntity selectedCard = coupleDailyCardRepository
+                .findByIdWithDailyCard(requestDTO.getCoupleCardId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 커플 카드입니다: " + requestDTO.getCoupleCardId()));
+
+        // 3. 접근 권한 검증
+        if (!selectedCard.getCoupleId().equals(couple.getCoupleId())) {
+            throw new IllegalStateException("해당 카드에 대한 접근 권한이 없습니다.");
+        }
+
+        // 4. 공유 링크 생성
+        String shareToken = generateShareLinkToken();
+
+        // 5. 만료 시간 생성
+        LocalDateTime expiredAt = LocalDateTime.now().plusDays(7);
+
+        // 6. 공유 링크 저장
+        DailyCardShareLink shareLink = DailyCardShareLink.builder()
+                .shareToken(shareToken)
+                .coupleCardId(requestDTO.getCoupleCardId())
+                .createUserId(userId)
+                .expiredAt(expiredAt)
+                .build();
+
+        dailyCardShareLinkReposittory.save(shareLink);
+
+        String shareUrl = shareLinkBaseUrl + "/share/card?token=" + shareToken;
+
+        return HistoryCardShareLinkResponseDTO.builder()
+                .shareUrl(shareUrl)
+                .shareToken(shareToken)
+                .expiredAt(expiredAt)
+                .build();
+    }
+
+    @Override
+    public HistoryCardShareLinkValidateResponseDTO validateHistoryCardShareLink(Long userId, HistoryCardShareLinkValidateRequestDTO requestDTO) {
+        DailyCardShareLink dailyCardShareLink = dailyCardShareLinkReposittory
+                .findByShareTokenAndDelYn(requestDTO.getShareToken(), "N")
+                .orElse(null);
+
+        if (dailyCardShareLink == null) {
+            return HistoryCardShareLinkValidateResponseDTO.builder()
+                    .status(ShareLinkStatus.NOT_FOUND)
+                    .message("존재하지 않는 링크입니다.")
+                    .build();
+        }
+
+        if (dailyCardShareLink.isExpired(LocalDateTime.now())) {
+            return HistoryCardShareLinkValidateResponseDTO.builder()
+                    .status(ShareLinkStatus.EXPIRED)
+                    .message("만료된 링크입니다.")
+                    .build();
+        }
+
+        // 1. 커플 연결 여부 검증
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElse(null);
+
+        if (couple == null) {
+            return HistoryCardShareLinkValidateResponseDTO.builder()
+                    .status(ShareLinkStatus.FORBIDDEN)
+                    .message("커플 연결이 되어있지 않습니다.")
+                    .build();
+        }
+
+        // 2. 커플 데일리 카드 조회
+        CoupleDailyCardEntity selectedCard = coupleDailyCardRepository
+                .findByIdWithDailyCard(dailyCardShareLink.getCoupleCardId())
+                .orElse(null);
+
+        if (selectedCard == null) {
+            return HistoryCardShareLinkValidateResponseDTO.builder()
+                    .status(ShareLinkStatus.NOT_FOUND)
+                    .message("존재하지 않는 커플 카드입니다: " + dailyCardShareLink.getCoupleCardId())
+                    .build();
+        }
+
+        // 3. 접근 권한 검증
+        if (!selectedCard.getCoupleId().equals(couple.getCoupleId())) {
+                return HistoryCardShareLinkValidateResponseDTO.builder()
+                        .status(ShareLinkStatus.FORBIDDEN)
+                        .message("해당 히스토리 카드에 대한 접근 권한이 없습니다.")
+                        .build();
+        }
+
+        //4. 접근 가능할 경우
+        return HistoryCardShareLinkValidateResponseDTO.builder()
+                .status(ShareLinkStatus.VALID)
+                .coupleCardId(dailyCardShareLink.getCoupleCardId())
+                .build();
+    }
+
+    private String generateShareLinkToken() {
+        byte[] bytes = new byte[32];
+
+        SecureRandom secureRandom = new SecureRandom();
+        secureRandom.nextBytes(bytes);
+
+        return Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(bytes);
     }
 
     private CardMode advanceMode(CardMode startMode, int offset) {
