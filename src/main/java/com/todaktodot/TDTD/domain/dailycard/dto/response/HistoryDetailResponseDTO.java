@@ -1,5 +1,6 @@
 package com.todaktodot.TDTD.domain.dailycard.dto.response;
 
+
 import com.todaktodot.TDTD.domain.feedback.repository.entity.FeedbackGenerationStatus;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.EmojiType;
 import io.swagger.v3.oas.annotations.media.Schema;
