@@ -6,6 +6,8 @@ import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
+import com.todaktodot.TDTD.domain.notification.dto.PushMessage;
+import com.todaktodot.TDTD.domain.notification.service.FcmService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ public class CoupleServiceImpl implements CoupleService {
 
     private final CoupleRepository coupleRepository;
     private final UserRepository userRepository;
+    private final FcmService fcmService;
 
     @Override
     @Transactional
@@ -81,10 +84,19 @@ public class CoupleServiceImpl implements CoupleService {
         userRepository.save(firstUser);
         userRepository.save(secondUser);
 
+        //4. 커플 해제 시 사일런트 알림 발송
+        Long anotherUserId = (userId1.equals(userId)) ? userId2 : userId1;
+        disconnectCouplePushAlarm(anotherUserId, couple.getCoupleId());
+
         log.info("========================================");
         log.info("커플 해지 완료");
         log.info("커플 ID: {}", couple.getCoupleId());
         log.info("해지 요청자: {}", userId);
         log.info("========================================");
+    }
+
+    private void disconnectCouplePushAlarm(Long receiveUserId, Long coupleId) {
+        PushMessage pushMessage = PushMessage.disconnectCouple(coupleId);
+        fcmService.sendToUser(receiveUserId, pushMessage);
     }
 }
