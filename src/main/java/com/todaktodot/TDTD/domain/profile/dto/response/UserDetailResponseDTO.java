@@ -20,6 +20,10 @@ public class UserDetailResponseDTO {
     private Long userId;
     @Schema(description = "닉네임")
     private String nickname;
+    @Schema(description = "생년월일")
+    private String birthDate;
+    @Schema(description = "성별")
+    private String gender;
     @Schema(description = "역할")
     private String role;
     @Schema(description = "정보성 알림 동의 여부")
@@ -43,6 +47,8 @@ public class UserDetailResponseDTO {
         return UserDetailResponseDTO.builder()
                 .userId(user.getId())
                 .nickname(user.getNickname())
+                .birthDate(user.getBirthDate() != null ? user.getBirthDate().toString() : null)
+                .gender(user.getGender() != null ? user.getGender().getCode() : null)
                 .role(user.getRole().getRole())
                 .infoAlarmYN(user.getInfoAlarmYN())
                 .adAlarmYN(user.getAdAlarmYN())

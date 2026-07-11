@@ -10,20 +10,17 @@ import com.todaktodot.TDTD.domain.notification.dto.PushMessage;
 import com.todaktodot.TDTD.domain.notification.dto.reqeust.NotificationSaveRequest;
 import com.todaktodot.TDTD.domain.notification.repository.DeviceTokenRepository;
 import com.todaktodot.TDTD.domain.notification.repository.entity.DeviceTokenEntity;
+import com.todaktodot.TDTD.domain.notification.repository.entity.PushSendMode;
 import com.todaktodot.TDTD.domain.notification.repository.entity.PushType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
 
 @Slf4j
 @Service
@@ -53,26 +50,33 @@ public class FcmServiceImpl implements FcmService {
         if (!isFirebaseInitialized()) return;
 
         boolean notificationEnabled = isNotificationEnabled(userId);
-        if (!notificationEnabled) {
-            if (!PushType.CONNECT_COUPLE.equals(message.getPushType())) return;
+
+        PushSendMode sendMode = resolvePushSendMode(
+                notificationEnabled,
+                message.getPushType()
+        );
+
+        if (PushSendMode.NONE.equals(sendMode)) {
+            return;
         }
+
         if (!canSendPush(userId, message)) return;
 
         List<String> fcmTokens = getActiveTokens(userId);
         if (fcmTokens.isEmpty()) return;
 
-        List<NotificationSaveRequest> saveRequestList = new ArrayList<>();
-        for (String fcmToken : fcmTokens) {
-            saveRequestList.add(mappingToSaveRequest(fcmToken, userId, message));
+        List<NotificationSaveRequest> saveRequestList = fcmTokens.stream()
+                .map(fcmToken ->
+                        mappingToSaveRequest(fcmToken, userId, message)
+                )
+                .toList();
+
+        if (PushSendMode.SILENT.equals(sendMode)) {
+            sendMulticastSilent(fcmTokens, message.getData(), userId, saveRequestList);
+            return;
         }
 
-        if (!notificationEnabled) {
-            // 알림 비동의이지만 '커플 연결 푸시'인 경우 -> Silent 푸시
-            sendMulticastSlient(fcmTokens, message.getData(), userId, saveRequestList);
-        } else {
-            String title = buildTitle(message);
-            sendMulticast(fcmTokens, title, message.getBody(), message.getData(), userId, saveRequestList);
-        }
+        sendMulticast(fcmTokens, buildTitle(message), message.getBody(), message.getData(), userId, saveRequestList);
     }
 
     @Override
@@ -129,8 +133,7 @@ public class FcmServiceImpl implements FcmService {
             allFcmTokens.addAll(fcmTokens);
         }
 
-        String title = buildTitle(message);
-        sendMulticast(allFcmTokens, title, message.getBody(), message.getData(), null, saveRequestList);
+        sendMulticast(allFcmTokens, buildTitle(message), message.getBody(), message.getData(), null, saveRequestList);
     }
 
     @Override
@@ -305,8 +308,8 @@ public class FcmServiceImpl implements FcmService {
         }
     }
 
-    private void sendMulticastSlient(List<String> fcmTokens,
-                               Map<String, String> data, Long userId, List<NotificationSaveRequest> saveRequest) {
+    private void sendMulticastSilent(List<String> fcmTokens,
+                                     Map<String, String> data, Long userId, List<NotificationSaveRequest> saveRequest) {
 
         MulticastMessage.Builder builder = MulticastMessage.builder()
                 .addAllTokens(fcmTokens);
@@ -382,6 +385,34 @@ public class FcmServiceImpl implements FcmService {
         return true;
     }
 
+    private PushSendMode resolvePushSendMode(boolean notificationEnabled, PushType pushType) {
+        /*
+         * 푸시 발송 정책
+         *
+         * 1. 커플 연결 해제
+         *    - 알림 동의 여부와 관계없이 Silent Push 발송
+         *
+         * 2. 알림 동의
+         *    - 일반 Push 발송
+         *
+         * 3. 알림 미동의
+         *    - 커플 연결인 경우에만 Silent Push 발송
+         *    - 콕 찌르기, 답변 등록, 이모티콘 반응 등은 발송하지 않음
+         */
+        if (PushType.DISCONNECT_COUPLE.equals(pushType)) {
+            return PushSendMode.SILENT;
+        }
+
+        if (notificationEnabled) {
+            return PushSendMode.NORMAL;
+        }
+
+        if (PushType.CONNECT_COUPLE.equals(pushType)) {
+            return PushSendMode.SILENT;
+        }
+
+        return PushSendMode.NONE;
+    }
 
     private NotificationSaveRequest mappingToSaveRequest(String fcmToken, Long userId, PushMessage pushMessage) {
         return NotificationSaveRequest.builder()
