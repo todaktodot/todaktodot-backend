@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -51,7 +52,7 @@ public class AppleClient {
     @Value("${oauth.apple.key-path}")
     private String keyPath;
 
-    public SocialUserResponse getUserInfo(String authorizationCode) {
+    public SocialUserResponse getUserInfo(String authorizationCode, String name) {
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("code", authorizationCode);
@@ -82,17 +83,19 @@ public class AppleClient {
             throw new RuntimeException("애플 응답에 id_token이 없습니다.");
         }
 
+        String refreshToken = response.containsKey("refresh_token") ? response.get("refresh_token").toString() : null;
         Claims claims = verifyIdToken(response.get("id_token").toString());
 
         String sub = claims.getSubject();
         String email = claims.get("email", String.class);
 
-        return new SocialUserResponse(
-                sub,
-                email,
-                "APPLE USER",
-                "APPLE"
-        );
+        return SocialUserResponse.builder()
+                .id(sub)
+                .email(email)
+                .name(name)
+                .appleRefreshToken(refreshToken)
+                .provider("APPLE")
+                .build();
     }
 
     /**
@@ -128,6 +131,43 @@ public class AppleClient {
 
         } catch (Exception e) {
             throw new RuntimeException("Apple id_token 검증 실패", e);
+        }
+    }
+
+    /**
+     * 애플 연결 해제
+     */
+    public void revokeToken(String refreshToken) {
+        if (!StringUtils.hasText(refreshToken)) {
+            throw new IllegalArgumentException("Refresh Token이 없습니다.");
+        }
+
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("client_id", clientId);
+        body.add("client_secret", generateClientSecret()); // 기존에 만드신 메서드 재사용
+        body.add("token", refreshToken);
+        body.add("token_type_hint", "refresh_token");
+
+        try {
+            webClient.post()
+                    .uri("https://appleid.apple.com/auth/revoke")
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .body(BodyInserters.fromFormData(body))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, clientResponse ->
+                            clientResponse.bodyToMono(String.class)
+                                    .flatMap(errorBody -> {
+                                        log.error("애플 Revoke API 에러 응답: {}", errorBody);
+                                        return Mono.error(new RuntimeException("애플 연동 해제 실패: " + errorBody));
+                                    })
+                    )
+                    .bodyToMono(Void.class)
+                    .block();
+
+            log.info("Apple 연동 해제 성공");
+        } catch (Exception e) {
+            log.error("Apple 연동 해제 중 오류 발생: {}", e.getMessage());
+            throw new IllegalStateException("Apple 탈퇴 처리 실패", e);
         }
     }
 

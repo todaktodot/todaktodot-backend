@@ -12,16 +12,18 @@ public class UserSummaryDTO {
     private final Long userId;
     private final String name;
     private final String nickname;
+    private final String kakaoNickname;
     private final String email;
     private final String provider;
     private final String joinYn;
     private final LocalDateTime regDt;
 
-    public UserSummaryDTO(Long userId, String name, String nickname, String email,
+    public UserSummaryDTO(Long userId, String name, String nickname, String kakaoNickname, String email,
                           String provider, String joinYn, LocalDateTime regDt) {
         this.userId = userId;
         this.name = name;
         this.nickname = nickname;
+        this.kakaoNickname = kakaoNickname;
         this.email = email;
         this.provider = provider;
         this.joinYn = joinYn;
@@ -34,6 +36,7 @@ public class UserSummaryDTO {
                 user.getId(),
                 userAccount.getName(),
                 user.getNickname(),
+                userAccount.getKakaoNickname(),
                 userAccount.getEmail(),
                 userAccount.getProvider(),
                 user.getTermYN(),

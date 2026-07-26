@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,12 @@ public class User {
 
     @Column(name = "NICK_NAME", length = 20)
     private String nickname;
+
+    @Column(name = "BIRTH_DATE")
+    private LocalDate birthDate;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 
     @Column(name = "USER_ROLE")
     @Enumerated(EnumType.STRING)
@@ -77,6 +84,12 @@ public class User {
 //        this.socialAccounts.add(userAccount);
 //    }
 
+    public void updateUserInfo(String nickname, LocalDate birthDate, Gender gender) {
+        this.nickname = nickname;
+        this.birthDate = birthDate;
+        this.gender = gender;
+    }
+
     public void updateNickname(String nickname) {
         this.nickname = nickname;
     }
@@ -113,6 +126,14 @@ public class User {
      */
     public void softDelete(long userId) {
         this.delYn = "Y";
+        this.updrId = userId;
+    }
+
+    /**
+     * 닉네임 초기화
+     */
+    public void nicknameClear(long userId) {
+        this.nickname = null;
         this.updrId = userId;
     }
 }

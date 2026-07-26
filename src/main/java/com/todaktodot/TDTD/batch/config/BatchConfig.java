@@ -4,6 +4,7 @@ import com.todaktodot.TDTD.batch.tasklet.AiReportAssignTasklet;
 import com.todaktodot.TDTD.batch.tasklet.AiReportCreateTasklet;
 import com.todaktodot.TDTD.batch.tasklet.DailyCardAssignTasklet;
 import com.todaktodot.TDTD.batch.tasklet.DailyCardBatchAssignTasklet;
+import com.todaktodot.TDTD.batch.tasklet.WeeklyStatisticsReportTasklet;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -21,12 +22,14 @@ public class BatchConfig {
     private final DailyCardBatchAssignTasklet dailyCardBatchAssignTasklet;
     private final AiReportAssignTasklet aiReportAssignTasklet;
     private final AiReportCreateTasklet aiReportCreateTasklet;
+    private final WeeklyStatisticsReportTasklet weeklyStatisticsReportTasklet;
 
-    public BatchConfig(DailyCardAssignTasklet dailyCardAssignTasklet, DailyCardBatchAssignTasklet dailyCardBatchAssignTasklet, AiReportAssignTasklet aiReportAssignTasklet, AiReportCreateTasklet aiReportCreateTasklet) {
+    public BatchConfig(DailyCardAssignTasklet dailyCardAssignTasklet, DailyCardBatchAssignTasklet dailyCardBatchAssignTasklet, AiReportAssignTasklet aiReportAssignTasklet, AiReportCreateTasklet aiReportCreateTasklet, WeeklyStatisticsReportTasklet weeklyStatisticsReportTasklet) {
         this.dailyCardAssignTasklet = dailyCardAssignTasklet;
         this.dailyCardBatchAssignTasklet = dailyCardBatchAssignTasklet;
         this.aiReportAssignTasklet = aiReportAssignTasklet;
         this.aiReportCreateTasklet = aiReportCreateTasklet;
+        this.weeklyStatisticsReportTasklet = weeklyStatisticsReportTasklet;
     }
 
     //데일리카드 도착 알림
@@ -86,6 +89,21 @@ public class BatchConfig {
     public Step aiReportCreateStep(JobRepository jopRepository, PlatformTransactionManager transactionManager) {
         return new StepBuilder("aiReportCreateStep", jopRepository)
                 .tasklet(aiReportCreateTasklet, transactionManager)
+                .build();
+    }
+
+    //주간 통계 Discord 리포트
+    @Bean
+    public Job weeklyStatisticsReportJob(JobRepository jobRepository, Step weeklyStatisticsReportStep) {
+        return new JobBuilder("weeklyStatisticsReportJob", jobRepository)
+                .start(weeklyStatisticsReportStep)
+                .build();
+    }
+
+    @Bean
+    public Step weeklyStatisticsReportStep(JobRepository jopRepository, PlatformTransactionManager transactionManager) {
+        return new StepBuilder("weeklyStatisticsReportStep", jopRepository)
+                .tasklet(weeklyStatisticsReportTasklet, transactionManager)
                 .build();
     }
 }

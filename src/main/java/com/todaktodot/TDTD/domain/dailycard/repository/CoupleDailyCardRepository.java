@@ -3,9 +3,11 @@ package com.todaktodot.TDTD.domain.dailycard.repository;
 import com.todaktodot.TDTD.domain.aireport.dto.response.SyncAnswerDTO;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardSubject;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CoupleDailyCardEntity;
+import com.todaktodot.TDTD.domain.dailycard.repository.projection.GrassProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryCardProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryDetailProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.WeeklyCardProjection;
+import com.todaktodot.TDTD.domain.dailycard.service.DailyCardServiceImpl;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
@@ -97,6 +99,35 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
 
+    // 데일리카드 답변 잔디 조회 (일자별 내/상대 답변 여부)
+    @Query(value = """
+        SELECT cdc.ISSUED_DATE AS issuedDate,
+               MAX(CASE WHEN me.ANSWER_ID IS NOT NULL THEN 1 ELSE 0 END) AS meAnswered,
+               MAX(CASE WHEN partner.ANSWER_ID IS NOT NULL THEN 1 ELSE 0 END) AS partnerAnswered
+        FROM couple_daily_card cdc
+            LEFT JOIN daily_card_user_answer me
+                ON me.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
+               AND me.USER_ID = :userId
+               AND me.DEL_YN = 'N'
+            LEFT JOIN daily_card_user_answer partner
+                ON partner.COUPLE_CARD_ID = cdc.COUPLE_CARD_ID
+               AND partner.USER_ID = :partnerUserId
+               AND :partnerUserId IS NOT NULL
+               AND partner.DEL_YN = 'N'
+        WHERE cdc.COUPLE_ID = :coupleId
+          AND cdc.ISSUED_DATE BETWEEN :startDate AND :endDate
+          AND cdc.SELECTED_YN = 'Y'
+          AND cdc.DEL_YN = 'N'
+        GROUP BY cdc.ISSUED_DATE
+        ORDER BY cdc.ISSUED_DATE ASC
+        """, nativeQuery = true)
+    List<GrassProjection> findGrass(
+            @Param("coupleId") Long coupleId,
+            @Param("userId") Long userId,
+            @Param("partnerUserId") Long partnerUserId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
     // 히스토리 카드 리스트 조회 (카드 마스터 + user1/user2 답변 여부 한 방 조회)
     // [TDTDBE-55] userId2가 NULL인 경우(SOLO 커플) 처리 추가
     @Query(value = """
@@ -150,7 +181,9 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                do2.OPTION_NO AS optionNo,
                do2.OPTION_CNTS AS optionCnts,
                a1.ANSWER_CONTENT AS user1Answer,
-               a2.ANSWER_CONTENT AS user2Answer
+               r1.emoji_type AS user1Emoji,
+               a2.ANSWER_CONTENT AS user2Answer,
+               r2.emoji_type AS user2Emoji
         FROM couple_daily_card cdc
             JOIN daily_card dc ON dc.CARD_ID = cdc.CARD_ID AND dc.DEL_YN = 'N'
             JOIN daily_card_question dq ON dq.CARD_ID = dc.CARD_ID AND dq.DEL_YN = 'N'
@@ -167,6 +200,15 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                AND a2.USER_ID = :userId2
                AND :userId2 IS NOT NULL
                AND a2.DEL_YN = 'N'
+            LEFT JOIN daily_card_answer_reaction r1
+                ON r1.answer_id = a1.ANSWER_ID
+               AND r1.reactor_user_id = :userId2
+               AND :userId2 IS NOT NULL
+               AND r1.del_yn = 'N'
+            LEFT JOIN daily_card_answer_reaction r2
+                ON r2.answer_id = a2.ANSWER_ID
+               AND r2.reactor_user_id = :userId1
+               AND r2.del_yn = 'N'
         WHERE cdc.COUPLE_ID = :coupleId
           AND cdc.ISSUED_DATE BETWEEN :startDate AND :endDate
           AND cdc.DEL_YN = 'N'
@@ -205,7 +247,9 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                do2.OPTION_NO AS optionNo,
                do2.OPTION_CNTS AS optionCnts,
                a1.ANSWER_CONTENT AS user1Answer,
-               a2.ANSWER_CONTENT AS user2Answer
+               r1.emoji_type AS user1Emoji,
+               a2.ANSWER_CONTENT AS user2Answer,
+               r2.emoji_type AS user2Emoji
         FROM couple_daily_card cdc
             JOIN daily_card dc ON dc.CARD_ID = cdc.CARD_ID AND dc.DEL_YN = 'N'
             JOIN daily_card_question dq ON dq.CARD_ID = dc.CARD_ID AND dq.DEL_YN = 'N'
@@ -222,6 +266,15 @@ public interface CoupleDailyCardRepository extends JpaRepository<CoupleDailyCard
                AND a2.USER_ID = :userId2
                AND :userId2 IS NOT NULL
                AND a2.DEL_YN = 'N'
+            LEFT JOIN daily_card_answer_reaction r1
+                ON r1.answer_id = a1.ANSWER_ID
+               AND r1.reactor_user_id = :userId2
+               AND :userId2 IS NOT NULL
+               AND r1.del_yn = 'N'
+            LEFT JOIN daily_card_answer_reaction r2
+                ON r2.answer_id = a2.ANSWER_ID
+               AND r2.reactor_user_id = :userId1
+               AND r2.del_yn = 'N'
         WHERE cdc.couple_card_id  = :coupleCardId
           AND cdc.DEL_YN = 'N'
         ORDER BY dq.QUESTION_NO, do2.OPTION_NO

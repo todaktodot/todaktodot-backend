@@ -1,15 +1,7 @@
 package com.todaktodot.TDTD.domain.dailycard.controller;
 
-import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SelectCardTypeRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryDetailResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.*;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.*;
 import com.todaktodot.TDTD.domain.dailycard.service.DailyCardService;
 import com.todaktodot.TDTD.domain.login.respository.entity.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -97,6 +89,20 @@ public class DailyCardUserController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "데일리카드 답변 잔디 조회",
+            description = "날짜 범위 내 현재 사용자와 상대방의 데일리카드 답변 참여 상태를 일자별로 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/grass")
+    public ResponseEntity<GrassResponseDTO> getGrass(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        Long userId = userPrincipal.getId();
+        GrassResponseDTO response = dailyCardService.getGrass(userId, startDate, endDate);
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary = "히스토리 카드 리스트 조회",
                description = "날짜 범위 내 배정된 데일리카드를 일자별로 조회합니다. 유형 선택 여부에 따라 노출 정보가 달라집니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -149,5 +155,50 @@ public class DailyCardUserController {
         Long userId = userPrincipal.getId();
         dailyCardService.pokeCoupleDailyCard(userId, coupleCardId);
         return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @Operation(summary = "데일리카드 답변 이모지 저장/수정",
+            description = "데일리카드 답변에 이모지를 남깁니다.")
+    @ApiResponse(responseCode = "200", description = "이모지 저장/수정 성공")
+    @PostMapping("/history/emoji")
+    public ResponseEntity<SaveEmojiResponseDTO> setEmojiReaction(
+            @AuthenticationPrincipal UserPrincipal userPrincipal, @RequestBody SaveEmojiRequestDTO requestDTO) {
+        Long userId = userPrincipal.getId();
+        SaveEmojiResponseDTO response = dailyCardService.setEmojiReaction(userId, requestDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "데일리카드 이모지 삭제",
+            description = "데일리카드 답변에 남긴 이모지를 삭제합니다.")
+    @ApiResponse(responseCode = "200", description = "이모지 삭제 성공")
+    @DeleteMapping("/history/emoji")
+    public ResponseEntity<HttpStatus> deleteEmojiReaction(
+            @AuthenticationPrincipal UserPrincipal userPrincipal, @RequestParam(name = "coupleCardId") Long coupleCardId) {
+        Long userId = userPrincipal.getId();
+        dailyCardService.deleteEmojiReaction(userId, coupleCardId);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @Operation(summary = "히스토리 카드 공유 링크 생성",
+            description = "히스토리 카드 '공유하기' 링크를 생성합니다.")
+    @ApiResponse(responseCode = "200", description = "히스토리 카드 공유 링크 생성 성공")
+    @PostMapping("/history/share-link")
+    public ResponseEntity<HistoryCardShareLinkResponseDTO> setHistoryCardShareLink(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestBody HistoryCardShareLinkRequestDTO requestDTO) {
+        Long userId = userPrincipal.getId();
+        HistoryCardShareLinkResponseDTO response = dailyCardService.setHistoryCardShareLink(userId, requestDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "히스토리 카드 공유 링크 검증",
+            description = "히스토리 카드 공유하기 링크를 검증합니다.")
+    @ApiResponse(responseCode = "200", description = "히스토리 카드 공유 링크 검증 성공")
+    @PostMapping("/history/share-link/validate")
+    public HistoryCardShareLinkValidateResponseDTO validateHistoryCardShareLink(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestBody HistoryCardShareLinkValidateRequestDTO requestDTO) {
+        Long userId = userPrincipal.getId();
+        return dailyCardService.validateHistoryCardShareLink(userId, requestDTO);
     }
 }

@@ -75,7 +75,10 @@
                         <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e1e8ed;">
                             <div><strong>ID:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.userId} : '-'">-</span></div>
                             <div><strong>이름:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.name} : '-'">-</span></div>
-                            <div><strong>닉네임:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.nickname} : '-'">-</span></div>
+                            <div th:if="${couple.user1 != null and couple.user1.provider == 'KAKAO'}">
+                                <strong>카카오 닉네임:</strong> <span th:text="${couple.user1.kakaoNickname}">-</span>
+                            </div>
+                            <div><strong>투닥투닷 닉네임:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.nickname} : '-'">-</span></div>
                             <div><strong>이메일:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.email} : '-'">-</span></div>
                             <div><strong>가입경로:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.provider} : '-'">-</span></div>
                             <div><strong>가입여부:</strong> <span th:text="${couple.user1 != null} ? ${couple.user1.joinYn} : '-'">-</span></div>
@@ -87,6 +90,9 @@
                         <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e1e8ed;">
                             <div><strong>ID:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.userId} : '-'">-</span></div>
                             <div><strong>이름:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.name} : '-'">-</span></div>
+                            <div th:if="${couple.user2 != null and couple.user2.provider == 'KAKAO'}">
+                                <strong>카카오 닉네임:</strong> <span th:text="${couple.user2.kakaoNickname}">-</span>
+                            </div>
                             <div><strong>닉네임:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.nickname} : '-'">-</span></div>
                             <div><strong>이메일:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.email} : '-'">-</span></div>
                             <div><strong>가입경로:</strong> <span th:text="${couple.user2 != null} ? ${couple.user2.provider} : '-'">-</span></div>
@@ -155,8 +161,10 @@
                                           th:classappend="${card.selectedYn == 'Y'} ? 'badge-active' : 'badge-inactive'"
                                           th:text="${card.selectedYn == 'Y'} ? '선택됨' : '미선택'">선택됨</span>
                                     <!-- AI 피드백 상태 배지 -->
-                                    <span th:if="${card.feedback != null}" class="badge" style="background: #10b981; color: white;">피드백 완료</span>
-                                    <span th:if="${card.bothAnswered && card.feedback == null}" class="badge" style="background: #f59e0b; color: white;">생성 가능</span>
+                                    <span th:if="${card.feedbackStatus == 'COMPLETED'}" class="badge" style="background: #10b981; color: white;">피드백 완료</span>
+                                    <span th:if="${card.feedbackStatus == 'GENERATING'}" class="badge" style="background: #3b82f6; color: white;">생성 중</span>
+                                    <span th:if="${card.feedbackStatus == 'FAILED'}" class="badge" style="background: #ef4444; color: white;">생성 실패</span>
+                                    <span th:if="${card.bothAnswered && card.feedbackStatus == 'NOT_STARTED'}" class="badge" style="background: #f59e0b; color: white;">생성 가능</span>
                                     <span th:if="${!card.bothAnswered}" class="badge badge-inactive">답변 대기</span>
                                 </div>
                             </div>
@@ -212,7 +220,7 @@
                                     </div>
 
                                     <!-- 케이스 1: 둘 다 답변 완료 + 피드백 미생성 -->
-                                    <div th:if="${card.bothAnswered && card.feedback == null}">
+                                    <div th:if="${card.bothAnswered && card.feedbackStatus == 'NOT_STARTED'}">
                                         <p style="color: #7f8c8d; margin-bottom: 12px;">커플 두 명 모두 답변을 완료했습니다. AI 피드백을 생성할 수 있습니다.</p>
                                         <button type="button" class="btn btn-primary"
                                                 th:attr="data-couple-id=${couple.coupleId},
@@ -222,6 +230,16 @@
                                                 onclick="generateFeedback(this)">
                                             AI 피드백 생성
                                         </button>
+                                    </div>
+
+                                    <div th:if="${card.feedbackStatus == 'GENERATING'}">
+                                        <p style="color: #0369a1; margin-bottom: 0;">AI 피드백을 생성 중입니다.</p>
+                                    </div>
+
+                                    <div th:if="${card.feedbackStatus == 'FAILED'}">
+                                        <p style="color: #b91c1c; margin-bottom: 8px;">AI 피드백 생성에 실패했습니다.</p>
+                                        <p th:if="${card.feedbackErrorMessage != null}" th:text="${card.feedbackErrorMessage}"
+                                           style="color: #7f1d1d; margin-bottom: 0; white-space: pre-wrap;">실패 사유</p>
                                     </div>
 
                                     <!-- 케이스 2: 피드백 존재 -->
@@ -254,7 +272,7 @@
                                     </div>
 
                                     <!-- 케이스 3: 둘 다 답변 안함 -->
-                                    <div th:if="${!card.bothAnswered && card.feedback == null}">
+                                    <div th:if="${!card.bothAnswered && card.feedbackStatus == 'NOT_STARTED'}">
                                         <p style="color: #7f8c8d;">커플 두 명 모두 답변을 완료해야 AI 피드백을 생성할 수 있습니다.</p>
                                     </div>
                                 </div>

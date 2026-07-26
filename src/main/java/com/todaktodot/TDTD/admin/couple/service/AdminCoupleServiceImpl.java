@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -147,15 +148,18 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
                 .collect(Collectors.groupingBy(DailyCardUserAnswerEntity::getCoupleCardId));
 
         // 피드백 매핑 배치 조회
-        Map<Long, Long> feedbackIdByCoupleCardId = coupleDailyCardFeedbackRepository
+        Map<Long, CoupleDailyCardFeedbackEntity> feedbackMappingByCoupleCardId = coupleDailyCardFeedbackRepository
                 .findAllByCoupleCardIdInAndDelYn(coupleCardIds, "N").stream()
                 .collect(Collectors.toMap(
                         CoupleDailyCardFeedbackEntity::getCoupleCardId,
-                        CoupleDailyCardFeedbackEntity::getFeedbackId
+                        mapping -> mapping
                 ));
 
         // 피드백 내용 배치 조회
-        Set<Long> feedbackIds = Set.copyOf(feedbackIdByCoupleCardId.values());
+        Set<Long> feedbackIds = feedbackMappingByCoupleCardId.values().stream()
+                .map(CoupleDailyCardFeedbackEntity::getFeedbackId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
         Map<Long, DailyCardFeedbackEntity> feedbackById = feedbackIds.isEmpty()
                 ? Map.of()
                 : dailyCardFeedbackRepository.findAllById(feedbackIds).stream()
@@ -213,7 +217,8 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
             boolean bothAnswered = checkBothAnswered(dailyCard, answersByQuestion, couple);
 
             // 피드백 조회
-            Long feedbackId = feedbackIdByCoupleCardId.get(coupleCard.getCoupleCardId());
+            CoupleDailyCardFeedbackEntity feedbackMapping = feedbackMappingByCoupleCardId.get(coupleCard.getCoupleCardId());
+            Long feedbackId = feedbackMapping != null ? feedbackMapping.getFeedbackId() : null;
             FeedbackSummaryDTO feedback = null;
             if (feedbackId != null) {
                 DailyCardFeedbackEntity feedbackEntity = feedbackById.get(feedbackId);
@@ -234,7 +239,9 @@ public class AdminCoupleServiceImpl implements AdminCoupleService {
                     dailyCard.getCardTitle(),
                     questions,
                     bothAnswered,
-                    feedback
+                    feedback,
+                    feedbackMapping != null ? feedbackMapping.resolveStatus().name() : "NOT_STARTED",
+                    feedbackMapping != null ? feedbackMapping.getErrorMessage() : null
             ));
         }
 

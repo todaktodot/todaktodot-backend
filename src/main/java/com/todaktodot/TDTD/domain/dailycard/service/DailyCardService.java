@@ -1,21 +1,11 @@
 package com.todaktodot.TDTD.domain.dailycard.service;
 
-import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.GenerateDailyCardRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SelectCardTypeRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryDetailResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.*;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.*;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardMode;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardSubject;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.CardType;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 
@@ -108,6 +98,17 @@ public interface DailyCardService {
     SelectCardTypeResponseDTO selectCardType(Long userId, SelectCardTypeRequestDTO request);
 
     /**
+     * 데일리카드 답변 잔디 조회
+     * 날짜별 현재 사용자와 상대방의 답변 참여 상태를 조회한다.
+     *
+     * @param userId 요청 사용자 ID
+     * @param startDate 조회 시작일
+     * @param endDate 조회 종료일
+     * @return 일자별 답변 상태
+     */
+    GrassResponseDTO getGrass(Long userId, LocalDate startDate, LocalDate endDate);
+
+    /**
      * 히스토리 카드 리스트 조회
      * 날짜 범위 내 배정된 데일리카드를 일자별로 조회.
      * 유형 선택 완료 시 전체 정보, 미선택 시 모드/주제만 노출
@@ -140,4 +141,32 @@ public interface DailyCardService {
      * @param coupleCardId 커플 데일리카드 ID
      */
     void pokeCoupleDailyCard(Long userId, Long coupleCardId);
+
+    /**
+     * 데일리카드 응답 이모지 반응 생성/수정
+     * @param userId 요청 사용자 ID
+     * @param requestDTO 데일리카드 ID + 이모지 종류
+     */
+    SaveEmojiResponseDTO setEmojiReaction(Long userId, SaveEmojiRequestDTO requestDTO);
+
+    /**
+     * 데일리카드 응답 이모지 반응 삭제
+     * @param userId 요청 사용자 ID
+     * @param coupleCardId 커플 데일리카드 ID
+     */
+    void deleteEmojiReaction(Long userId, Long coupleCardId);
+
+    /**
+     * 히스토리 카드 공유링크 생성
+     * @param userId 요청 사용자 ID
+     * @param requestDTO  커플 데일리카드 ID
+     */
+    HistoryCardShareLinkResponseDTO setHistoryCardShareLink(Long userId, HistoryCardShareLinkRequestDTO requestDTO);
+
+    /**
+     * 히스토리 카드 공유링크 검증
+     * @param userId 요청 사용자 ID
+     * @param requestDTO  공유된 토큰
+     */
+    HistoryCardShareLinkValidateResponseDTO validateHistoryCardShareLink(Long userId, HistoryCardShareLinkValidateRequestDTO requestDTO);
 }

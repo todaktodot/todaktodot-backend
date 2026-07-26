@@ -9,4 +9,5 @@ public class LoginRequestDTO {
     //TODO: enum으로 변경
     private String provider;
     private String token;
+    private String appleName;
 }

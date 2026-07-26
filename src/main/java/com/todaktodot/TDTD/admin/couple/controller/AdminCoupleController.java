@@ -4,7 +4,7 @@ import com.todaktodot.TDTD.admin.couple.dto.CoupleDetailDTO;
 import com.todaktodot.TDTD.admin.couple.dto.CoupleListDTO;
 import com.todaktodot.TDTD.admin.couple.service.AdminCoupleService;
 import com.todaktodot.TDTD.domain.feedback.dto.reqeust.GenerateFeedbackRequestDTO;
-import com.todaktodot.TDTD.domain.feedback.dto.response.GenerateFeedbackResponseDTO;
+import com.todaktodot.TDTD.domain.feedback.dto.response.FeedbackResponseDTO;
 import com.todaktodot.TDTD.domain.feedback.service.FeedbackService;
 import com.todaktodot.TDTD.domain.insight.dto.GenerateInsightRequestDTO;
 import com.todaktodot.TDTD.domain.insight.dto.GenerateInsightResponseDTO;
@@ -74,7 +74,7 @@ public class AdminCoupleController {
      */
     @PostMapping("/{coupleId}/feedback/generate")
     @ResponseBody
-    public ResponseEntity<GenerateFeedbackResponseDTO> generateFeedback(
+    public ResponseEntity<FeedbackResponseDTO> generateFeedback(
             @PathVariable Long coupleId,
             @RequestBody GenerateFeedbackRequestDTO requestDTO) {
 
@@ -85,10 +85,11 @@ public class AdminCoupleController {
         CoupleDetailDTO couple = adminCoupleService.getCouple(coupleId);
         Long userId = couple.getUserId1();
 
-        GenerateFeedbackResponseDTO response = feedbackService.generateFeedback(userId, requestDTO);
+        FeedbackResponseDTO response = feedbackService.generateFeedback(userId, requestDTO);
 
-        log.info("[Admin] 피드백 생성 완료: coupleId={}, feedbackId={}",
-                coupleId, response.getFeedbackId());
+        Long feedbackId = response.getFeedback() != null ? response.getFeedback().getFeedbackId() : null;
+        log.info("[Admin] 피드백 생성 완료: coupleId={}, feedbackStatus={}, feedbackId={}",
+                coupleId, response.getFeedbackStatus(), feedbackId);
 
         return ResponseEntity.ok(response);
     }
@@ -111,10 +112,8 @@ public class AdminCoupleController {
 
         log.info("[Admin] 인사이트 생성 요청: coupleId={}, endDt={}", coupleId, requestDTO.getEndDt());
 
-        // 커플 정보 조회하여 userId1 획득 (검증 통과용)
-        CoupleDetailDTO couple = adminCoupleService.getCouple(coupleId);
-        //Long userId = couple.getUserId1();
-
+        //임시 - 어드민에서 생성하는 경우 일요일 -> 월요일로 조정
+        requestDTO.setEndDt(requestDTO.getEndDt().plusDays(1));
         GenerateInsightResponseDTO response = insightService.generateInsight(requestDTO);
 
         log.info("[Admin] 인사이트 생성 완료: coupleId={}, InsightId={}",

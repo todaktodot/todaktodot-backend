@@ -2,20 +2,12 @@ package com.todaktodot.TDTD.domain.dailycard.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardShareLinkReposittory;
 import com.todaktodot.TDTD.domain.dailycard.dto.ai.AiGeneratedCardDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.AssignCardRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.GenerateDailyCardRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SelectCardTypeRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.request.SubmitAnswerRequestDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignBatchResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.AssignMyCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.GenerateDailyCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.SelectCardTypeResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryCardResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.HistoryDetailResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.SubmitAnswerResponseDTO;
-import com.todaktodot.TDTD.domain.dailycard.dto.response.WeeklyCardResponseDTO;
+import com.todaktodot.TDTD.domain.dailycard.dto.request.*;
+import com.todaktodot.TDTD.domain.dailycard.dto.response.*;
+import com.todaktodot.TDTD.domain.dailycard.repository.*;
+import com.todaktodot.TDTD.domain.dailycard.repository.projection.GrassProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryCardProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.HistoryDetailProjection;
 import com.todaktodot.TDTD.domain.dailycard.repository.projection.WeeklyCardProjection;
@@ -25,12 +17,6 @@ import com.todaktodot.TDTD.domain.feedback.repository.entity.CoupleDailyCardFeed
 import com.todaktodot.TDTD.domain.feedback.repository.entity.DailyCardFeedbackEntity;
 import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
-import com.todaktodot.TDTD.domain.dailycard.repository.AiCardGenerationInfoRepository;
-import com.todaktodot.TDTD.domain.dailycard.repository.CoupleDailyCardRepository;
-import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardUserAnswerRepository;
-import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardOptionRepository;
-import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardQuestionRepository;
-import com.todaktodot.TDTD.domain.dailycard.repository.DailyCardRepository;
 import com.todaktodot.TDTD.domain.dailycard.repository.entity.*;
 
 import java.math.BigDecimal;
@@ -39,6 +25,7 @@ import com.todaktodot.TDTD.admin.prompt.repository.SituationCategoryRepository;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.SituationCategoryEntity;
 
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -61,6 +48,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.PessimisticLockingFailureException;
@@ -85,6 +73,8 @@ public class DailyCardServiceImpl implements DailyCardService {
     private final CoupleDailyCardFeedbackRepository coupleDailyCardFeedbackRepository;
     private final DailyCardFeedbackRepository dailyCardFeedbackRepository;
     private final NotificationRepository notificationRepository;
+    private final DailyCardReactionRepository dailyCardReactionRepository;
+    private final DailyCardShareLinkReposittory dailyCardShareLinkReposittory;
     private final UserRepository userRepository;
     private final FcmService fcmService;
     private final ObjectMapper objectMapper;
@@ -95,6 +85,9 @@ public class DailyCardServiceImpl implements DailyCardService {
     private static final LocalTime DAILY_CARD_ANSWER_OPEN_TIME = LocalTime.of(8, 0);
     private static final LocalTime DAILY_CARD_ANSWER_CLOSE_TIME = LocalTime.of(4, 0);
     private static final String UNKNOWN_NICKNAME = "-";
+
+    @Value("${share-link.base-url}")
+    private String shareLinkBaseUrl;
 
     /**
      * AI 생성 결과를 담는 record
@@ -1026,6 +1019,85 @@ public class DailyCardServiceImpl implements DailyCardService {
 
     @Override
     @Transactional(readOnly = true)
+    public GrassResponseDTO getGrass(Long userId, LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("조회 시작일과 종료일은 필수입니다.");
+        }
+
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("조회 시작일은 종료일보다 이후일 수 없습니다.");
+        }
+
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        Long partnerUserId = resolvePartnerUserId(couple, userId);
+        List<GrassProjection> rows = coupleDailyCardRepository.findGrass(
+                couple.getCoupleId(), userId, partnerUserId, startDate, endDate);
+
+        Map<LocalDate, GrassAnsweredState> answeredByDate = new HashMap<>();
+        for (GrassProjection row : rows) {
+            answeredByDate.put(
+                    row.getIssuedDate(),
+                    new GrassAnsweredState(isAnswered(row.getMeAnswered()), isAnswered(row.getPartnerAnswered()))
+            );
+        }
+
+        List<GrassDayDTO> days = new ArrayList<>();
+        LocalDate currentDate = startDate;
+        while (!currentDate.isAfter(endDate)) {
+            GrassAnsweredState state = answeredByDate.getOrDefault(currentDate, GrassAnsweredState.NONE);
+            days.add(GrassDayDTO.builder()
+                    .date(currentDate)
+                    .status(resolveGrassStatus(state.meAnswered(), state.partnerAnswered()))
+                    .build());
+            currentDate = currentDate.plusDays(1);
+        }
+
+        return GrassResponseDTO.builder()
+                .startDate(startDate)
+                .endDate(endDate)
+                .days(days)
+                .build();
+    }
+
+    private Long resolvePartnerUserId(CoupleEntity couple, Long userId) {
+        if (Objects.equals(couple.getUserId1(), userId)) {
+            return couple.getUserId2();
+        }
+
+        if (Objects.equals(couple.getUserId2(), userId)) {
+            return couple.getUserId1();
+        }
+
+        throw new IllegalStateException("해당 커플에 속한 사용자가 아닙니다.");
+    }
+
+    private boolean isAnswered(Long value) {
+        return value != null && value == 1L;
+    }
+
+    private GrassStatus resolveGrassStatus(boolean meAnswered, boolean partnerAnswered) {
+        if (meAnswered && partnerAnswered) {
+            return GrassStatus.BOTH;
+        }
+
+        if (meAnswered) {
+            return GrassStatus.ME_ONLY;
+        }
+
+        if (partnerAnswered) {
+            return GrassStatus.PARTNER_ONLY;
+        }
+
+        return GrassStatus.NONE;
+    }
+    private record GrassAnsweredState(boolean meAnswered, boolean partnerAnswered) {
+        private static final GrassAnsweredState NONE = new GrassAnsweredState(false, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public HistoryCardResponseDTO getHistoryCards(Long userId, LocalDate startDate, LocalDate endDate) {
         // 1. userId → CoupleEntity (coupleId, userId1, userId2 획득)
         CoupleEntity couple = coupleRepository.findByUserId(userId)
@@ -1116,6 +1188,7 @@ public class DailyCardServiceImpl implements DailyCardService {
 
         // 5. 피드백 배치 조회
         Map<Long, HistoryDetailResponseDTO.FeedbackItem> feedbackMap = new LinkedHashMap<>();
+        Map<Long, String> feedbackStatusMap = new LinkedHashMap<>();
         if (!selectedCoupleCardIds.isEmpty()) {
             List<CoupleDailyCardFeedbackEntity> feedbackMappings =
                     coupleDailyCardFeedbackRepository.findAllByCoupleCardIdInAndDelYn(selectedCoupleCardIds, "N");
@@ -1123,6 +1196,7 @@ public class DailyCardServiceImpl implements DailyCardService {
             if (!feedbackMappings.isEmpty()) {
                 List<Long> feedbackIds = feedbackMappings.stream()
                         .map(CoupleDailyCardFeedbackEntity::getFeedbackId)
+                        .filter(Objects::nonNull)
                         .distinct()
                         .toList();
                 Map<Long, DailyCardFeedbackEntity> feedbackEntities = new LinkedHashMap<>();
@@ -1130,6 +1204,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                         .forEach(fb -> feedbackEntities.put(fb.getFeedbackId(), fb));
 
                 for (CoupleDailyCardFeedbackEntity mapping : feedbackMappings) {
+                    feedbackStatusMap.put(mapping.getCoupleCardId(), mapping.resolveStatus().name());
                     DailyCardFeedbackEntity fb = feedbackEntities.get(mapping.getFeedbackId());
                     if (fb != null && "N".equals(fb.getDelYn())) {
                         feedbackMap.put(mapping.getCoupleCardId(),
@@ -1201,7 +1276,9 @@ public class DailyCardServiceImpl implements DailyCardService {
                             .answerRequired("Y".equals(qFirst.getAnswerReqYn()))
                             .options(options)
                             .user1Answer(u1Answer)
+                            .user1Emoji(EmojiType.from(qFirst.getUser1Emoji()))
                             .user2Answer(u2Answer)
+                            .user2Emoji(EmojiType.from(qFirst.getUser2Emoji()))
                             .build());
                 }
 
@@ -1220,6 +1297,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                         .user2Answered(user2HasAnswer)
                         .questions(questions)
                         .feedback(feedbackMap.get(first.getCoupleCardId()))
+                        .feedbackStatus(feedbackStatusMap.getOrDefault(first.getCoupleCardId(), "NOT_STARTED"))
                         .isPocked(notification != null)
                         .build());
             } else {
@@ -1262,6 +1340,7 @@ public class DailyCardServiceImpl implements DailyCardService {
 
         // 2. 피드백 배치 조회
         Map<Long, HistoryDetailResponseDTO.FeedbackItem> feedbackMap = new LinkedHashMap<>();
+        Map<Long, String> feedbackStatusMap = new LinkedHashMap<>();
         List<Long> selectedCoupleCardIds = new ArrayList<>();
         selectedCoupleCardIds.add(coupleCardId);
 
@@ -1271,6 +1350,7 @@ public class DailyCardServiceImpl implements DailyCardService {
         if (!feedbackMappings.isEmpty()) {
             List<Long> feedbackIds = feedbackMappings.stream()
                     .map(CoupleDailyCardFeedbackEntity::getFeedbackId)
+                    .filter(Objects::nonNull)
                     .distinct()
                     .toList();
             Map<Long, DailyCardFeedbackEntity> feedbackEntities = new LinkedHashMap<>();
@@ -1278,6 +1358,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                     .forEach(fb -> feedbackEntities.put(fb.getFeedbackId(), fb));
 
             for (CoupleDailyCardFeedbackEntity mapping : feedbackMappings) {
+                feedbackStatusMap.put(mapping.getCoupleCardId(), mapping.resolveStatus().name());
                 DailyCardFeedbackEntity fb = feedbackEntities.get(mapping.getFeedbackId());
                 if (fb != null && "N".equals(fb.getDelYn())) {
                     feedbackMap.put(mapping.getCoupleCardId(),
@@ -1328,7 +1409,9 @@ public class DailyCardServiceImpl implements DailyCardService {
                     .answerRequired("Y".equals(firstRow.getAnswerReqYn()))
                     .options(options)
                     .user1Answer(firstRow.getUser1Answer())
+                    .user1Emoji(EmojiType.from(firstRow.getUser1Emoji()))
                     .user2Answer(firstRow.getUser2Answer())
+                    .user2Emoji(EmojiType.from(firstRow.getUser2Emoji()))
                     .build());
         }
 
@@ -1347,6 +1430,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                 .user2Answered(true)
                 .questions(questions)
                 .feedback(feedbackMap.get(first.getCoupleCardId()))
+                .feedbackStatus(feedbackStatusMap.getOrDefault(first.getCoupleCardId(), "NOT_STARTED"))
                 .build());
 
 
@@ -1381,6 +1465,189 @@ public class DailyCardServiceImpl implements DailyCardService {
         //TODO : 알림 전송
         PushMessage pokePushMessage = PushMessage.poke(user.getNickname(), coupleCardId);
         fcmService.sendToUser(Objects.equals(couple.getUserId1(), userId) ? couple.getUserId2() : couple.getUserId1(), pokePushMessage);
+    }
+
+    @Override
+    @Transactional
+    public SaveEmojiResponseDTO setEmojiReaction(Long userId, SaveEmojiRequestDTO requestDTO) {
+        //커플 조회
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("혼자 둘러보기 혹은 커플 연결이 되어있지 않습니다."));
+
+        //커플이 아닌 경우
+        if (couple.getUserId2() == null) throw new IllegalStateException("혼자 둘러보기의 경우 이모지 반응이 불가합니다.");
+
+        //상대방 ID
+        Long receiveUserId = couple.getUserId1().equals(userId) ? couple.getUserId2() : couple.getUserId1();
+
+        //데일리카드 조회
+        DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(requestDTO.getCoupleCardId(), 1, receiveUserId, "N")
+                .orElseThrow(() -> new IllegalStateException("상대방의 응답한 데일리카드 답변이 존재하지 않습니다."));
+
+        Optional<DailyCardAnswerReactionEntity> reactionEntity = dailyCardReactionRepository.findByReactorUserIdAndAnswerIdAndDelYn(userId, answerEntity.getAnswerId(), "N");
+
+        DailyCardAnswerReactionEntity savedReaction = null;
+        //이미 존재하는 경우
+        if (reactionEntity.isPresent()) {
+            DailyCardAnswerReactionEntity reaction = reactionEntity.get();
+
+            //이모지 교체
+            reaction.updateEmojiType(requestDTO.getEmojiType(), userId);
+            savedReaction = dailyCardReactionRepository.save(reaction);
+        }
+        else {
+            DailyCardAnswerReactionEntity newAnswerReaction = DailyCardAnswerReactionEntity.builder()
+                    .emojiType(requestDTO.getEmojiType())
+                    .reactorUserId(userId)
+                    .answerId(answerEntity.getAnswerId())
+                    .regrId(userId)
+                    .build();
+
+            savedReaction = dailyCardReactionRepository.save(newAnswerReaction);
+
+            //최초 1회 이모지 푸시알림
+            if (!dailyCardReactionRepository.existsByReactorUserIdAndAnswerIdAndDelYn(userId, answerEntity.getAnswerId(), "Y")) {
+                emojiReactionPushAlarm(requestDTO.getCoupleCardId(), receiveUserId, couple);
+            }
+        }
+
+        return new SaveEmojiResponseDTO(userId, requestDTO.getCoupleCardId(), savedReaction.getEmojiType().name(), 1, savedReaction.getUpdDt());
+    }
+
+    @Override
+    @Transactional
+    public void deleteEmojiReaction(Long userId, Long coupleCardId) {
+        //커플 조회
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("혼자 둘러보기 혹은 커플 연결이 되어있지 않습니다."));
+
+        //커플이 아닌 경우
+        if (couple.getUserId2() == null) throw new IllegalStateException("혼자 둘러보기의 경우 이모지 삭제가 불가합니다.");
+
+        //상대방 ID
+        Long receiveUserId = couple.getUserId1().equals(userId) ? couple.getUserId2() : couple.getUserId1();
+
+        //데일리카드 조회
+        DailyCardUserAnswerEntity answerEntity = dailyCardUserAnswerRepository.findByCoupleCardIdAndQuestionNoAndUserIdAndDelYn(coupleCardId, 1, receiveUserId, "N")
+                .orElseThrow(() -> new IllegalStateException("상대방의 응답한 데일리카드 답변이 존재하지 않습니다."));
+
+        //남긴 이모지 조회
+        DailyCardAnswerReactionEntity reactionEntity = dailyCardReactionRepository.findByReactorUserIdAndAnswerIdAndDelYn(userId, answerEntity.getAnswerId(), "N")
+                .orElseThrow(() -> new IllegalStateException("해당 데일리카드 답변에 이모지 반응이 존재하지 않습니다."));
+
+        reactionEntity.updateDelYn(userId);
+        dailyCardReactionRepository.save(reactionEntity);
+    }
+
+    @Override
+    public HistoryCardShareLinkResponseDTO setHistoryCardShareLink(Long userId, HistoryCardShareLinkRequestDTO requestDTO) {
+        // 1. 커플 연결 여부 검증
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalStateException("커플 연결이 되어있지 않습니다."));
+
+        // 2. 선택할 카드 조회 + dailyCard EAGER 로드
+        CoupleDailyCardEntity selectedCard = coupleDailyCardRepository
+                .findByIdWithDailyCard(requestDTO.getCoupleCardId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 커플 카드입니다: " + requestDTO.getCoupleCardId()));
+
+        // 3. 접근 권한 검증
+        if (!selectedCard.getCoupleId().equals(couple.getCoupleId())) {
+            throw new IllegalStateException("해당 카드에 대한 접근 권한이 없습니다.");
+        }
+
+        // 4. 공유 링크 생성
+        String shareToken = generateShareLinkToken();
+
+        // 5. 만료 시간 생성
+        LocalDateTime expiredAt = LocalDateTime.now().plusDays(7);
+
+        // 6. 공유 링크 저장
+        DailyCardShareLink shareLink = DailyCardShareLink.builder()
+                .shareToken(shareToken)
+                .coupleCardId(requestDTO.getCoupleCardId())
+                .createUserId(userId)
+                .expiredAt(expiredAt)
+                .build();
+
+        dailyCardShareLinkReposittory.save(shareLink);
+
+        String shareUrl = shareLinkBaseUrl + "/share/card?token=" + shareToken;
+
+        return HistoryCardShareLinkResponseDTO.builder()
+                .shareUrl(shareUrl)
+                .shareToken(shareToken)
+                .expiredAt(expiredAt)
+                .build();
+    }
+
+    @Override
+    public HistoryCardShareLinkValidateResponseDTO validateHistoryCardShareLink(Long userId, HistoryCardShareLinkValidateRequestDTO requestDTO) {
+        DailyCardShareLink dailyCardShareLink = dailyCardShareLinkReposittory
+                .findByShareTokenAndDelYn(requestDTO.getShareToken(), "N")
+                .orElse(null);
+
+        if (dailyCardShareLink == null) {
+            return HistoryCardShareLinkValidateResponseDTO.builder()
+                    .status(ShareLinkStatus.NOT_FOUND)
+                    .message("존재하지 않는 링크입니다.")
+                    .build();
+        }
+
+        if (dailyCardShareLink.isExpired(LocalDateTime.now())) {
+            return HistoryCardShareLinkValidateResponseDTO.builder()
+                    .status(ShareLinkStatus.EXPIRED)
+                    .message("만료된 링크입니다.")
+                    .build();
+        }
+
+        // 1. 커플 연결 여부 검증
+        CoupleEntity couple = coupleRepository.findByUserId(userId)
+                .orElse(null);
+
+        if (couple == null) {
+            return HistoryCardShareLinkValidateResponseDTO.builder()
+                    .status(ShareLinkStatus.FORBIDDEN)
+                    .message("커플 연결이 되어있지 않습니다.")
+                    .build();
+        }
+
+        // 2. 커플 데일리 카드 조회
+        CoupleDailyCardEntity selectedCard = coupleDailyCardRepository
+                .findByIdWithDailyCard(dailyCardShareLink.getCoupleCardId())
+                .orElse(null);
+
+        if (selectedCard == null) {
+            return HistoryCardShareLinkValidateResponseDTO.builder()
+                    .status(ShareLinkStatus.NOT_FOUND)
+                    .message("존재하지 않는 커플 카드입니다: " + dailyCardShareLink.getCoupleCardId())
+                    .build();
+        }
+
+        // 3. 접근 권한 검증
+        if (!selectedCard.getCoupleId().equals(couple.getCoupleId())) {
+                return HistoryCardShareLinkValidateResponseDTO.builder()
+                        .status(ShareLinkStatus.FORBIDDEN)
+                        .message("해당 히스토리 카드에 대한 접근 권한이 없습니다.")
+                        .build();
+        }
+
+        //4. 접근 가능할 경우
+        return HistoryCardShareLinkValidateResponseDTO.builder()
+                .status(ShareLinkStatus.VALID)
+                .coupleCardId(dailyCardShareLink.getCoupleCardId())
+                .build();
+    }
+
+    private String generateShareLinkToken() {
+        byte[] bytes = new byte[32];
+
+        SecureRandom secureRandom = new SecureRandom();
+        secureRandom.nextBytes(bytes);
+
+        return Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(bytes);
     }
 
     private CardMode advanceMode(CardMode startMode, int offset) {
@@ -1438,6 +1705,12 @@ public class DailyCardServiceImpl implements DailyCardService {
             PushMessage pushMessage = PushMessage.partnerAnswer(couple.getCoupleId(), coupleCardId);
             fcmService.sendToUser(receiveUserId, pushMessage);
         }
+    }
+
+    //이모지 반응 시 푸시알림 전송
+    private void emojiReactionPushAlarm(Long coupleCardId, Long receiveUserId, CoupleEntity couple) {
+        PushMessage pushMessage = PushMessage.emojiReaction(couple.getCoupleId(), coupleCardId);
+        fcmService.sendToUser(receiveUserId, pushMessage);
     }
 
 }

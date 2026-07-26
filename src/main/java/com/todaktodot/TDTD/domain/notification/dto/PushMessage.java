@@ -114,7 +114,7 @@ public class PushMessage {
     }
 
     /**
-     * 모두 답변 완료 알림 생성
+     * 커플 연결 알림 생성
      */
     public static PushMessage connectCouple(Long coupleId) {
         return PushMessage.builder()
@@ -124,6 +124,37 @@ public class PushMessage {
                 .data(Map.of(
                         "type", PushType.CONNECT_COUPLE.getCode(),
                         "coupleId", String.valueOf(coupleId)
+                ))
+                .build();
+    }
+
+    /**
+     * 커플 연결 해제 알림 생성
+     */
+    public static PushMessage disconnectCouple(Long coupleId) {
+        return PushMessage.builder()
+                .title("커플 해제되었어요")
+                .body("더이상 둘 만의 대화를 공유할 수 없어요.")
+                .pushType(PushType.DISCONNECT_COUPLE)
+                .data(Map.of(
+                        "type", PushType.DISCONNECT_COUPLE.getCode(),
+                        "coupleId", String.valueOf(coupleId)
+                ))
+                .build();
+    }
+
+    /**
+     * 이모지 알림 생성
+     */
+    public static PushMessage emojiReaction(Long coupleId, Long coupleCardId) {
+        return PushMessage.builder()
+                .title("💬연인이 내 답변에 반응했어요!")
+                .body("지금 바로 확인해볼까요?")
+                .pushType(PushType.EMOJI_REACTION)
+                .data(Map.of(
+                        "type", PushType.EMOJI_REACTION.getCode(),
+                        "coupleId", String.valueOf(coupleId),
+                        "coupleCardId", String.valueOf(coupleCardId)
                 ))
                 .build();
     }

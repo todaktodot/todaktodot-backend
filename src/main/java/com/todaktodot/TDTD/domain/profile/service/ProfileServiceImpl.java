@@ -4,12 +4,18 @@ import com.todaktodot.TDTD.domain.couple.repository.CoupleRepository;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleEntity;
 import com.todaktodot.TDTD.domain.couple.repository.entity.CoupleType;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
+import com.todaktodot.TDTD.domain.login.respository.entity.Gender;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
 import com.todaktodot.TDTD.domain.login.respository.entity.UserAccount;
+import com.todaktodot.TDTD.domain.login.service.SocialUserProvider;
+import com.todaktodot.TDTD.domain.notification.dto.PushMessage;
 import com.todaktodot.TDTD.domain.notification.repository.DeviceTokenRepository;
 import com.todaktodot.TDTD.domain.notification.repository.entity.DeviceTokenEntity;
+import com.todaktodot.TDTD.domain.notification.service.FcmService;
 import com.todaktodot.TDTD.domain.profile.dto.request.SetNicknameRequestDTO;
+import com.todaktodot.TDTD.domain.profile.dto.request.SetOnboardingRequestDTO;
 import com.todaktodot.TDTD.domain.profile.dto.response.SetNicknameResponseDTO;
+import com.todaktodot.TDTD.domain.profile.dto.response.SetOnboardingResponseDTO;
 import com.todaktodot.TDTD.domain.profile.dto.response.UserDetailResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +34,20 @@ public class ProfileServiceImpl implements ProfileService {
     private final UserRepository userRepository;
     private final DeviceTokenRepository deviceTokenRepository;
     private final CoupleRepository coupleRepository;
+    private final FcmService fcmService;
+    private final SocialUserProvider socialUserProvider;
+
+    @Override
+    @Transactional
+    public SetOnboardingResponseDTO setOnboarding(Long userId, SetOnboardingRequestDTO requestDTO) {
+        User user = userRepository.findByIdAndDelYn(userId, "N")
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+
+        Gender gender = Gender.fromCode(requestDTO.getGender());
+        user.updateUserInfo(requestDTO.getNickname(), requestDTO.getBirthDate(), gender);
+
+        return SetOnboardingResponseDTO.of(user.getId(), user.getNickname(), user.getBirthDate(), user.getGender().getCode());
+    }
 
     @Override
     @Transactional
@@ -119,28 +141,51 @@ public class ProfileServiceImpl implements ProfileService {
         User loginUser = userRepository.findByIdAndDelYn(userId, "N")
                 .orElseThrow(() -> new IllegalArgumentException("[userID : " + userId +" ] 사용자를 찾을 수 없습니다"));
 
-        //계쩡 정보 삭제
+        //1. 계정 정보 삭제
         List<UserAccount> socialAccounts = loginUser.getSocialAccounts();
+
         socialAccounts.forEach(acc -> {
             acc.softDelete(userId);
+            //소셜 계정 해제 (현재는 카카오, 애플)
+            socialUserProvider.revokeSocialUser(acc.getProvider(), acc.getProviderId(), acc.getAppleRefreshToken());
         });
 
-        //회원 정보 삭제
+        //2. 회원 정보 삭제
         loginUser.softDelete(userId);
+        userRepository.save(loginUser);
 
-        //디바이스 토큰 삭제
+        //3. 디바이스 토큰 삭제
         List<DeviceTokenEntity> allToken = deviceTokenRepository.findAllByUserId(userId);
         allToken.forEach(at -> {
             at.softDelete(userId);
         });
 
-        //커플 해지
-        CoupleEntity couple = coupleRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("커플 관계가 존재하지 않습니다"));
+        //4. 커플 해지
+        Optional<CoupleEntity> opCouple = coupleRepository.findByUserId(userId);
 
-        // DEL_YN = 'Y' 처리
-        couple.disconnect(userId);
-        coupleRepository.save(couple);
+        //SOLO가 아닌 커플인 경우
+        if (opCouple.isPresent() && opCouple.get().isComplete()) {
+            CoupleEntity couple = opCouple.get();
+            // DEL_YN = 'Y' 처리
+            couple.disconnect(userId);
+            coupleRepository.save(couple);
+
+            //커플 ->  상대방 userId
+            Long secondUserId = (Objects.equals(couple.getUserId1(), loginUser.getId())) ? couple.getUserId2() : couple.getUserId1();
+
+            User secondUser = userRepository.findByIdAndDelYn(secondUserId, "N")
+                    .orElseThrow(() -> new IllegalStateException(secondUserId + " 이미 탈퇴한 회원입니다."));
+            secondUser.nicknameClear(secondUserId);
+            userRepository.save(secondUser);
+
+            //상대방에게 사일런트 푸시 발송
+            disconnectCouplePushAlarm(secondUserId, couple.getCoupleId());
+        }
+    }
+
+    private void disconnectCouplePushAlarm(Long receiveUserId, Long coupleId) {
+        PushMessage pushMessage = PushMessage.disconnectCouple(coupleId);
+        fcmService.sendToUser(receiveUserId, pushMessage);
     }
 
     /**
