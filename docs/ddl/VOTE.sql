@@ -1,0 +1,24 @@
+-- 투표 글
+CREATE TABLE vote (
+    vote_id                 BIGINT          NOT NULL AUTO_INCREMENT COMMENT '투표 ID (PK)',
+    user_id                 BIGINT          NOT NULL COMMENT '작성자 ID (화면 비노출, 신고/정지 처리용)',
+    random_nickname         VARCHAR(30)     NOT NULL COMMENT '랜덤 조합 닉네임 (작성 시 1회 생성 후 불변)',
+    category                VARCHAR(20)     NOT NULL COMMENT '카테고리 (LOVE/ECONOMY/LIFESTYLE)',
+    title                   VARCHAR(100)    NOT NULL COMMENT '제목',
+    status                  VARCHAR(20)     NOT NULL DEFAULT 'POSTED' COMMENT '노출 상태 (POSTED/HIDDEN)',
+    hide_reason             VARCHAR(20)     NULL COMMENT '숨김 사유 (AUTO/ADMIN), HIDDEN일 때만 값 존재',
+    closed_at               DATETIME        NOT NULL COMMENT '마감 시각 (등록+24h, 수정 불변)',
+    participant_cnt         INT             NOT NULL DEFAULT 0 COMMENT '총 참여 수',
+    auto_hide_exempt_yn     CHAR(1)         NOT NULL DEFAULT 'N' COMMENT '자동 숨김 예외 플래그',
+    hidden_notice_ack_yn    CHAR(1)         NOT NULL DEFAULT 'N' COMMENT '숨김 안내 팝업 확인 여부',
+    reg_dt                  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+    regr_id                 BIGINT          NOT NULL COMMENT '등록자 ID',
+    upd_dt                  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+    updr_id                 BIGINT          NOT NULL COMMENT '수정자 ID',
+    del_yn                  CHAR(1)         NOT NULL DEFAULT 'N' COMMENT '삭제 여부 (Y/N)',
+    PRIMARY KEY (vote_id),
+    INDEX idx_feed_latest (del_yn, status, reg_dt, vote_id),
+    INDEX idx_feed_popular (del_yn, status, participant_cnt, vote_id),
+    INDEX idx_author (user_id, del_yn, reg_dt),
+    INDEX idx_category (category, del_yn, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='투표 글';
