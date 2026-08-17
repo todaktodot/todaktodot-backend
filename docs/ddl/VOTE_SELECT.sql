@@ -1,18 +1,18 @@
 -- 투표 참여 테이블
-CREATE TABLE VOTE_SELECT (
-    SELECT_ID       BIGINT          NOT NULL AUTO_INCREMENT COMMENT '참여 ID (PK)',
-    VOTE_ID         BIGINT          NOT NULL COMMENT '투표 ID (FK)',
-    USER_ID         BIGINT          NOT NULL COMMENT '참여자 사용자 ID (FK)',
-    OPTION_ID       BIGINT          NOT NULL COMMENT '선택한 답변 항목 ID (FK)',
-    REG_DT          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
-    REGR_ID         BIGINT          NOT NULL COMMENT '등록자 ID',
-    UPD_DT          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
-    UPDR_ID         BIGINT          NOT NULL COMMENT '수정자 ID',
-    DEL_YN          CHAR(1)         NOT NULL DEFAULT 'N' COMMENT '삭제 여부 (Y/N)',
-    ACTIVE_SLOT     INT             GENERATED ALWAYS AS (CASE WHEN DEL_YN = 'N' THEN 1 ELSE NULL END) VIRTUAL COMMENT '활성 row 유니크 제약용 슬롯',
-    PRIMARY KEY (SELECT_ID),
-    UNIQUE KEY UK_VOTE_USER_ACTIVE (VOTE_ID, USER_ID, ACTIVE_SLOT),
-    INDEX IDX_VOTE_ID (VOTE_ID, DEL_YN),
-    INDEX IDX_USER_ID (USER_ID, DEL_YN),
-    INDEX IDX_OPTION_ID (OPTION_ID, DEL_YN)
+CREATE TABLE vote_select (
+    select_id       BIGINT          NOT NULL AUTO_INCREMENT COMMENT '참여 ID (PK)',
+    vote_id         BIGINT          NOT NULL COMMENT '투표 ID (FK)',
+    user_id         BIGINT          NOT NULL COMMENT '참여자 사용자 ID (FK)',
+    option_id       BIGINT          NOT NULL COMMENT '선택한 답변 항목 ID (FK)',
+    reg_dt          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+    regr_id         BIGINT          NOT NULL COMMENT '등록자 ID',
+    upd_dt          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+    updr_id         BIGINT          NOT NULL COMMENT '수정자 ID',
+    del_yn          CHAR(1)         NOT NULL DEFAULT 'N' COMMENT '삭제 여부 (Y/N)',
+    active_slot     INT             GENERATED ALWAYS AS (CASE WHEN del_yn = 'N' THEN 1 ELSE NULL END) VIRTUAL COMMENT '활성 row 유니크 제약용 슬롯',
+    PRIMARY KEY (select_id),
+    UNIQUE KEY uk_vote_user_active (vote_id, user_id, active_slot),
+    INDEX idx_vote_id (vote_id, del_yn),
+    INDEX idx_user_id (user_id, del_yn),
+    INDEX idx_option_id (option_id, del_yn)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='투표 참여';
