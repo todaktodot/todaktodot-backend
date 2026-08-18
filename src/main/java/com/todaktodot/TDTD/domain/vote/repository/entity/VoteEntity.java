@@ -37,7 +37,7 @@ public class VoteEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 20)
-    private VoteStatus status = VoteStatus.POSTED;
+    private VoteDisplayStatus status = VoteDisplayStatus.POSTED;
 
     // STATUS 가 HIDDEN 일 때만 값이 존재한다.
     @Enumerated(EnumType.STRING)
@@ -82,7 +82,7 @@ public class VoteEntity {
         this.category = category;
         this.title = title;
         this.closedAt = closedAt;
-        this.status = VoteStatus.POSTED;
+        this.status = VoteDisplayStatus.POSTED;
         this.participantCnt = 0;
         this.autoHideExemptYn = "N";
         this.hiddenNoticeAckYn = "N";

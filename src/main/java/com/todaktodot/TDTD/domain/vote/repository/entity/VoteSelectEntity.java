@@ -60,4 +60,16 @@ public class VoteSelectEntity {
         this.updrId = regrId;
         this.delYn = "N";
     }
+
+    // 재투표 - 선택한 답변 항목 변경
+    public void updateOptionId(Long optionId, Long updrId) {
+        this.optionId = optionId;
+        this.updrId = updrId;
+    }
+
+    // 투표 취소
+    public void softDelete(Long updrId) {
+        this.delYn = "Y";
+        this.updrId = updrId;
+    }
 }
