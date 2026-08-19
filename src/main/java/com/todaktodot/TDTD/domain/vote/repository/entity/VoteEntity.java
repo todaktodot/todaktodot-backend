@@ -90,4 +90,24 @@ public class VoteEntity {
         this.updrId = regrId;
         this.delYn = "N";
     }
+
+    public void updateVote(VoteCategory category, String title, Long userId) {
+        this.category = category;
+        this.title = title;
+        this.updrId = userId;
+        this.updDt = LocalDateTime.now();
+    }
+
+    public void deleteVote(Long userId) {
+        this.delYn = "Y";
+        this.updrId = userId;
+        this.updDt = LocalDateTime.now();
+    }
+
+    //표출 상태 변경
+    public void updateDisplayStatus(VoteStatus status, Long userId) {
+        this.status = status;
+        this.updrId = userId;
+        this.updDt = LocalDateTime.now();
+    }
 }
