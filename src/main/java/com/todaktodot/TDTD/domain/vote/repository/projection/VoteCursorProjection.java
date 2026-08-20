@@ -1,4 +1,4 @@
-package com.todaktodot.TDTD.domain.vote_kyu.repository.projection;
+package com.todaktodot.TDTD.domain.vote.repository.projection;
 
 import java.time.LocalDateTime;
 

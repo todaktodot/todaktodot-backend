@@ -1,16 +1,16 @@
-package com.todaktodot.TDTD.domain.vote_kyu.controller;
+package com.todaktodot.TDTD.domain.vote.controller;
 
 import com.todaktodot.TDTD.domain.login.respository.entity.UserPrincipal;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.request.VoteCreateRequestDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.request.VoteReportRequestDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.request.VoteUpdateRequestDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.response.VoteCreateResponseDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.response.VoteListResponseDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.response.VoteResponseDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.entity.VoteSortCondition;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.entity.VoteStatus;
-import com.todaktodot.TDTD.domain.vote_kyu.service.VoteService;
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteCreateRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteReportRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteUpdateRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteCreateResponseDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteListResponseDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteResponseDTO;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteSortCondition;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteStatus;
+import com.todaktodot.TDTD.domain.vote.service.VoteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -95,7 +95,7 @@ public class VoteController {
      */
     @Operation(description = "투표 삭제 API")
     @ApiResponse(responseCode = "200", description = "투표 삭제 성공")
-    @DeleteMapping()
+    @DeleteMapping("/{voteId}")
     public ResponseEntity<Void> delete(@AuthenticationPrincipal UserPrincipal userPrincipal,
                                        @PathVariable Long voteId) {
         Long userId = userPrincipal.getId();

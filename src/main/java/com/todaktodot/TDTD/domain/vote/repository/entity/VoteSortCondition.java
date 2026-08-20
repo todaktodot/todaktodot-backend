@@ -1,4 +1,4 @@
-package com.todaktodot.TDTD.domain.vote_kyu.repository.entity;
+package com.todaktodot.TDTD.domain.vote.repository.entity;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,14 +1,14 @@
-package com.todaktodot.TDTD.domain.vote_kyu.service;
+package com.todaktodot.TDTD.domain.vote.service;
 
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.request.VoteCreateRequestDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.request.VoteReportRequestDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.request.VoteUpdateRequestDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.response.VoteCreateResponseDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.response.VoteListResponseDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.response.VoteResponseDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.entity.VoteSortCondition;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.entity.VoteStatus;
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteCreateRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteReportRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteUpdateRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteCreateResponseDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteListResponseDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteResponseDTO;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteSortCondition;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteStatus;
 
 import java.util.List;
 

@@ -1,25 +1,26 @@
-package com.todaktodot.TDTD.domain.vote_kyu.service;
+package com.todaktodot.TDTD.domain.vote.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteEntity;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteOptionEntity;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteDisplayStatus;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteReportEntity;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.request.VoteCreateRequestDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.request.VoteCursorDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.request.VoteReportRequestDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.request.VoteUpdateRequestDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.response.VoteCreateResponseDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.response.VoteListResponseDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.dto.response.VoteResponseDTO;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.VoteOptionRepository;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.VoteReportRepository;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.VoteRepository;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.VoteSelectRepository;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.entity.VoteSortCondition;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.entity.VoteStatus;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.projection.VoteCursorProjection;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.projection.VoteProjection;
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteCreateRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteCursorDTO;
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteReportRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteUpdateRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteCreateResponseDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteListResponseDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteResponseDTO;
+import com.todaktodot.TDTD.domain.vote.repository.VoteOptionRepository;
+import com.todaktodot.TDTD.domain.vote.repository.VoteReportRepository;
+import com.todaktodot.TDTD.domain.vote.repository.VoteRepository;
+import com.todaktodot.TDTD.domain.vote.repository.VoteSelectRepository;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteSortCondition;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteStatus;
+import com.todaktodot.TDTD.domain.vote.repository.projection.VoteCursorProjection;
+import com.todaktodot.TDTD.domain.vote.repository.projection.VoteProjection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -298,7 +299,7 @@ public class VoteServiceImpl implements VoteService{
 
         //누적 신고 10개 이상인 경우 투표 HIDDEN 처리
         if (allReport.size() >= 10) {
-            vote.updateDisplayStatus(com.todaktodot.TDTD.domain.vote.repository.entity.VoteStatus.HIDDEN, userId);
+            vote.updateDisplayStatus(VoteDisplayStatus.HIDDEN, userId);
         }
     }
 

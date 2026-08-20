@@ -1,4 +1,4 @@
-package com.todaktodot.TDTD.domain.vote_kyu.repository;
+package com.todaktodot.TDTD.domain.vote.repository;
 
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteReportEntity;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteSelectEntity;

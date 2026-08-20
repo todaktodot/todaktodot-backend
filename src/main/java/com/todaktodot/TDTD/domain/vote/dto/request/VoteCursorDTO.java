@@ -1,6 +1,6 @@
-package com.todaktodot.TDTD.domain.vote_kyu.dto.request;
+package com.todaktodot.TDTD.domain.vote.dto.request;
 
-import com.todaktodot.TDTD.domain.vote_kyu.repository.entity.VoteSortCondition;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteSortCondition;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

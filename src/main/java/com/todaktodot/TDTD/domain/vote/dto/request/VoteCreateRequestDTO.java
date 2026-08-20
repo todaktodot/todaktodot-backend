@@ -1,4 +1,4 @@
-package com.todaktodot.TDTD.domain.vote_kyu.dto.request;
+package com.todaktodot.TDTD.domain.vote.dto.request;
 
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
 import lombok.Getter;
@@ -8,9 +8,8 @@ import java.util.List;
 
 @Getter
 @Setter
-public class VoteUpdateRequestDTO {
+public class VoteCreateRequestDTO {
 
-    private Long voteId;
     private VoteCategory category;
     private String title;
     private List<OptionRequest> options;
@@ -18,7 +17,6 @@ public class VoteUpdateRequestDTO {
     @Getter
     @Setter
     public static class OptionRequest {
-
         private String content;
         private int order;
     }

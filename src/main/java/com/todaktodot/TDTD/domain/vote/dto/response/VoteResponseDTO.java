@@ -1,8 +1,8 @@
-package com.todaktodot.TDTD.domain.vote_kyu.dto.response;
+package com.todaktodot.TDTD.domain.vote.dto.response;
 
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.entity.VoteStatus;
-import com.todaktodot.TDTD.domain.vote_kyu.repository.projection.VoteProjection;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteStatus;
+import com.todaktodot.TDTD.domain.vote.repository.projection.VoteProjection;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;

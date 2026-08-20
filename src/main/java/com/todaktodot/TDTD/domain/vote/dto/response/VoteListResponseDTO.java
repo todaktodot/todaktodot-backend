@@ -1,4 +1,4 @@
-package com.todaktodot.TDTD.domain.vote_kyu.dto.response;
+package com.todaktodot.TDTD.domain.vote.dto.response;
 
 import lombok.Builder;
 import lombok.Getter;
