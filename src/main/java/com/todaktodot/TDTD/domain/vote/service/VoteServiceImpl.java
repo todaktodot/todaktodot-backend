@@ -339,24 +339,19 @@ public class VoteServiceImpl implements VoteService{
         return result;
     }
 
+    /**
+     * TODO 잔여 시간은 시간 단위 기준 (분 미표기), 마감 시 "마감" 고정 표기 — UX 정책 화면 확인
+     */
     private static String calculateRemainingTime(LocalDateTime closedAt) {
 
         LocalDateTime now = LocalDateTime.now();
 
-        //TODO : 이미 마감된 게시물의 남은시간은?
         if (!closedAt.isAfter(now)) {
-            return null;
+            return "마감";
         }
 
-        Duration duration = Duration.between(now, closedAt);
-
-        long hours = duration.toHours();
-        long minutes = duration.toMinutesPart();
-        if (hours > 0) {
-            return hours + "시간 " + minutes + "분";
-        }
-
-        return minutes + "분";
+        long hours = Duration.between(now, closedAt).toHours();
+        return String.valueOf(hours);
     }
 
     /**
