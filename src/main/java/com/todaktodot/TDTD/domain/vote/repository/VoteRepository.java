@@ -20,26 +20,6 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
 
     Optional<VoteEntity> findByVoteIdAndDelYn(Long voteId, String delYn);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT v FROM VoteEntity v WHERE v.voteId = :voteId AND v.delYn = 'N'")
-    Optional<VoteEntity> findByVoteIdForUpdate(@Param("voteId") Long voteId);
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-            UPDATE VoteEntity v
-            SET v.participantCnt = v.participantCnt + 1, v.updrId = :userId
-            WHERE v.voteId = :voteId
-            """)
-    void increaseParticipantCnt(@Param("voteId") Long voteId, @Param("userId") Long userId);
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-            UPDATE VoteEntity v
-            SET v.participantCnt = v.participantCnt - 1, v.updrId = :userId
-            WHERE v.voteId = :voteId AND v.participantCnt > 0
-            """)
-    void decreaseParticipantCnt(@Param("voteId") Long voteId, @Param("userId") Long userId);
-
     long countByUserIdAndRegDtBetweenAndDelYn(Long userId, LocalDateTime startDateTime, LocalDateTime endDateTime, String delYn);
 
     @Query(value = """
@@ -47,7 +27,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             V.VOTE_ID AS voteId,
             V.REG_DT AS createdAt,
             V.PARTICIPANT_CNT AS participantCnt
-        FROM VOTE V
+        FROM vote V
         WHERE V.DEL_YN = 'N'
           AND V.STATUS = 'POSTED'
           /* 카테고리 */
@@ -65,7 +45,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
           )
           AND NOT EXISTS (
                       SELECT 1
-                      FROM VOTE_REPORT VR
+                      FROM vote_report VR
                       WHERE VR.VOTE_ID = V.VOTE_ID
                         AND VR.USER_ID = :userId
                         AND VR.DEL_YN = 'N'
@@ -77,7 +57,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
     """, nativeQuery = true)
     List<VoteCursorProjection> findFirstByLatest(
             @Param("userId") Long userId,
-            @Param("category") List<VoteCategory> categories,
+            @Param("categories") List<VoteCategory> categories,
             @Param("isMine") Boolean isMine,
             @Param("voteStatus") VoteStatus voteStatus,
             @Param("size") int size
@@ -88,7 +68,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             V.VOTE_ID AS voteId,
             V.REG_DT AS createdAt,
             V.PARTICIPANT_CNT AS participantCnt
-        FROM VOTE V
+        FROM vote V
         WHERE V.DEL_YN = 'N'
           AND V.STATUS = 'POSTED'
           AND  V.CATEGORY IN (:categories)
@@ -103,7 +83,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
           )
           AND NOT EXISTS (
               SELECT 1
-              FROM VOTE_REPORT VR
+              FROM vote_report VR
               WHERE VR.VOTE_ID = V.VOTE_ID
                 AND VR.USER_ID = :userId
                 AND VR.DEL_YN = 'N'
@@ -123,7 +103,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
     """, nativeQuery = true)
     List<VoteCursorProjection> findNextByLatest(
             @Param("userId") Long userId,
-            @Param("category") List<VoteCategory> categories,
+            @Param("categories") List<VoteCategory> categories,
             @Param("isMine") Boolean isMine,
             @Param("voteStatus") VoteStatus voteStatus,
             @Param("cursorCreatedAt") LocalDateTime cursorCreatedAt,
@@ -136,7 +116,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             V.VOTE_ID AS voteId,
             V.REG_DT AS createdAt,
             V.PARTICIPANT_CNT AS participantCnt
-        FROM VOTE V
+        FROM vote V
         WHERE V.DEL_YN = 'N'
           AND V.STATUS = 'POSTED'
           AND V.CATEGORY IN (:categories)
@@ -151,7 +131,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
           )
           AND NOT EXISTS (
               SELECT 1
-              FROM VOTE_REPORT VR
+              FROM vote_report VR
               WHERE VR.VOTE_ID = V.VOTE_ID
                 AND VR.USER_ID = :userId
                 AND VR.DEL_YN = 'N'
@@ -163,7 +143,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
     """, nativeQuery = true)
     List<VoteCursorProjection> findFirstByPopular(
             @Param("userId") Long userId,
-            @Param("category") List<VoteCategory> categories,
+            @Param("categories") List<VoteCategory> categories,
             @Param("isMine") Boolean isMine,
             @Param("voteStatus") VoteStatus voteStatus,
             @Param("size") int size
@@ -174,7 +154,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             V.VOTE_ID AS voteId,
             V.REG_DT AS createdAt,
             V.PARTICIPANT_CNT AS participantCnt
-        FROM VOTE V
+        FROM vote V
         WHERE V.DEL_YN = 'N'
           AND V.STATUS = 'POSTED'
           AND V.CATEGORY IN (:categories)
@@ -189,7 +169,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
           )
           AND NOT EXISTS (
               SELECT 1
-              FROM VOTE_REPORT VR
+              FROM vote_report VR
               WHERE VR.VOTE_ID = V.VOTE_ID
                 AND VR.USER_ID = :userId
                 AND VR.DEL_YN = 'N'
@@ -208,7 +188,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
     """, nativeQuery = true)
     List<VoteCursorProjection> findNextByPopular(
             @Param("userId") Long userId,
-            @Param("category") List<VoteCategory> categories,
+            @Param("categories") List<VoteCategory> categories,
             @Param("isMine") Boolean isMine,
             @Param("voteStatus") VoteStatus voteStatus,
             @Param("cursorParticipantCnt") Integer cursorParticipantCnt,
@@ -256,15 +236,15 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
                 WHEN US.OPTION_ID = O.OPTION_ID THEN 'Y'
                 ELSE 'N'
             END AS isSelected
-        FROM VOTE V
-        INNER JOIN VOTE_OPTION O
+        FROM vote V
+        INNER JOIN vote_option O
             ON O.VOTE_ID = V.VOTE_ID
            AND O.DEL_YN = 'N'
         LEFT JOIN (
             SELECT
                 VOTE_ID,
                 COUNT(*) AS LIKE_CNT
-            FROM VOTE_LIKE
+            FROM vote_like
             WHERE DEL_YN = 'N'
             GROUP BY VOTE_ID
         ) L
@@ -273,7 +253,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             SELECT
                 VOTE_ID,
                 COUNT(*) AS REPORT_CNT
-            FROM VOTE_REPORT
+            FROM vote_report
             WHERE DEL_YN = 'N'
             GROUP BY VOTE_ID
         ) R
@@ -282,16 +262,16 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             SELECT
                 OPTION_ID,
                 COUNT(*) AS VOTE_CNT
-            FROM VOTE_SELECT
+            FROM vote_select
             WHERE DEL_YN = 'N'
             GROUP BY OPTION_ID
         ) OS
             ON OS.OPTION_ID = O.OPTION_ID
-        LEFT JOIN VOTE_SELECT US
+        LEFT JOIN vote_select US
             ON US.VOTE_ID = V.VOTE_ID
            AND US.USER_ID = :userId
            AND US.DEL_YN = 'N'
-        LEFT JOIN VOTE_LIKE UL
+        LEFT JOIN vote_like UL
             ON UL.VOTE_ID = V.VOTE_ID
            AND UL.USER_ID = :userId
            AND UL.DEL_YN = 'N'
@@ -304,4 +284,24 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             @Param("voteIds") List<Long> voteIds,
             @Param("userId") Long userId
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT v FROM VoteEntity v WHERE v.voteId = :voteId AND v.delYn = 'N'")
+    Optional<VoteEntity> findByVoteIdForUpdate(@Param("voteId") Long voteId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE VoteEntity v
+            SET v.participantCnt = v.participantCnt + 1, v.updrId = :userId
+            WHERE v.voteId = :voteId
+            """)
+    void increaseParticipantCnt(@Param("voteId") Long voteId, @Param("userId") Long userId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE VoteEntity v
+            SET v.participantCnt = v.participantCnt - 1, v.updrId = :userId
+            WHERE v.voteId = :voteId AND v.participantCnt > 0
+            """)
+    void decreaseParticipantCnt(@Param("voteId") Long voteId, @Param("userId") Long userId);
 }

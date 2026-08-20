@@ -51,7 +51,7 @@ public class VoteServiceImpl implements VoteService{
         int todayVoteCnt = todayVoteCount(userId);
 
         Boolean isMine = "Y".equals(isMineStr) ? Boolean.TRUE : null;
-        List<VoteCategory> categoryParams = !categories.isEmpty() ? categories : List.of(VoteCategory.LOVE, VoteCategory.LIFESTYLE, VoteCategory.LIFESTYLE); // 더미값
+        List<VoteCategory> categoryParams = (categories != null && !categories.isEmpty()) ? categories : List.of(VoteCategory.values());
 
         //커서 Decode
         VoteCursorDTO cursorDto = null;
