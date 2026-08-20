@@ -9,5 +9,7 @@ public interface VoteOptionRepository extends JpaRepository<VoteOptionEntity, Lo
 
     List<VoteOptionEntity> findByVoteIdAndDelYnOrderBySortOrderAsc(Long voteId, String delYn);
 
+    List<VoteOptionEntity> findAllByVoteIdAndDelYn(Long voteId, String delYn);
+
     boolean existsByOptionIdAndVoteIdAndDelYn(Long optionId, Long voteId, String delYn);
 }

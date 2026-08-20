@@ -105,7 +105,7 @@ public class VoteEntity {
     }
 
     //표출 상태 변경
-    public void updateDisplayStatus(VoteStatus status, Long userId) {
+    public void updateDisplayStatus(VoteDisplayStatus status, Long userId) {
         this.status = status;
         this.updrId = userId;
         this.updDt = LocalDateTime.now();

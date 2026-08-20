@@ -7,5 +7,7 @@ import java.util.Optional;
 
 public interface VoteSelectRepository extends JpaRepository<VoteSelectEntity, Long> {
 
+    boolean existsByVoteIdAndDelYn(Long voteId, String delYn);
+
     Optional<VoteSelectEntity> findByVoteIdAndUserIdAndDelYn(Long voteId, Long userId, String delYn);
 }
