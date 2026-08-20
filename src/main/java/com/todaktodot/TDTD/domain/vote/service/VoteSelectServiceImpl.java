@@ -1,17 +1,21 @@
 package com.todaktodot.TDTD.domain.vote.service;
 
 import com.todaktodot.TDTD.domain.vote.dto.request.VoteSelectRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteResponseDTO;
 import com.todaktodot.TDTD.domain.vote.repository.VoteOptionRepository;
 import com.todaktodot.TDTD.domain.vote.repository.VoteRepository;
 import com.todaktodot.TDTD.domain.vote.repository.VoteSelectRepository;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteDisplayStatus;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteEntity;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteSelectEntity;
+import com.todaktodot.TDTD.domain.vote.repository.projection.VoteProjection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 // TODO 에러 코드 체계 도입 시 VoteException 으로 교체 (V1001 마감 / V1005 숨김 / V1007 삭제)
@@ -25,7 +29,7 @@ public class VoteSelectServiceImpl implements VoteSelectService {
 
     @Override
     @Transactional
-    public void select(Long userId, VoteSelectRequestDTO requestDTO) {
+    public VoteResponseDTO select(Long userId, VoteSelectRequestDTO requestDTO) {
 
         Long voteId = requestDTO.getVoteId();
         Long optionId = requestDTO.getOptionId();
@@ -53,11 +57,13 @@ public class VoteSelectServiceImpl implements VoteSelectService {
 
             voteRepository.increaseParticipantCnt(voteId, userId);
         }
+
+        return getVoteResponse(voteId, userId);
     }
 
     @Override
     @Transactional
-    public void cancelSelect(Long userId, Long voteId) {
+    public VoteResponseDTO cancelSelect(Long userId, Long voteId) {
 
         validateParticipable(voteId);
 
@@ -67,6 +73,40 @@ public class VoteSelectServiceImpl implements VoteSelectService {
                     select.softDelete(userId);
                     voteRepository.decreaseParticipantCnt(voteId, userId);
                 });
+
+        return getVoteResponse(voteId, userId);
+    }
+
+    /**
+     * 참여/취소 후 갱신된 투표 카드 조회
+     */
+    private VoteResponseDTO getVoteResponse(Long voteId, Long userId) {
+        List<VoteProjection> projections = voteRepository.selectVoteDetails(List.of(voteId), userId);
+
+        if (projections.isEmpty()) {
+            return null;
+        }
+
+        String remainingTime = calculateRemainingTime(projections.get(0).getClosedAt());
+        return VoteResponseDTO.from(projections, remainingTime);
+    }
+
+    // TODO 정책 확정되면 같이 수정 필요
+    private static String calculateRemainingTime(LocalDateTime closedAt) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (!closedAt.isAfter(now)) {
+            return null;
+        }
+
+        Duration duration = Duration.between(now, closedAt);
+        long hours = duration.toHours();
+        long minutes = duration.toMinutesPart();
+
+        if (hours > 0) {
+            return hours + "시간 " + minutes + "분";
+        }
+        return minutes + "분";
     }
 
     /**
