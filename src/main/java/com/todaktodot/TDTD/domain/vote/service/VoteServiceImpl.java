@@ -1,26 +1,16 @@
 package com.todaktodot.TDTD.domain.vote.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteEntity;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteOptionEntity;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteDisplayStatus;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteReportEntity;
-import com.todaktodot.TDTD.domain.vote.dto.request.VoteCreateRequestDTO;
-import com.todaktodot.TDTD.domain.vote.dto.request.VoteCursorDTO;
-import com.todaktodot.TDTD.domain.vote.dto.request.VoteReportRequestDTO;
-import com.todaktodot.TDTD.domain.vote.dto.request.VoteUpdateRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.request.*;
+import com.todaktodot.TDTD.domain.vote.exception.VoteException;
+import com.todaktodot.TDTD.domain.vote.repository.*;
+import com.todaktodot.TDTD.domain.vote.repository.entity.*;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteCreateResponseDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteListResponseDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteResponseDTO;
-import com.todaktodot.TDTD.domain.vote.repository.VoteOptionRepository;
-import com.todaktodot.TDTD.domain.vote.repository.VoteReportRepository;
-import com.todaktodot.TDTD.domain.vote.repository.VoteRepository;
-import com.todaktodot.TDTD.domain.vote.repository.VoteSelectRepository;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteSortCondition;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteStatus;
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteCursorProjection;
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteProjection;
+import com.todaktodot.TDTD.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +32,7 @@ public class VoteServiceImpl implements VoteService{
     private final VoteOptionRepository voteOptionRepository;
     private final VoteSelectRepository voteSelectRepository;
     private final VoteReportRepository voteReportRepository;
+    private final VoteLikeRepository voteLikeRepository;
     private final ObjectMapper objectMapper;
     @Override
     @Transactional(readOnly = true)
@@ -123,29 +114,21 @@ public class VoteServiceImpl implements VoteService{
     @Override
     @Transactional(readOnly = true)
     public VoteResponseDTO getDetail(Long userId, Long voteId) {
-        List<Long> voteIds = List.of(voteId);
-
-        //VoteId List로 옵션 조회
-        List<VoteProjection> projections = voteRepository.selectVoteDetails(voteIds, userId);
-
-        //DTO 조립
-        List<VoteResponseDTO> voteList = convertVoteResponse(voteIds, projections);
-
-        if (voteList.isEmpty()) {
-            return null;
-        }
-
-        return voteList.getFirst();
+        return getVoteResponse(voteId, userId);
     }
 
     @Override
     @Transactional
     public VoteCreateResponseDTO create(Long userId, VoteCreateRequestDTO request) {
+
         int todayVoteCount = todayVoteCount(userId);
 
-        //TODO: 당일 생성 가능 투표 수 제한 예외처리
         if (todayVoteCount >= 10) {
-            throw new IllegalStateException("더 이상 투표를 생성할 수 없습니다.");
+            throw new VoteException(ErrorCode.VOTE_DAILY_LIMIT_EXCEEDED);
+        }
+
+        if (request.getOptions().size() < 2 || request.getOptions().size() > 5) {
+            throw new IllegalArgumentException("옵션은 최소 2개, 최대 5개만 등록할 수 있습니다.");
         }
 
         //vote 저장
@@ -183,19 +166,17 @@ public class VoteServiceImpl implements VoteService{
                 .build();
     }
 
-
     @Override
     @Transactional
     public void update(Long userId, VoteUpdateRequestDTO request) {
         LocalDateTime now = LocalDateTime.now();
-        //TODO: 예외처리 필요
         // 1. 투표 조회
         VoteEntity vote = voteRepository.findById(request.getVoteId())
-                .orElseThrow(() -> new IllegalStateException("존재하지 않는 투표입니다."));
+                .orElseThrow(() -> new VoteException(ErrorCode.VOTE_NOT_FOUND));
 
         // 2. 삭제된 투표인지 확인
         if ("Y".equals(vote.getDelYn())) {
-            throw new IllegalStateException("이미 삭제된 투표입니다.");
+            throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
         }
 
         // 3. 작성자 본인 확인
@@ -205,13 +186,13 @@ public class VoteServiceImpl implements VoteService{
 
         // 4. 마감 여부 확인
         if (!vote.getClosedAt().isAfter(now)) {
-            throw new IllegalStateException("이미 마감된 투표입니다.");
+            throw new VoteException(ErrorCode.VOTE_ALREADY_CLOSED);
         }
 
         // 5. 이미 참여자가 있는지 확인
         boolean hasParticipant = voteSelectRepository.existsByVoteIdAndDelYn(vote.getVoteId(), "N");
         if (hasParticipant) {
-            throw new IllegalStateException("이미 참여자가 존재합니다.");
+            throw new VoteException(ErrorCode.VOTE_HAS_PARTICIPANTS);
         }
 
         //투표 본문 수정
@@ -237,14 +218,13 @@ public class VoteServiceImpl implements VoteService{
     @Override
     @Transactional
     public void delete(Long userId, Long voteId) {
-        // TODO: 예외처리 필요
         // 1. 투표 조회
         VoteEntity vote = voteRepository.findById(voteId)
-                .orElseThrow(() -> new IllegalStateException("존재하지 않는 투표입니다."));
+                .orElseThrow(() -> new VoteException(ErrorCode.VOTE_NOT_FOUND));
 
         // 2. 삭제된 투표인지 확인
         if ("Y".equals(vote.getDelYn())) {
-            throw new IllegalStateException("이미 삭제된 투표입니다.");
+            throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
         }
 
         // 3. 작성자 본인 확인
@@ -264,15 +244,91 @@ public class VoteServiceImpl implements VoteService{
 
     @Override
     @Transactional
+    public VoteResponseDTO select(Long userId, VoteSelectRequestDTO requestDTO) {
+
+        Long voteId = requestDTO.getVoteId();
+        Long optionId = requestDTO.getOptionId();
+
+        validateParticipable(voteId);
+
+        // 다른 투표의 옵션 ID를 보내는 요청 방어
+        if (!voteOptionRepository.existsByOptionIdAndVoteIdAndDelYn(optionId, voteId, "N")) {
+            throw new IllegalArgumentException("해당 투표의 답변 항목이 아닙니다.");
+        }
+
+        Optional<VoteSelectEntity> activeSelect =
+                voteSelectRepository.findByVoteIdAndUserIdAndDelYn(voteId, userId, "N");
+
+        if (activeSelect.isPresent()) {
+            activeSelect.get().updateOptionId(optionId, userId);   // 재투표 - 참여 수는 변하지 않음
+
+        } else {
+            voteSelectRepository.save(VoteSelectEntity.builder()
+                    .voteId(voteId)
+                    .userId(userId)
+                    .optionId(optionId)
+                    .regrId(userId)
+                    .build());
+
+            voteRepository.increaseParticipantCnt(voteId, userId);
+        }
+
+        return getVoteResponse(voteId, userId);
+    }
+
+    @Override
+    @Transactional
+    public VoteResponseDTO cancelSelect(Long userId, Long voteId) {
+
+        validateParticipable(voteId);
+
+        // 참여하지 않은 상태에서의 취소 요청은 에러 없이 넘김
+        voteSelectRepository.findByVoteIdAndUserIdAndDelYn(voteId, userId, "N")
+                .ifPresent(select -> {
+                    select.softDelete(userId);
+                    voteRepository.decreaseParticipantCnt(voteId, userId);
+                });
+
+        return getVoteResponse(voteId, userId);
+    }
+
+    @Override
+    @Transactional
+    public void like(Long userId, Long voteId) {
+
+        validateLikeable(voteId);
+
+        // 이미 좋아요한 상태에서의 재요청은 에러 없이 넘김
+        if (voteLikeRepository.findByVoteIdAndUserIdAndDelYn(voteId, userId, "N").isEmpty()) {
+            voteLikeRepository.save(VoteLikeEntity.builder()
+                    .voteId(voteId)
+                    .userId(userId)
+                    .regrId(userId)
+                    .build());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void cancelLike(Long userId, Long voteId) {
+
+        validateLikeable(voteId);
+
+        // 좋아요하지 않은 상태에서의 취소 요청은 에러 없이 넘김
+        voteLikeRepository.findByVoteIdAndUserIdAndDelYn(voteId, userId, "N")
+                .ifPresent(like -> like.softDelete(userId));
+    }
+
+    @Override
+    @Transactional
     public void report(Long userId, VoteReportRequestDTO request) {
-        //TODO: 예외처리 필요
         //1. 투표 조회
         VoteEntity vote = voteRepository.findById(request.getVoteId())
-                .orElseThrow(() -> new IllegalStateException("존재하지 않는 투표입니다."));
+                .orElseThrow(() -> new VoteException(ErrorCode.VOTE_NOT_FOUND));
 
         // 2. 삭제된 투표인지 확인
         if ("Y".equals(vote.getDelYn())) {
-            throw new IllegalStateException("이미 삭제된 투표입니다.");
+            throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
         }
 
         // 3. 타유저 투표인지 확인
@@ -283,7 +339,7 @@ public class VoteServiceImpl implements VoteService{
         // 4. 이미 신고한 투표인지 확인
         VoteReportEntity voteReport = voteReportRepository.findByVoteIdAndUserId(request.getVoteId(), userId).orElse(null);
         if (voteReport != null) {
-            throw new IllegalStateException("이미 신고한 투표입니다.");
+            throw new VoteException(ErrorCode.VOTE_ALREADY_REPORTED);
         }
 
         VoteReportEntity newReport = VoteReportEntity.builder()
@@ -315,6 +371,20 @@ public class VoteServiceImpl implements VoteService{
     }
 
     /**
+     * 투표 단건 조회
+     */
+    private VoteResponseDTO getVoteResponse(Long voteId, Long userId) {
+        List<VoteProjection> projections = voteRepository.selectVoteDetails(List.of(voteId), userId);
+
+        if (projections.isEmpty()) {
+            return null;
+        }
+
+        String remainingTime = calculateRemainingTime(projections.get(0).getClosedAt());
+        return VoteResponseDTO.from(projections, remainingTime);
+    }
+
+    /**
      * 응답 DTO 조립
      */
     private List<VoteResponseDTO> convertVoteResponse(List<Long> voteIds, List<VoteProjection> projections) {
@@ -340,7 +410,7 @@ public class VoteServiceImpl implements VoteService{
     }
 
     /**
-     * TODO 잔여 시간은 시간 단위 기준 (분 미표기), 마감 시 "마감" 고정 표기 — UX 정책 화면 확인
+     * 남은 시간 계산
      */
     private static String calculateRemainingTime(LocalDateTime closedAt) {
 
@@ -376,6 +446,37 @@ public class VoteServiceImpl implements VoteService{
     }
 
     /**
+     * 참여 가능한 투표인지 검증
+     * 화면에 남은 시간이 표시되어 있더라도 서버 시각을 기준으로 확인
+     */
+    private void validateParticipable(Long voteId) {
+
+        VoteEntity vote = voteRepository.findByVoteIdForUpdate(voteId)
+                .orElseThrow(() -> new VoteException(ErrorCode.VOTE_ALREADY_DELETED));
+
+        if (vote.getStatus() == VoteDisplayStatus.HIDDEN) {
+            throw new VoteException(ErrorCode.VOTE_HIDDEN_BY_REPORTS);
+        }
+
+        if (!vote.getClosedAt().isAfter(LocalDateTime.now())) {
+            throw new VoteException(ErrorCode.VOTE_ALREADY_CLOSED);
+        }
+    }
+
+    /**
+     * 좋아요 가능한 투표인지 검증
+     */
+    private void validateLikeable(Long voteId) {
+
+        VoteEntity vote = voteRepository.findByVoteIdForUpdate(voteId)
+                .orElseThrow(() -> new VoteException(ErrorCode.VOTE_ALREADY_DELETED));
+
+        if (vote.getStatus() == VoteDisplayStatus.HIDDEN) {
+            throw new VoteException(ErrorCode.VOTE_HIDDEN_BY_REPORTS);
+        }
+    }
+
+    /**
      * 랜덤 닉네임 생성
      */
     private String generateRandomNickname() {
@@ -389,7 +490,8 @@ public class VoteServiceImpl implements VoteService{
                 "활발한 ",
                 "엉뚱한 ",
                 "똑똑한 ",
-                "느긋한 "
+                "느긋한 ",
+                "용맹한 "
         );
 
         List<String> animals = List.of(
@@ -404,16 +506,19 @@ public class VoteServiceImpl implements VoteService{
                 "펭귄",
                 "알파카",
                 "다람쥐",
-                "사슴"
+                "사슴",
+                "나무늘보",
+                "돌고래"
         );
 
         ThreadLocalRandom random = ThreadLocalRandom.current();
-
         String adjective = adjectives.get(random.nextInt(adjectives.size()));
-
         String animal = animals.get(random.nextInt(animals.size()));
 
-        return adjective + animal;
+        // 0000 ~ 9999
+        int number = random.nextInt(10000);
+
+        return adjective + animal + String.format("%04d", number);
     }
 
     public String encode(VoteCursorDTO cursor) {

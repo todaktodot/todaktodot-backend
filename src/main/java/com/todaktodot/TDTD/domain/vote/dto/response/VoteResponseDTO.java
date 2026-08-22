@@ -37,19 +37,31 @@ public class VoteResponseDTO {
 
         private Long optionId;
         private String content;
-        private int voteCnt;
+        private Integer voteCnt;
         private BigDecimal voteRate;
         private boolean isSelected;
 
         public static OptionResponseDTO from(VoteProjection option) {
-
-            return OptionResponseDTO.builder()
-                    .optionId(option.getOptionId())
-                    .content(option.getContent())
-                    .voteCnt(option.getVoteCnt())
-                    .voteRate(option.getVoteRate())
-                    .isSelected("Y".equals(option.getIsSelected()))
-                    .build();
+            //내가 참여한 투표이면 투표수, 투표 비율 노출
+            if ("Y".equals(option.getHasVoted())) {
+                return OptionResponseDTO.builder()
+                        .optionId(option.getOptionId())
+                        .content(option.getContent())
+                        .voteCnt(option.getVoteCnt())
+                        .voteRate(option.getVoteRate())
+                        .isSelected("Y".equals(option.getIsSelected()))
+                        .build();
+            }
+            //내가 참여한 투표가 아니면 투표수, 투표 비율 노출하지 않음
+            else {
+                return OptionResponseDTO.builder()
+                        .optionId(option.getOptionId())
+                        .content(option.getContent())
+                        .voteCnt(null)
+                        .voteRate(null)
+                        .isSelected(false)
+                        .build();
+            }
         }
     }
 
