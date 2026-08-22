@@ -1,5 +1,6 @@
 package com.todaktodot.TDTD.domain.vote.service;
 
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteSelectRequestDTO;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
 import com.todaktodot.TDTD.domain.vote.dto.request.VoteCreateRequestDTO;
 import com.todaktodot.TDTD.domain.vote.dto.request.VoteReportRequestDTO;
@@ -46,6 +47,26 @@ public interface VoteService {
      * 투표 삭제
      */
     void delete(Long userId, Long voteId);
+
+    /**
+     * 투표 선택
+     */
+    VoteResponseDTO select(Long userId, VoteSelectRequestDTO requestDTO);
+
+    /**
+     * 투표 취소
+     */
+    VoteResponseDTO cancelSelect(Long userId, Long voteId);
+
+    /**
+     * 투표 좋아요
+     */
+    void like(Long userId, Long voteId);
+
+    /**
+     * 투표 좋아요 취소
+     */
+    void cancelLike(Long userId, Long voteId);
 
     /**
      * 투표 신고

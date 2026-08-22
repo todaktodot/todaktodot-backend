@@ -1,10 +1,8 @@
 package com.todaktodot.TDTD.domain.vote.controller;
 
 import com.todaktodot.TDTD.domain.login.respository.entity.UserPrincipal;
+import com.todaktodot.TDTD.domain.vote.dto.request.*;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
-import com.todaktodot.TDTD.domain.vote.dto.request.VoteCreateRequestDTO;
-import com.todaktodot.TDTD.domain.vote.dto.request.VoteReportRequestDTO;
-import com.todaktodot.TDTD.domain.vote.dto.request.VoteUpdateRequestDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteCreateResponseDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteListResponseDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteResponseDTO;
@@ -16,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -44,8 +43,7 @@ public class VoteController {
                                                        @RequestParam(name = "sortBy") VoteSortCondition sortBy,
                                                        @RequestParam(name = "cursor", required = false) String cursor,
                                                        @RequestParam(name = "size", required = false, defaultValue = "10") int size) {
-        Long userId = userPrincipal.getId();
-        VoteListResponseDTO response = voteService.getList(userId, categories, status, isMine, sortBy, cursor, size);
+        VoteListResponseDTO response = voteService.getList(userPrincipal.getId(), categories, status, isMine, sortBy, cursor, size);
         return ResponseEntity.ok(response);
     }
 
@@ -58,8 +56,7 @@ public class VoteController {
     @GetMapping()
     public ResponseEntity<VoteResponseDTO> getDetail(@AuthenticationPrincipal UserPrincipal userPrincipal,
                                                    @RequestParam(name = "voteId") Long voteId) {
-        Long userId = userPrincipal.getId();
-        VoteResponseDTO response = voteService.getDetail(userId, voteId);
+        VoteResponseDTO response = voteService.getDetail(userPrincipal.getId(), voteId);
         return ResponseEntity.ok(response);
     }
 
@@ -72,8 +69,7 @@ public class VoteController {
     @PostMapping()
     public ResponseEntity<VoteCreateResponseDTO> create(@AuthenticationPrincipal UserPrincipal userPrincipal,
                                                         @RequestBody VoteCreateRequestDTO request) {
-        Long userId = userPrincipal.getId();
-        VoteCreateResponseDTO response = voteService.create(userId, request);
+        VoteCreateResponseDTO response = voteService.create(userPrincipal.getId(), request);
         return ResponseEntity.ok(response);
     }
 
@@ -85,8 +81,7 @@ public class VoteController {
     @PutMapping()
     public ResponseEntity<Void> update(@AuthenticationPrincipal UserPrincipal userPrincipal,
                                                         @RequestBody VoteUpdateRequestDTO request) {
-        Long userId = userPrincipal.getId();
-        voteService.update(userId, request);
+        voteService.update(userPrincipal.getId(), request);
         return ResponseEntity.ok().build();
     }
 
@@ -98,8 +93,49 @@ public class VoteController {
     @DeleteMapping("/{voteId}")
     public ResponseEntity<Void> delete(@AuthenticationPrincipal UserPrincipal userPrincipal,
                                        @PathVariable Long voteId) {
-        Long userId = userPrincipal.getId();
-        voteService.delete(userId, voteId);
+        voteService.delete(userPrincipal.getId(), voteId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "투표 참여", description = "투표에 참여합니다. 이미 참여한 상태에서 다른 항목을 보내면 재투표로 처리됩니다.")
+    @ApiResponse(responseCode = "200", description = "참여 성공",
+            content = @Content(schema = @Schema(implementation = VoteResponseDTO.class)))
+    @PostMapping("/select")
+    public ResponseEntity<VoteResponseDTO> select(@AuthenticationPrincipal UserPrincipal userPrincipal,
+                                                  @Valid @RequestBody VoteSelectRequestDTO requestDTO) {
+
+        VoteResponseDTO response = voteService.select(userPrincipal.getId(), requestDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "투표 참여 취소", description = "참여한 투표를 취소하고 미투표 상태로 되돌립니다.")
+    @ApiResponse(responseCode = "200", description = "취소 성공",
+            content = @Content(schema = @Schema(implementation = VoteResponseDTO.class)))
+    @DeleteMapping("/select")
+    public ResponseEntity<VoteResponseDTO> cancelSelect(@AuthenticationPrincipal UserPrincipal userPrincipal,
+                                                        @RequestParam(name = "voteId") Long voteId) {
+
+        VoteResponseDTO response = voteService.cancelSelect(userPrincipal.getId(), voteId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "투표 좋아요", description = "투표에 좋아요를 등록합니다.")
+    @ApiResponse(responseCode = "200", description = "좋아요 성공")
+    @PostMapping("/like")
+    public ResponseEntity<Void> like(@AuthenticationPrincipal UserPrincipal userPrincipal,
+                                     @Valid @RequestBody VoteLikeRequestDTO requestDTO) {
+
+        voteService.like(userPrincipal.getId(), requestDTO.getVoteId());
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "투표 좋아요 취소", description = "등록한 좋아요를 취소합니다.")
+    @ApiResponse(responseCode = "200", description = "취소 성공")
+    @DeleteMapping("/like")
+    public ResponseEntity<Void> cancelLike(@AuthenticationPrincipal UserPrincipal userPrincipal,
+                                           @RequestParam(name = "voteId") Long voteId) {
+
+        voteService.cancelLike(userPrincipal.getId(), voteId);
         return ResponseEntity.ok().build();
     }
 
@@ -111,8 +147,7 @@ public class VoteController {
     @PostMapping("/reports")
     public ResponseEntity<Void> report(@AuthenticationPrincipal UserPrincipal userPrincipal,
                                        @RequestBody VoteReportRequestDTO request) {
-        Long userId = userPrincipal.getId();
-        voteService.report(userId, request);
+        voteService.report(userPrincipal.getId(), request);
         return ResponseEntity.ok().build();
     }
 }
