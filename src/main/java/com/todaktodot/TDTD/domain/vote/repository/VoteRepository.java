@@ -31,7 +31,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
         WHERE V.DEL_YN = 'N'
           AND V.STATUS = 'POSTED'
           /* 카테고리 */
-          AND  V.CATEGORY IN (:categories)
+          AND V.CATEGORY IN (:categories)
           /* 내가 작성한 투표 여부 */
           AND (
                 :isMine IS NULL
@@ -57,7 +57,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
     """, nativeQuery = true)
     List<VoteCursorProjection> findFirstByLatest(
             @Param("userId") Long userId,
-            @Param("categories") List<VoteCategory> categories,
+            @Param("categories") List<String> categories,
             @Param("isMine") Boolean isMine,
             @Param("voteStatus") VoteStatus voteStatus,
             @Param("size") int size
@@ -103,7 +103,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
     """, nativeQuery = true)
     List<VoteCursorProjection> findNextByLatest(
             @Param("userId") Long userId,
-            @Param("categories") List<VoteCategory> categories,
+            @Param("categories") List<String> categories,
             @Param("isMine") Boolean isMine,
             @Param("voteStatus") VoteStatus voteStatus,
             @Param("cursorCreatedAt") LocalDateTime cursorCreatedAt,
@@ -143,7 +143,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
     """, nativeQuery = true)
     List<VoteCursorProjection> findFirstByPopular(
             @Param("userId") Long userId,
-            @Param("categories") List<VoteCategory> categories,
+            @Param("categories") List<String> categories,
             @Param("isMine") Boolean isMine,
             @Param("voteStatus") VoteStatus voteStatus,
             @Param("size") int size
@@ -188,7 +188,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
     """, nativeQuery = true)
     List<VoteCursorProjection> findNextByPopular(
             @Param("userId") Long userId,
-            @Param("categories") List<VoteCategory> categories,
+            @Param("categories") List<String> categories,
             @Param("isMine") Boolean isMine,
             @Param("voteStatus") VoteStatus voteStatus,
             @Param("cursorParticipantCnt") Integer cursorParticipantCnt,
