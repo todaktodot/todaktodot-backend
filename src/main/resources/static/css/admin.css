@@ -386,6 +386,7 @@ table td {
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .badge-dessert { background: #fef3c7; color: #92400e; }
@@ -1236,4 +1237,430 @@ table td {
 
 .statistics-download-btn:hover {
     background: #465665;
+}
+
+/* ==================== Admin Vote (투표 관리) ==================== */
+
+/* 페이지 전체 배경과 같은 색으로 - sticky 헤더가 스크롤되는 내용을 가리도록 불투명 유지 */
+.content-header {
+    background: #f5f7fa;
+    border-bottom: none;
+    box-shadow: none;
+}
+
+.btn-dark {
+    background: #2c3e50;
+    color: #fff;
+}
+.btn-dark:hover { background: #1c2b38; }
+
+.btn-purple {
+    background: #7740ae;
+    color: #fff;
+}
+.btn-purple:hover { background: #63348f; }
+
+.btn-outline-light {
+    background: #fff;
+    color: #374151;
+    border: 1px solid #d8dde3;
+}
+.btn-outline-light:hover { background: #f8fafc; }
+
+.btn-soft-gray {
+    background: #eef0f2;
+    color: #4b5563;
+    border: none;
+}
+.btn-soft-gray:hover { background: #e2e5e9; }
+
+.btn-soft-purple {
+    background: #ece4f9;
+    color: #6d3fc0;
+    border: none;
+}
+.btn-soft-purple:hover { background: #ddcdf5; }
+
+.btn-soft-danger {
+    background: #fde2e1;
+    color: #b91c1c;
+    border: none;
+}
+.btn-soft-danger:hover { background: #fbcfce; }
+
+.stat-card-alert {
+    background: #fdf3ee;
+    border: 1px solid #f4c9ae;
+}
+.stat-card-alert .value { color: #d9622b; }
+.stat-card-alert .label { color: #d9622b; }
+
+/* 주제 뱃지 - 연애관(핑크)/경제관(블루)/생활관(그린) */
+.badge-love { background: #fde8ef; color: #be3455; }
+.badge-economy { background: #e7f0fb; color: #2f5fa8; }
+.badge-lifestyle { background: #e7f6ec; color: #2f7d4f; }
+
+.badge-vote-active { background: #e3f8e9; color: #1f8a4c; }
+.badge-vote-closed { background: #eef0f2; color: #6b7280; }
+.badge-vote-auto-hidden { background: #ffe9d6; color: #b45309; }
+.badge-vote-hidden { background: #f3e8d8; color: #92703f; }
+
+.badge-report-none { background: #f1f5f9; color: #94a3b8; }
+.badge-report-pending { background: #fdead9; color: #c2410c; }
+.badge-report-resolved { background: #e3f8e9; color: #1f8a4c; }
+
+.report-cnt-pending {
+    color: #c2410c;
+    font-weight: 700;
+}
+
+.waiting-pending {
+    color: #d9622b;
+}
+.waiting-overdue {
+    color: #b91c1c;
+    font-weight: 700;
+}
+
+.admin-vote-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+}
+.admin-vote-actions .btn-sm {
+    padding: 7px 14px;
+    font-size: 0.85rem;
+}
+
+tr.row-alert {
+    background: #fdf5f4;
+}
+tr.row-alert:hover {
+    background: #fbe9e8;
+}
+
+.admin-vote-filter-row {
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.admin-vote-filter-row .filter-group {
+    flex: 1 1 78px;
+}
+.admin-vote-filter-row .filter-group:has(.admin-vote-date-range) {
+    flex: 2 1 220px;
+}
+.admin-vote-filter-row .filter-group:has(input[name="keyword"]) {
+    flex: 1 1 130px;
+}
+.admin-vote-filter-row .filter-group:last-child {
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+.admin-vote-filter-row .filter-group select,
+.admin-vote-filter-row .filter-group input {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 8px;
+    font-size: 0.82rem;
+    height: 36px;
+}
+.admin-vote-filter-row .filter-group:last-child .btn {
+    height: 36px;
+    padding: 0 18px;
+}
+
+.admin-vote-stats.stats-grid {
+    gap: 14px;
+}
+.admin-vote-stats .stat-card {
+    padding: 14px 18px;
+}
+.admin-vote-stats .stat-card .value {
+    font-size: 1.7rem;
+}
+.admin-vote-stats .stat-card .label {
+    font-size: 0.8rem;
+    margin-top: 2px;
+}
+
+.admin-vote-table th,
+.admin-vote-table td {
+    padding: 8px 8px;
+    font-size: 0.83rem;
+    white-space: nowrap;
+    vertical-align: middle !important;
+}
+.admin-vote-table td.admin-vote-title-cell {
+    white-space: normal;
+    width: 220px;
+    min-width: 150px;
+    max-width: 220px;
+}
+
+.admin-vote-date-range {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.admin-vote-date-range input {
+    min-width: 0;
+    flex: 1;
+}
+.admin-vote-date-range span {
+    color: #9aa5b1;
+    flex-shrink: 0;
+}
+
+.admin-vote-search-wrap {
+    position: relative;
+}
+.admin-vote-search-wrap::before {
+    content: "";
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.45;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+}
+.admin-vote-filter-row .admin-vote-search-wrap input {
+    padding-left: 30px !important;
+}
+
+/* 투표 상세 모달 */
+.vote-detail-modal .modal-header h3 .badge {
+    margin-right: 6px;
+}
+.vote-detail-modal .modal-header {
+    border-bottom: none;
+    padding-bottom: 4px;
+    align-items: flex-start;
+}
+.vote-detail-modal .modal-body {
+    padding-top: 0;
+}
+.vote-detail-id {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-left: 4px;
+}
+.vote-detail-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 4px 0 22px;
+}
+.vote-detail-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #1f2937;
+    margin-bottom: 12px;
+}
+.vote-detail-muted {
+    color: #94a3b8;
+    font-weight: 400;
+    font-size: 0.85rem;
+}
+.vote-detail-section-title {
+    margin-top: 26px;
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.vote-option-row {
+    margin-bottom: 14px;
+}
+.vote-option-line {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+.vote-option-content {
+    font-weight: 600;
+    color: #1f2937;
+}
+.vote-option-result {
+    font-weight: 700;
+    color: #7740ae;
+    font-size: 0.9rem;
+}
+.vote-option-result-muted {
+    color: #4b5563;
+    font-weight: 500;
+}
+.vote-option-track {
+    background: #f1eefa;
+    border-radius: 20px;
+    height: 8px;
+    overflow: hidden;
+}
+.vote-option-fill {
+    background: #7740ae;
+    height: 100%;
+    border-radius: 20px;
+}
+.vote-option-fill-muted {
+    background: #d9cdec;
+}
+
+.vote-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border: 1px solid #eef0f2;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.vote-meta-cell {
+    padding: 12px 16px;
+    border-right: 1px solid #eef0f2;
+    border-bottom: 1px solid #eef0f2;
+}
+.vote-meta-cell:nth-child(4n) {
+    border-right: none;
+}
+.vote-meta-cell:nth-last-child(-n+4) {
+    border-bottom: none;
+}
+.vote-meta-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-bottom: 4px;
+}
+.vote-meta-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+.vote-meta-highlight {
+    color: #d9622b;
+    font-weight: 700;
+    font-size: 0.8rem;
+    margin-left: 4px;
+}
+.vote-meta-alert {
+    color: #c2410c;
+}
+.vote-meta-todo {
+    color: #c7ccd3;
+    font-weight: 400;
+}
+
+.vote-plain-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #eef0f2;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.vote-plain-table th {
+    text-align: left;
+    color: #94a3b8;
+    font-weight: 500;
+    font-size: 0.8rem;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-bottom: 1px solid #eef0f2;
+}
+.vote-plain-table td {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    color: #374151;
+    border-bottom: 1px solid #f5f6f8;
+}
+.vote-plain-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.badge-actor {
+    background: #eef0f2;
+    color: #4b5563;
+    text-transform: none;
+}
+
+.vote-load-more {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: #f8fafc;
+    border: none;
+    color: #7740ae;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 10px;
+    cursor: pointer;
+}
+.vote-load-more:hover {
+    background: #f1eefa;
+    text-decoration: underline;
+}
+
+.vote-table-empty-row td {
+    text-align: center;
+    color: #94a3b8;
+    padding: 18px;
+}
+
+.admin-vote-count-muted {
+    color: #9aa5b1;
+    font-weight: 400;
+    font-size: 0.9rem;
+}
+
+.admin-vote-title-link {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font: inherit;
+    color: #1f2937;
+    text-align: left;
+}
+.admin-vote-title-link:hover {
+    text-decoration: underline;
+}
+
+.admin-vote-table thead th {
+    background: #fff;
+    text-transform: none;
+    letter-spacing: normal;
+    color: #94a3b8;
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
+.pagination-purple a,
+.pagination-purple span {
+    border: none;
+    background: transparent;
+    color: #6b7280;
+}
+.pagination-purple a:hover {
+    background: #f3edfa;
+    color: #7740ae;
+}
+.pagination-purple .active {
+    background: #7740ae;
+    color: #fff;
+    border-radius: 20px;
+}
+
+.modal-warning {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-top: 10px;
 }

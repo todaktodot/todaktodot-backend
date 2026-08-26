@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>투표 관리</title>
+</head>
+<body>
+    <h2 layout:fragment="pageTitle">투표 관리</h2>
+
+    <div layout:fragment="content">
+        <div class="stats-grid admin-vote-stats">
+            <div class="stat-card">
+                <div class="value" th:text="${stats.totalCnt}">0</div>
+                <div class="label">전체 투표</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" th:text="${stats.activeCnt}">0</div>
+                <div class="label">진행중</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" th:text="${stats.closedCnt}">0</div>
+                <div class="label">마감</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" th:text="${stats.hiddenCnt}">0</div>
+                <div class="label">숨김</div>
+            </div>
+            <div class="stat-card stat-card-alert">
+                <div class="value" th:text="${stats.reportPendingCnt}">0</div>
+                <div class="label">신고 검토 필요</div>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <form th:action="@{/admin/vote}" method="get" class="filter-row admin-vote-filter-row"
+                  onsubmit="return validateVoteDateRange();">
+                <div class="filter-group">
+                    <label>주제</label>
+                    <select name="category" class="no-auto-submit">
+                        <option value="" th:selected="${condition.category == null || condition.category == ''}">전체</option>
+                        <option value="LOVE" th:selected="${condition.category == 'LOVE'}">연애관</option>
+                        <option value="ECONOMY" th:selected="${condition.category == 'ECONOMY'}">경제관</option>
+                        <option value="LIFESTYLE" th:selected="${condition.category == 'LIFESTYLE'}">생활관</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>상태</label>
+                    <select name="voteStatus" class="no-auto-submit">
+                        <option value="" th:selected="${condition.voteStatus == null || condition.voteStatus == ''}">전체</option>
+                        <option value="ACTIVE" th:selected="${condition.voteStatus == 'ACTIVE'}">진행중</option>
+                        <option value="CLOSED" th:selected="${condition.voteStatus == 'CLOSED'}">마감</option>
+                        <option value="AUTO_HIDDEN" th:selected="${condition.voteStatus == 'AUTO_HIDDEN'}">자동숨김</option>
+                        <option value="HIDDEN" th:selected="${condition.voteStatus == 'HIDDEN'}">숨김</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>신고 상태</label>
+                    <select name="reportStatus" class="no-auto-submit">
+                        <option value="" th:selected="${condition.reportStatus == null || condition.reportStatus == ''}">전체</option>
+                        <option value="NONE" th:selected="${condition.reportStatus == 'NONE'}">신고 없음</option>
+                        <option value="PENDING" th:selected="${condition.reportStatus == 'PENDING'}">검토 필요</option>
+                        <option value="RESOLVED" th:selected="${condition.reportStatus == 'RESOLVED'}">검토 완료</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>정렬</label>
+                    <select name="sort" class="no-auto-submit">
+                        <option value="LATEST" th:selected="${condition.sort == 'LATEST'}">최신순</option>
+                        <option value="REPORT_DESC" th:selected="${condition.sort == 'REPORT_DESC'}">신고수 많은순</option>
+                        <option value="WAIT_ASC" th:selected="${condition.sort == 'WAIT_ASC'}">대기 오래된순</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>기간</label>
+                    <div class="admin-vote-date-range">
+                        <input type="date" id="startDt" name="startDt" th:value="${condition.startDt}">
+                        <span>~</span>
+                        <input type="date" id="endDt" name="endDt" th:value="${condition.endDt}">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>검색</label>
+                    <div class="admin-vote-search-wrap">
+                        <input type="text" name="keyword" placeholder="질문 · 랜덤 닉네임 · user_id 검색..." th:value="${condition.keyword}">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn btn-purple">검색</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>투표 목록
+                    <span class="admin-vote-count-muted">— 총 <span th:text="${votes.totalElements}">0</span>개 중
+                    <span th:text="${votes.totalElements == 0 ? 0 : votes.number * votes.size + 1}">1</span>–<span
+                            th:text="${votes.number * votes.size + votes.numberOfElements}">10</span></span>
+                </h3>
+            </div>
+            <div class="card-body">
+                <div th:if="${votes.empty}" class="empty-state">
+                    <div class="icon">🗳️</div>
+                    <h3>등록된 투표가 없습니다</h3>
+                </div>
+
+                <div th:unless="${votes.empty}" class="table-container">
+                    <table class="admin-vote-table">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>ID</th>
+                                <th>질문</th>
+                                <th>주제</th>
+                                <th>랜덤 닉네임</th>
+                                <th>참여</th>
+                                <th>좋아요</th>
+                                <th>신고</th>
+                                <th>신고 상태</th>
+                                <th>대기 경과</th>
+                                <th>상태</th>
+                                <th>등록일</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="vote, iterStat : ${votes}"
+                                th:classappend="${vote.reportStatusCode == 'PENDING'} ? 'row-alert' : ''">
+                                <td th:text="${votes.number * votes.size + iterStat.count}">1</td>
+                                <td th:text="${vote.voteId}">1</td>
+                                <td class="admin-vote-title-cell">
+                                    <button type="button" class="admin-vote-title-link"
+                                            th:text="${vote.title}"
+                                            th:onclick="'openVoteDetail(' + ${vote.voteId} + ')'">질문</button>
+                                </td>
+                                <td>
+                                    <span th:switch="${vote.categoryLabel}">
+                                        <span th:case="'연애관'" class="badge badge-love">연애관</span>
+                                        <span th:case="'경제관'" class="badge badge-economy">경제관</span>
+                                        <span th:case="'생활관'" class="badge badge-lifestyle">생활관</span>
+                                    </span>
+                                </td>
+                                <td th:text="${vote.randomNickname}">-</td>
+                                <td th:text="${vote.participantCnt}">0</td>
+                                <td th:text="${vote.likeCnt}">0</td>
+                                <td>
+                                    <span th:if="${vote.reportCnt > 0}" class="report-cnt-pending" th:text="${vote.reportCnt}">0</span>
+                                    <span th:unless="${vote.reportCnt > 0}">—</span>
+                                </td>
+                                <td>
+                                    <span th:switch="${vote.reportStatusCode}">
+                                        <span th:case="'NONE'" class="badge badge-report-none">신고 없음</span>
+                                        <span th:case="'PENDING'" class="badge badge-report-pending">검토 필요</span>
+                                        <span th:case="'RESOLVED'" class="badge badge-report-resolved">검토 완료</span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span th:if="${vote.waitingDisplay == null}">-</span>
+                                    <span th:if="${vote.waitingDisplay != null}"
+                                          th:text="${vote.waitingDisplay}"
+                                          th:class="${vote.waitingOverdue} ? 'waiting-overdue' : 'waiting-pending'">-</span>
+                                </td>
+                                <td>
+                                    <span th:switch="${vote.voteStatusCode}">
+                                        <span th:case="'ACTIVE'" class="badge badge-vote-active">진행중</span>
+                                        <span th:case="'CLOSED'" class="badge badge-vote-closed">마감</span>
+                                        <span th:case="'AUTO_HIDDEN'" class="badge badge-vote-auto-hidden">자동숨김</span>
+                                        <span th:case="'HIDDEN'" class="badge badge-vote-hidden">숨김</span>
+                                    </span>
+                                </td>
+                                <td th:text="${#temporals.format(vote.regDt, 'MM-dd')}">-</td>
+                                <td>
+                                    <div class="admin-vote-actions">
+                                        <button type="button" class="btn btn-sm btn-outline-light"
+                                                th:onclick="'openVoteDetail(' + ${vote.voteId} + ')'">상세</button>
+                                        <button th:if="${vote.hideButtonVisible}" type="button" class="btn btn-sm btn-soft-gray"
+                                                th:onclick="'requestVoteHide(' + ${vote.voteId} + ')'">숨김</button>
+                                        <button th:if="${vote.restoreButtonVisible}" type="button" class="btn btn-sm btn-soft-purple"
+                                                th:onclick="'requestVoteRestore(' + ${vote.voteId} + ')'">복구</button>
+                                        <button type="button" class="btn btn-sm btn-soft-danger"
+                                                th:onclick="'requestVoteDelete(' + ${vote.voteId} + ')'">삭제</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div th:if="${votes.totalPages > 1}" class="pagination pagination-purple"
+                     th:with="windowStart=${(votes.number / 10) * 10}, windowEnd=${T(java.lang.Math).min(windowStart + 9, votes.totalPages - 1)}">
+                    <a th:if="${votes.hasPrevious()}"
+                       th:href="@{/admin/vote(page=${votes.number - 1}, category=${condition.category}, voteStatus=${condition.voteStatus}, reportStatus=${condition.reportStatus}, sort=${condition.sort}, startDt=${condition.startDt}, endDt=${condition.endDt}, keyword=${condition.keyword})}">
+                        &lsaquo;
+                    </a>
+                    <th:block th:each="i : ${#numbers.sequence(windowStart, windowEnd)}">
+                        <span th:if="${i == votes.number}" class="active" th:text="${i + 1}">1</span>
+                        <a th:unless="${i == votes.number}"
+                           th:href="@{/admin/vote(page=${i}, category=${condition.category}, voteStatus=${condition.voteStatus}, reportStatus=${condition.reportStatus}, sort=${condition.sort}, startDt=${condition.startDt}, endDt=${condition.endDt}, keyword=${condition.keyword})}"
+                           th:text="${i + 1}">1</a>
+                    </th:block>
+                    <a th:if="${votes.hasNext()}"
+                       th:href="@{/admin/vote(page=${votes.number + 1}, category=${condition.category}, voteStatus=${condition.voteStatus}, reportStatus=${condition.reportStatus}, sort=${condition.sort}, startDt=${condition.startDt}, endDt=${condition.endDt}, keyword=${condition.keyword})}">
+                        &rsaquo;
+                    </a>
+                    <a th:if="${windowEnd < votes.totalPages - 1}"
+                       th:href="@{/admin/vote(page=${votes.totalPages - 1}, category=${condition.category}, voteStatus=${condition.voteStatus}, reportStatus=${condition.reportStatus}, sort=${condition.sort}, startDt=${condition.startDt}, endDt=${condition.endDt}, keyword=${condition.keyword})}">
+                        마지막 <span th:text="${votes.totalPages}">1</span> &raquo;
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 투표 상세 모달 (AJAX 로 admin/vote/detail 조각을 불러와 채움) -->
+        <div class="modal-overlay" id="voteDetailModal">
+            <div class="modal" style="max-width:900px;" id="voteDetailModalContent"></div>
+        </div>
+
+        <!-- 숨김 확인 모달 -->
+        <div class="modal-overlay" id="voteHideModal">
+            <div class="modal" style="max-width:440px;">
+                <div class="modal-header">
+                    <h3>이 투표를 숨길까요?</h3>
+                    <button type="button" class="modal-close" onclick="closeModal('voteHideModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    피드에서 바로 사라지고, 참여수·좋아요는 그대로 남아요.<br>
+                    작성자에게는 '가려졌다'는 안내가 한 번 전달돼요.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('voteHideModal')">취소</button>
+                    <button type="button" class="btn btn-dark" onclick="submitVoteHide()">숨김</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 복구 확인 모달 -->
+        <div class="modal-overlay" id="voteRestoreModal">
+            <div class="modal" style="max-width:440px;">
+                <div class="modal-header">
+                    <h3>이 신고를 복구할까요?</h3>
+                    <button type="button" class="modal-close" onclick="closeModal('voteRestoreModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    신고가 정리되고 투표는 피드에 다시 보여요.<br>
+                    같은 사유로는 다시 신고되지 않아요.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('voteRestoreModal')">취소</button>
+                    <button type="button" class="btn btn-purple" onclick="submitVoteRestore()">복구</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 삭제 확인 모달 -->
+        <div class="modal-overlay" id="voteDeleteModal">
+            <div class="modal" style="max-width:440px;">
+                <div class="modal-header">
+                    <h3>이 투표를 삭제할까요?</h3>
+                    <button type="button" class="modal-close" onclick="closeModal('voteDeleteModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    피드와 검색에서 모두 사라지고, 참여 기록도 함께 정리돼요.
+                    <div class="modal-warning">삭제한 투표는 다시 복구할 수 없어요. 작성자의 삭제 확정 누적이 1회 올라가요.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('voteDeleteModal')">취소</button>
+                    <button type="button" class="btn btn-danger" onclick="submitVoteDelete()">삭제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block layout:fragment="scripts">
+        <script th:src="@{/js/admin-vote.js}"></script>
+    </th:block>
+</body>
+</html>
