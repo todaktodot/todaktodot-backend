@@ -190,7 +190,7 @@
 
                 <div th:if="${votes.totalPages > 1}" class="pagination pagination-purple"
                      th:with="windowStart=${(votes.number / 10) * 10}, windowEnd=${T(java.lang.Math).min(windowStart + 9, votes.totalPages - 1)}">
-                    <a th:if="${votes.hasPrevious()}"
+                    <a th:if="${votes.hasPrevious()}" class="pagination-nav"
                        th:href="@{/admin/vote(page=${votes.number - 1}, category=${condition.category}, voteStatus=${condition.voteStatus}, reportStatus=${condition.reportStatus}, sort=${condition.sort}, startDt=${condition.startDt}, endDt=${condition.endDt}, keyword=${condition.keyword})}">
                         &lsaquo;
                     </a>
@@ -200,11 +200,11 @@
                            th:href="@{/admin/vote(page=${i}, category=${condition.category}, voteStatus=${condition.voteStatus}, reportStatus=${condition.reportStatus}, sort=${condition.sort}, startDt=${condition.startDt}, endDt=${condition.endDt}, keyword=${condition.keyword})}"
                            th:text="${i + 1}">1</a>
                     </th:block>
-                    <a th:if="${votes.hasNext()}"
+                    <a th:if="${votes.hasNext()}" class="pagination-nav"
                        th:href="@{/admin/vote(page=${votes.number + 1}, category=${condition.category}, voteStatus=${condition.voteStatus}, reportStatus=${condition.reportStatus}, sort=${condition.sort}, startDt=${condition.startDt}, endDt=${condition.endDt}, keyword=${condition.keyword})}">
                         &rsaquo;
                     </a>
-                    <a th:if="${windowEnd < votes.totalPages - 1}"
+                    <a th:if="${windowEnd < votes.totalPages - 1}" class="pagination-nav pagination-last"
                        th:href="@{/admin/vote(page=${votes.totalPages - 1}, category=${condition.category}, voteStatus=${condition.voteStatus}, reportStatus=${condition.reportStatus}, sort=${condition.sort}, startDt=${condition.startDt}, endDt=${condition.endDt}, keyword=${condition.keyword})}">
                         마지막 <span th:text="${votes.totalPages}">1</span> &raquo;
                     </a>

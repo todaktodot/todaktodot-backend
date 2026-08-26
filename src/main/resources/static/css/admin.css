@@ -1397,6 +1397,14 @@ tr.row-alert:hover {
     min-width: 150px;
     max-width: 220px;
 }
+.admin-vote-table th:nth-child(6),
+.admin-vote-table td:nth-child(6),
+.admin-vote-table th:nth-child(7),
+.admin-vote-table td:nth-child(7),
+.admin-vote-table th:nth-child(8),
+.admin-vote-table td:nth-child(8) {
+    text-align: center;
+}
 
 .admin-vote-date-range {
     display: flex;
@@ -1639,11 +1647,18 @@ tr.row-alert:hover {
     font-size: 0.85rem;
 }
 
+.pagination-purple {
+    gap: 6px;
+}
 .pagination-purple a,
 .pagination-purple span {
     border: none;
     background: transparent;
     color: #6b7280;
+    min-width: 36px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    text-align: center;
 }
 .pagination-purple a:hover {
     background: #f3edfa;
@@ -1652,7 +1667,20 @@ tr.row-alert:hover {
 .pagination-purple .active {
     background: #7740ae;
     color: #fff;
-    border-radius: 20px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+.pagination-purple .pagination-nav {
+    border: 1px solid #dce4ec;
+    background: #fff;
+    min-width: auto;
+}
+.pagination-purple .pagination-nav:hover {
+    border-color: #7740ae;
+}
+.pagination-purple .pagination-last {
+    padding: 8px 16px;
+    white-space: nowrap;
 }
 
 .modal-warning {
