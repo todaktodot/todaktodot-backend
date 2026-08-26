@@ -11,4 +11,8 @@ public interface VoteReportRepository extends JpaRepository<VoteReportEntity, Lo
     Optional<VoteReportEntity> findByVoteIdAndUserId(Long voteId, Long userId);
 
     List<VoteReportEntity> findAllByVoteId(Long voteId);
+
+    List<VoteReportEntity> findAllByVoteIdAndDelYnOrderByRegDtDesc(Long voteId, String delYn);
+
+    long countByVoteIdAndDelYn(Long voteId, String delYn);
 }
