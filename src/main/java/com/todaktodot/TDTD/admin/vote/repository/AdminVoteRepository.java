@@ -96,10 +96,11 @@ public class AdminVoteRepository {
             )
             """;
 
+    // 관리자가 수동으로 숨긴 건(HIDDEN)은 신고 0건이어도 "검토 완료"로 처리
     private static final String REPORT_STATUS_CASE = """
             CASE
-                WHEN report_cnt = 0 THEN 'NONE'
                 WHEN vote_status_code = 'HIDDEN' THEN 'RESOLVED'
+                WHEN report_cnt = 0 THEN 'NONE'
                 ELSE 'PENDING'
             END
             """;
@@ -155,8 +156,8 @@ public class AdminVoteRepository {
         for (Object[] row : rows) {
             String voteStatusCode = (String) row[7];
             long reportCnt = ((Number) row[6]).longValue();
-            String reportStatusCode = reportCnt == 0 ? "NONE"
-                    : "HIDDEN".equals(voteStatusCode) ? "RESOLVED" : "PENDING";
+            String reportStatusCode = "HIDDEN".equals(voteStatusCode) ? "RESOLVED"
+                    : reportCnt == 0 ? "NONE" : "PENDING";
 
             Timestamp waitStartTs = (Timestamp) row[8];
             String waitingDisplay = null;
