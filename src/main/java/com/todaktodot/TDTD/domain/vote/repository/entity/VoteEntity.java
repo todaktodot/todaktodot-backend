@@ -57,6 +57,9 @@ public class VoteEntity {
     @Column(name = "HIDDEN_NOTICE_ACK_YN", nullable = false, length = 1, columnDefinition = "CHAR(1) DEFAULT 'N'")
     private String hiddenNoticeAckYn = "N";
 
+    @Column(name = "REVIEW_CYCLE_STARTED_AT")
+    private LocalDateTime reviewCycleStartedAt;
+
     @CreationTimestamp
     @Column(name = "REG_DT", nullable = false, updatable = false)
     private LocalDateTime regDt;
@@ -109,5 +112,27 @@ public class VoteEntity {
         this.status = status;
         this.updrId = userId;
         this.updDt = LocalDateTime.now();
+    }
+
+    // 신고 누적(자동) 또는 어드민 조치(수동)로 피드 비노출 처리
+    public void hide(HideReason hideReason, Long updrId) {
+        this.status = VoteDisplayStatus.HIDDEN;
+        this.hideReason = hideReason;
+        this.hiddenNoticeAckYn = "N";
+        this.updrId = updrId;
+    }
+
+    // 복구 - 재노출 + 신고 검토 주기 초기화(이 시각 이전 신고는 신고건수 집계에서 제외)
+    public void restore(Long updrId) {
+        this.status = VoteDisplayStatus.POSTED;
+        this.hideReason = null;
+        this.reviewCycleStartedAt = LocalDateTime.now();
+        this.updrId = updrId;
+    }
+
+    // 반려 - 노출 상태는 그대로 두고 신고 검토 주기만 초기화(근거 없다고 판단한 신고를 집계에서 제외)
+    public void resetReviewCycle(Long updrId) {
+        this.reviewCycleStartedAt = LocalDateTime.now();
+        this.updrId = updrId;
     }
 }

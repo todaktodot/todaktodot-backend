@@ -1,0 +1,126 @@
+<div xmlns:th="http://www.thymeleaf.org" class="vote-detail-modal">
+    <div class="modal-header">
+        <h3>
+            <span th:switch="${vote.categoryLabel}">
+                <span th:case="'연애관'" class="badge badge-love">연애관</span>
+                <span th:case="'경제관'" class="badge badge-economy">경제관</span>
+                <span th:case="'생활관'" class="badge badge-lifestyle">생활관</span>
+            </span>
+            <span th:switch="${vote.voteStatusCode}">
+                <span th:case="'ACTIVE'" class="badge badge-vote-active">진행중</span>
+                <span th:case="'CLOSED'" class="badge badge-vote-closed">마감</span>
+                <span th:case="'AUTO_HIDDEN'" class="badge badge-vote-auto-hidden">자동숨김</span>
+                <span th:case="'HIDDEN'" class="badge badge-vote-hidden">숨김</span>
+            </span>
+            <span class="vote-detail-id">ID <span th:text="${vote.voteId}">1</span></span>
+        </h3>
+        <button type="button" class="modal-close" onclick="closeModal('voteDetailModal')">&times;</button>
+    </div>
+
+    <div class="modal-body">
+        <h3 class="vote-detail-title" th:text="${vote.title}">질문</h3>
+
+        <div class="vote-detail-section-head">
+            <span>선택지별 득표 결과</span>
+            <span class="vote-detail-muted">총 <span th:text="${vote.participantCnt}">0</span>표</span>
+        </div>
+        <div th:each="option : ${vote.optionResults}" class="vote-option-row">
+            <div class="vote-option-line">
+                <span class="vote-option-content" th:text="${option.content}">항목</span>
+                <span th:class="${option.leading} ? 'vote-option-result' : 'vote-option-result vote-option-result-muted'"
+                      th:text="${option.voteCnt} + '표 · ' + ${option.ratePercent} + '%'">0표 · 0%</span>
+            </div>
+            <div class="vote-option-track">
+                <div th:class="${option.leading} ? 'vote-option-fill' : 'vote-option-fill vote-option-fill-muted'"
+                     th:style="'width:' + ${option.ratePercent} + '%;'"></div>
+            </div>
+        </div>
+
+        <h4 class="vote-detail-section-title">메타 정보</h4>
+        <div class="vote-meta-grid">
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">랜덤 닉네임</div>
+                <div class="vote-meta-value" th:text="${vote.randomNickname}">-</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">작성자 user_id</div>
+                <div class="vote-meta-value" th:text="${vote.userId}">-</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">등록일시</div>
+                <div class="vote-meta-value" th:text="${#temporals.format(vote.regDt, 'MM-dd HH:mm')}">-</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">마감일시</div>
+                <div class="vote-meta-value">
+                    <span th:text="${#temporals.format(vote.closedAt, 'MM-dd HH:mm')}">-</span>
+                    <span th:if="${vote.remainingTimeDisplay == '마감'}" class="vote-meta-highlight">마감</span>
+                    <span th:unless="${vote.remainingTimeDisplay == '마감'}" class="vote-meta-highlight"
+                          th:text="${vote.remainingTimeDisplay} + '시간 남음'"></span>
+                </div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">참여수</div>
+                <div class="vote-meta-value" th:text="${vote.participantCnt}">0</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">좋아요</div>
+                <div class="vote-meta-value" th:text="${vote.likeCnt}">0</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">신고수</div>
+                <div class="vote-meta-value" th:classappend="${vote.reportCnt > 0} ? 'vote-meta-alert' : ''"
+                     th:text="${vote.reportCnt}">0</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">작성자 제재 이력</div>
+                <div class="vote-meta-value" th:classappend="${vote.deleteConfirmedCnt > 0} ? 'vote-meta-alert' : ''"
+                     th:text="'삭제 확정 ' + ${vote.deleteConfirmedCnt} + '회'">삭제 확정 0회</div>
+            </div>
+        </div>
+
+        <h4 class="vote-detail-section-title">신고 이력 (<span th:text="${#lists.size(vote.reports)}">0</span>건)</h4>
+        <table class="vote-plain-table">
+            <thead>
+                <tr><th>신고자 user_id</th><th>현재 닉네임</th><th>신고 일시</th></tr>
+            </thead>
+            <tbody>
+                <tr th:if="${#lists.isEmpty(vote.reports)}" class="vote-table-empty-row">
+                    <td colspan="3">신고 이력이 없습니다.</td>
+                </tr>
+                <tr th:each="r, rStat : ${vote.reports}"
+                    th:classappend="${rStat.index >= 5} ? 'vote-report-extra' : ''"
+                    th:style="${rStat.index >= 5} ? 'display:none;' : ''">
+                    <td th:text="${r.userId}">-</td>
+                    <td th:text="${r.nickname}">-</td>
+                    <td th:text="${#temporals.format(r.regDt, 'MM-dd HH:mm')}">-</td>
+                </tr>
+                <tr th:if="${#lists.size(vote.reports) > 5}">
+                    <td colspan="3" style="padding:0;">
+                        <button type="button" class="vote-load-more"
+                                onclick="this.closest('tbody').querySelectorAll('.vote-report-extra').forEach(r => r.style.display=''); this.closest('tr').remove();">
+                            더보기 (<span th:text="${#lists.size(vote.reports) - 5}">0</span>건)
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4 class="vote-detail-section-title">상태 변경 이력</h4>
+        <table class="vote-plain-table">
+            <thead>
+                <tr><th>일시</th><th>처리자</th><th>변경</th></tr>
+            </thead>
+            <tbody>
+                <tr th:if="${#lists.isEmpty(vote.moderationLogs)}" class="vote-table-empty-row">
+                    <td colspan="3">상태 변경 이력이 없습니다.</td>
+                </tr>
+                <tr th:each="log : ${vote.moderationLogs}">
+                    <td th:text="${#temporals.format(log.regDt, 'MM-dd HH:mm')}">-</td>
+                    <td><span class="badge badge-actor" th:text="${log.actor}">system</span></td>
+                    <td th:text="${log.description}">-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

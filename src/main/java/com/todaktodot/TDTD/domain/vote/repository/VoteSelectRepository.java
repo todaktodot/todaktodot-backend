@@ -10,4 +10,6 @@ public interface VoteSelectRepository extends JpaRepository<VoteSelectEntity, Lo
     boolean existsByVoteIdAndDelYn(Long voteId, String delYn);
 
     Optional<VoteSelectEntity> findByVoteIdAndUserIdAndDelYn(Long voteId, Long userId, String delYn);
+
+    long countByOptionIdAndDelYn(Long optionId, String delYn);
 }
