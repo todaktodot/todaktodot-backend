@@ -156,16 +156,6 @@ public class AdminVoteServiceImpl implements AdminVoteService {
 
     @Override
     @Transactional
-    public void reject(Long voteId, String actor) {
-        VoteEntity vote = voteRepository.findByVoteIdAndDelYn(voteId, "N")
-                .orElseThrow(() -> new IllegalArgumentException("투표 정보를 찾을 수 없습니다: " + voteId));
-
-        vote.resetReviewCycle(ADMIN_USER_ID);
-        saveLog(voteId, "미처리", "반려", actor, "근거 없는 신고로 판단하여 반려");
-    }
-
-    @Override
-    @Transactional
     public void delete(Long voteId, String actor) {
         VoteEntity vote = voteRepository.findByVoteIdAndDelYn(voteId, "N")
                 .orElseThrow(() -> new IllegalArgumentException("투표 정보를 찾을 수 없습니다: " + voteId));

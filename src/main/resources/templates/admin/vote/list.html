@@ -179,8 +179,6 @@
                                                 th:onclick="'requestVoteHide(' + ${vote.voteId} + ')'">숨김</button>
                                         <button th:if="${vote.restoreButtonVisible}" type="button" class="btn btn-sm btn-soft-purple"
                                                 th:onclick="'requestVoteRestore(' + ${vote.voteId} + ')'">복구</button>
-                                        <button th:if="${vote.rejectButtonVisible}" type="button" class="btn btn-sm btn-soft-info"
-                                                th:onclick="'requestVoteReject(' + ${vote.voteId} + ')'">반려</button>
                                         <button type="button" class="btn btn-sm btn-soft-danger"
                                                 th:onclick="'requestVoteDelete(' + ${vote.voteId} + ')'">삭제</button>
                                     </div>
@@ -251,24 +249,6 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('voteRestoreModal')">취소</button>
                     <button type="button" class="btn btn-purple" onclick="submitVoteRestore()">복구</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 반려 확인 모달 -->
-        <div class="modal-overlay" id="voteRejectModal">
-            <div class="modal" style="max-width:440px;">
-                <div class="modal-header">
-                    <h3>이 신고를 반려할까요?</h3>
-                    <button type="button" class="modal-close" onclick="closeModal('voteRejectModal')">&times;</button>
-                </div>
-                <div class="modal-body">
-                    신고가 근거 없다고 판단되어 반려돼요.<br>
-                    대기 중인 신고 건수가 초기화되고, 투표는 계속 노출돼요.
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('voteRejectModal')">취소</button>
-                    <button type="button" class="btn btn-info" onclick="submitVoteReject()">반려</button>
                 </div>
             </div>
         </div>

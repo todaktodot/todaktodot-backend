@@ -50,10 +50,4 @@ public class AdminVoteListDTO {
     public boolean isRestoreButtonVisible() {
         return "AUTO_HIDDEN".equals(voteStatusCode) || "HIDDEN".equals(voteStatusCode);
     }
-
-    // 보이는 글(진행중/마감) + 검토 필요 상태일 때만 - 신고 기각
-    public boolean isRejectButtonVisible() {
-        return ("ACTIVE".equals(voteStatusCode) || "CLOSED".equals(voteStatusCode))
-                && "PENDING".equals(reportStatusCode);
-    }
 }

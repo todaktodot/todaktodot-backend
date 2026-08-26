@@ -72,14 +72,6 @@ public class AdminVoteController {
         return Map.of("message", "복구되었습니다.");
     }
 
-    @PostMapping("/{voteId}/reject")
-    @ResponseBody
-    public Map<String, String> reject(@PathVariable Long voteId, Authentication authentication) {
-        log.info("[Admin] 투표 신고 반려 요청: voteId={}, actor={}", voteId, authentication.getName());
-        adminVoteService.reject(voteId, authentication.getName());
-        return Map.of("message", "반려 처리되었습니다.");
-    }
-
     @DeleteMapping("/{voteId}")
     @ResponseBody
     public Map<String, String> delete(@PathVariable Long voteId, Authentication authentication) {

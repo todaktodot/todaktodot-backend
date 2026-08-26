@@ -129,10 +129,4 @@ public class VoteEntity {
         this.reviewCycleStartedAt = LocalDateTime.now();
         this.updrId = updrId;
     }
-
-    // 반려 - 노출 상태는 그대로 두고 신고 검토 주기만 초기화(근거 없다고 판단한 신고를 집계에서 제외)
-    public void resetReviewCycle(Long updrId) {
-        this.reviewCycleStartedAt = LocalDateTime.now();
-        this.updrId = updrId;
-    }
 }
