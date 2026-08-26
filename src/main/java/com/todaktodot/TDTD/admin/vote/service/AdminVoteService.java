@@ -19,5 +19,7 @@ public interface AdminVoteService {
 
     void restore(Long voteId, String actor);
 
+    void reject(Long voteId, String actor);
+
     void delete(Long voteId, String actor);
 }
