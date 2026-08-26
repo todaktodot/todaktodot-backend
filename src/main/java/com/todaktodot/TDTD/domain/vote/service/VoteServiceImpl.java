@@ -33,6 +33,7 @@ public class VoteServiceImpl implements VoteService{
     private final VoteSelectRepository voteSelectRepository;
     private final VoteReportRepository voteReportRepository;
     private final VoteLikeRepository voteLikeRepository;
+    private final VoteModerationLogRepository voteModerationLogRepository;
     private final ObjectMapper objectMapper;
     @Override
     @Transactional(readOnly = true)
@@ -355,8 +356,17 @@ public class VoteServiceImpl implements VoteService{
         List<VoteReportEntity> allReport = voteReportRepository.findAllByVoteId(request.getVoteId());
 
         //누적 신고 10개 이상인 경우 투표 HIDDEN 처리
-        if (allReport.size() >= 10) {
-            vote.updateDisplayStatus(VoteDisplayStatus.HIDDEN, userId);
+        if (allReport.size() >= 10 && vote.getStatus() != VoteDisplayStatus.HIDDEN) {
+            String prevStatus = vote.getStatus().name();
+            vote.hide(HideReason.AUTO, userId);
+            voteModerationLogRepository.save(VoteModerationLogEntity.builder()
+                    .voteId(vote.getVoteId())
+                    .prevStatus(prevStatus)
+                    .newStatus(VoteDisplayStatus.HIDDEN.name())
+                    .actor("system")
+                    .memo("신고 10건 도달")
+                    .regrId(userId)
+                    .build());
         }
     }
 
