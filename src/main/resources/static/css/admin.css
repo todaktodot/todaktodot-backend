@@ -1288,19 +1288,6 @@ table td {
 }
 .btn-soft-danger:hover { background: #fbcfce; }
 
-.btn-info {
-    background: #0ea5e9;
-    color: #fff;
-}
-.btn-info:hover { background: #0284c7; }
-
-.btn-soft-info {
-    background: #e0f2fe;
-    color: #0369a1;
-    border: none;
-}
-.btn-soft-info:hover { background: #cceafd; }
-
 .stat-card-alert {
     background: #fdf3ee;
     border: 1px solid #f4c9ae;

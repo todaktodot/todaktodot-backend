@@ -20,11 +20,6 @@ function requestVoteRestore(voteId) {
     openModal('voteRestoreModal');
 }
 
-function requestVoteReject(voteId) {
-    voteActionTargetId = voteId;
-    openModal('voteRejectModal');
-}
-
 function requestVoteDelete(voteId) {
     voteActionTargetId = voteId;
     openModal('voteDeleteModal');
@@ -38,12 +33,6 @@ function submitVoteHide() {
 
 function submitVoteRestore() {
     fetch('/admin/vote/' + voteActionTargetId + '/restore', { method: 'POST' })
-        .then(handleVoteActionResponse)
-        .catch(handleVoteActionError);
-}
-
-function submitVoteReject() {
-    fetch('/admin/vote/' + voteActionTargetId + '/reject', { method: 'POST' })
         .then(handleVoteActionResponse)
         .catch(handleVoteActionError);
 }
