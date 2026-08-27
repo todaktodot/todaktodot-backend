@@ -64,7 +64,7 @@ public class AdminVoteRepository {
                     CASE
                         WHEN v.STATUS = 'HIDDEN' AND v.HIDE_REASON = 'AUTO' THEN 'AUTO_HIDDEN'
                         WHEN v.STATUS = 'HIDDEN' THEN 'HIDDEN'
-                        WHEN v.CLOSED_AT > NOW() THEN 'ACTIVE'
+                        WHEN v.CLOSED_AT > :now THEN 'ACTIVE'
                         ELSE 'CLOSED'
                     END AS vote_status_code
                 FROM vote v
@@ -88,7 +88,7 @@ public class AdminVoteRepository {
                     CASE
                         WHEN v.STATUS = 'HIDDEN' AND v.HIDE_REASON = 'AUTO' THEN 'AUTO_HIDDEN'
                         WHEN v.STATUS = 'HIDDEN' THEN 'HIDDEN'
-                        WHEN v.CLOSED_AT > NOW() THEN 'ACTIVE'
+                        WHEN v.CLOSED_AT > :now THEN 'ACTIVE'
                         ELSE 'CLOSED'
                     END AS vote_status_code
                 FROM vote v
@@ -144,6 +144,9 @@ public class AdminVoteRepository {
         Query countQuery = em.createNativeQuery(countSql);
         bindParams(selectQuery, cond);
         bindParams(countQuery, cond);
+        // DB 서버 세션 타임존(UTC)과 CLOSED_AT에 저장된 앱 로컬(KST) 값이 어긋나므로 SQL NOW() 대신 자바 시각을 바인딩
+        selectQuery.setParameter("now", LocalDateTime.now());
+        countQuery.setParameter("now", LocalDateTime.now());
         selectQuery.setParameter("limit", pageable.getPageSize());
         selectQuery.setParameter("offset", pageable.getOffset());
 
@@ -202,7 +205,9 @@ public class AdminVoteRepository {
                     SUM(CASE WHEN report_cnt > 0 AND vote_status_code != 'HIDDEN' THEN 1 ELSE 0 END)
                 FROM v_calc
                 """;
-        Object[] row = (Object[]) em.createNativeQuery(sql).getSingleResult();
+        Object[] row = (Object[]) em.createNativeQuery(sql)
+                .setParameter("now", LocalDateTime.now())
+                .getSingleResult();
         return new AdminVoteStatsDTO(
                 ((Number) row[0]).longValue(),
                 nvl(row[1]), nvl(row[2]), nvl(row[3]), nvl(row[4])
