@@ -14,8 +14,7 @@ import java.util.List;
 public class VoteListResponseDTO {
     private List<VoteResponseDTO> data;
     private int createVoteCnt;
-    @JsonProperty("isSuspended")
-    private boolean isSuspended;
+    private Boolean isSuspended;
     private String nextCursor;
-    private boolean hasNext;
+    private Boolean hasNext;
 }
