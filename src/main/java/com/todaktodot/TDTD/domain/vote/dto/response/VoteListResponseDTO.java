@@ -1,5 +1,6 @@
 package com.todaktodot.TDTD.domain.vote.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,8 @@ import java.util.List;
 public class VoteListResponseDTO {
     private List<VoteResponseDTO> data;
     private int createVoteCnt;
+    @JsonProperty("isSuspended")
+    private boolean isSuspended;
     private String nextCursor;
     private boolean hasNext;
 }

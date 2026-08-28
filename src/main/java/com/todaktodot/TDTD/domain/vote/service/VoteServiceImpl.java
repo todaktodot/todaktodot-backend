@@ -43,7 +43,7 @@ public class VoteServiceImpl implements VoteService{
         int todayVoteCnt = todayVoteCount(userId);
 
         Boolean isMine = "Y".equals(isMineStr) ? Boolean.TRUE : null;
-//        List<VoteCategory> categoryParams = (categories != null && !categories.isEmpty()) ? categories : List.of(VoteCategory.values());
+
         List<String> categoryParams = (categories != null && !categories.isEmpty()) ? categories.stream()
                 .map(VoteCategory::name).toList() : Arrays.stream(VoteCategory.values()).map(VoteCategory::name).toList();
         //커서 Decode
@@ -83,6 +83,7 @@ public class VoteServiceImpl implements VoteService{
             return VoteListResponseDTO.builder()
                     .data(Collections.emptyList())
                     .createVoteCnt(todayVoteCnt)
+                    .isSuspended(false)
                     .nextCursor(null)
                     .hasNext(false)
                     .build();
@@ -110,6 +111,7 @@ public class VoteServiceImpl implements VoteService{
                 .nextCursor(nextCursor)
                 .hasNext(hasNext)
                 .createVoteCnt(todayVoteCnt)
+                .isSuspended(false)
                 .build();
     }
 
