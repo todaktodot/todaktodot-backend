@@ -26,10 +26,9 @@ public class VoteResponseDTO {
     private int participantCnt;
     private int reportCnt;
     private String remainingTime;
-    @JsonProperty("isMine")
-    private boolean isMine;
-    private boolean hasVoted;
-    private boolean hasLiked;
+    private Boolean isMine;
+    private Boolean hasVoted;
+    private Boolean hasLiked;
     private String createdAt;
 
     @Getter
@@ -41,8 +40,7 @@ public class VoteResponseDTO {
         private String content;
         private Integer voteCnt;
         private BigDecimal voteRate;
-        @JsonProperty("isSelected")
-        private boolean isSelected;
+        private Boolean isSelected;
 
         public static OptionResponseDTO from(VoteProjection option) {
             //내가 참여한 투표이면 투표수, 투표 비율 노출
