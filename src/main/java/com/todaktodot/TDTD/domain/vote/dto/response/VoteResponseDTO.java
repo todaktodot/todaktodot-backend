@@ -1,5 +1,6 @@
 package com.todaktodot.TDTD.domain.vote.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteStatus;
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteProjection;
@@ -25,6 +26,7 @@ public class VoteResponseDTO {
     private int participantCnt;
     private int reportCnt;
     private String remainingTime;
+    @JsonProperty("isMine")
     private boolean isMine;
     private boolean hasVoted;
     private boolean hasLiked;
@@ -39,6 +41,7 @@ public class VoteResponseDTO {
         private String content;
         private Integer voteCnt;
         private BigDecimal voteRate;
+        @JsonProperty("isSelected")
         private boolean isSelected;
 
         public static OptionResponseDTO from(VoteProjection option) {
