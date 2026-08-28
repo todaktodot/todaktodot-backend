@@ -1,6 +1,5 @@
 package com.todaktodot.TDTD.domain.vote.repository;
 
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteEntity;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteStatus;
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteCursorProjection;
@@ -70,6 +69,24 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             V.PARTICIPANT_CNT AS participantCnt
         FROM vote V
         WHERE V.DEL_YN = 'N'
+          AND  V.USER_ID = :userId
+        ORDER BY
+            V.REG_DT DESC,
+            V.VOTE_ID DESC
+        LIMIT :size
+    """, nativeQuery = true)
+    List<VoteCursorProjection> findFirstForMyPageByLatest(
+            @Param("userId") Long userId,
+            @Param("size") int size
+    );
+
+    @Query(value = """
+        SELECT
+            V.VOTE_ID AS voteId,
+            V.REG_DT AS createdAt,
+            V.PARTICIPANT_CNT AS participantCnt
+        FROM vote V
+        WHERE V.DEL_YN = 'N'
           AND V.STATUS = 'POSTED'
           AND  V.CATEGORY IN (:categories)
           AND (
@@ -118,6 +135,34 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             V.PARTICIPANT_CNT AS participantCnt
         FROM vote V
         WHERE V.DEL_YN = 'N'
+          AND  V.USER_ID = :userId
+          /* 커서 */
+          AND (
+                V.REG_DT < :cursorCreatedAt
+                OR (
+                    V.REG_DT = :cursorCreatedAt
+                    AND V.VOTE_ID < :cursorVoteId
+                )
+          )
+        ORDER BY
+            V.REG_DT DESC,
+            V.VOTE_ID DESC
+        LIMIT :size
+    """, nativeQuery = true)
+    List<VoteCursorProjection> findNextForMyPageByLatest(
+            @Param("userId") Long userId,
+            @Param("cursorCreatedAt") LocalDateTime cursorCreatedAt,
+            @Param("cursorVoteId") Long cursorVoteId,
+            @Param("size") int size
+    );
+
+    @Query(value = """
+        SELECT
+            V.VOTE_ID AS voteId,
+            V.REG_DT AS createdAt,
+            V.PARTICIPANT_CNT AS participantCnt
+        FROM vote V
+        WHERE V.DEL_YN = 'N'
           AND V.STATUS = 'POSTED'
           AND V.CATEGORY IN (:categories)
           AND (
@@ -146,6 +191,24 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             @Param("categories") List<String> categories,
             @Param("isMine") Boolean isMine,
             @Param("voteStatus") VoteStatus voteStatus,
+            @Param("size") int size
+    );
+
+    @Query(value = """
+        SELECT
+            V.VOTE_ID AS voteId,
+            V.REG_DT AS createdAt,
+            V.PARTICIPANT_CNT AS participantCnt
+        FROM vote V
+        WHERE V.DEL_YN = 'N'
+          AND V.USER_ID = :userId
+        ORDER BY
+            V.PARTICIPANT_CNT DESC,
+            V.VOTE_ID DESC
+        LIMIT :size
+    """, nativeQuery = true)
+    List<VoteCursorProjection> findFirstForMyPageByPopular(
+            @Param("userId") Long userId,
             @Param("size") int size
     );
 
@@ -199,7 +262,35 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
     @Query(value = """
         SELECT
             V.VOTE_ID AS voteId,
+            V.REG_DT AS createdAt,
+            V.PARTICIPANT_CNT AS participantCnt
+        FROM vote V
+        WHERE V.DEL_YN = 'N'
+          AND V.USER_ID = :userId
+          AND (
+                V.PARTICIPANT_CNT < :cursorParticipantCnt
+                OR (
+                    V.PARTICIPANT_CNT = :cursorParticipantCnt
+                    AND V.VOTE_ID < :cursorVoteId
+                )
+          )
+        ORDER BY
+            V.PARTICIPANT_CNT DESC,
+            V.VOTE_ID DESC
+        LIMIT :size
+    """, nativeQuery = true)
+    List<VoteCursorProjection> findNextForMyPageByPopular(
+            @Param("userId") Long userId,
+            @Param("cursorParticipantCnt") Integer cursorParticipantCnt,
+            @Param("cursorVoteId") Long cursorVoteId,
+            @Param("size") int size
+    );
+
+    @Query(value = """
+        SELECT
+            V.VOTE_ID AS voteId,
             V.RANDOM_NICKNAME AS nickname,
+            V.STATUS AS displayStatus,
             V.CATEGORY AS category,
             CASE
                 WHEN V.CLOSED_AT > NOW() THEN 'ACTIVE'

@@ -27,6 +27,15 @@ public interface VoteService {
     VoteListResponseDTO getList(Long userId, List<VoteCategory> categories, VoteStatus status, String isMine, VoteSortCondition sortBy, String cursor, int size);
 
     /**
+     * 투표 목록 조회
+     * @param userId 사용자ID
+     * @param sortBy 정렬 방식
+     * @param cursor 커서
+     * @param size 페이지 크기
+     */
+    VoteListResponseDTO getListForMyPage(Long userId, VoteSortCondition sortBy, String cursor, int size);
+
+    /**
      * 투표 단건 조회
      * @param userId 사용자 ID
      * @param voteId 투표 ID
@@ -72,4 +81,5 @@ public interface VoteService {
      * 투표 신고
      */
     void report(Long userId, VoteReportRequestDTO request);
+
 }

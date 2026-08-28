@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 public class VoteListResponseDTO {
     private List<VoteResponseDTO> data;
-    private int createVoteCnt;
+    private Integer createVoteCnt;
     private Boolean isSuspended;
     private String nextCursor;
     private Boolean hasNext;

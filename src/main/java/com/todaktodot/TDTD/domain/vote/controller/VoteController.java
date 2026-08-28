@@ -48,6 +48,21 @@ public class VoteController {
     }
 
     /**
+     * 투표 목록 조회 - 마이페이지용
+     */
+    @Operation(description = "마이페이지 투표 목록 조회 API")
+    @ApiResponse(responseCode = "200", description = "마이페이지 투표 목록 조회 성공",
+            content = @Content(schema = @Schema(implementation = VoteListResponseDTO.class)))
+    @GetMapping("/list/my-page")
+    public ResponseEntity<VoteListResponseDTO> getListForMyPage(@AuthenticationPrincipal UserPrincipal userPrincipal,
+                                                       @RequestParam(name = "sortBy") VoteSortCondition sortBy,
+                                                       @RequestParam(name = "cursor", required = false) String cursor,
+                                                       @RequestParam(name = "size", required = false, defaultValue = "10") int size) {
+        VoteListResponseDTO response = voteService.getListForMyPage(userPrincipal.getId(), sortBy, cursor, size);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * 투표 단건 조회
      */
     @Operation(description = "투표 단건 조회 API")
