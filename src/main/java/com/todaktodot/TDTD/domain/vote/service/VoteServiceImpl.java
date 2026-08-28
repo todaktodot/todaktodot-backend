@@ -35,6 +35,7 @@ public class VoteServiceImpl implements VoteService{
     private final VoteLikeRepository voteLikeRepository;
     private final VoteModerationLogRepository voteModerationLogRepository;
     private final ObjectMapper objectMapper;
+
     @Override
     @Transactional(readOnly = true)
     public VoteListResponseDTO getList(Long userId, List<VoteCategory> categories, VoteStatus status, String isMineStr, VoteSortCondition sortBy, String cursor, int size) {
@@ -111,6 +112,79 @@ public class VoteServiceImpl implements VoteService{
                 .nextCursor(nextCursor)
                 .hasNext(hasNext)
                 .createVoteCnt(todayVoteCnt)
+                .isSuspended(false)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VoteListResponseDTO getListForMyPage(Long userId, VoteSortCondition sortBy, String cursor, int size) {
+
+        //커서 Decode
+        VoteCursorDTO cursorDto = null;
+        if (StringUtils.hasText(cursor)) {
+            cursorDto = decode(cursor);
+        }
+
+        List<VoteCursorProjection> voteCursorList = new ArrayList<>();
+        //최신순 조회
+        //VoteDisplayStatus = HIDDEN 포함, 사용자가 신고한 투표 포함
+        if (sortBy.equals(VoteSortCondition.LATEST)) {
+            //첫번째 페이지 조회
+            if (cursorDto == null) {
+               voteCursorList =  voteRepository.findFirstForMyPageByLatest(userId,size+1);
+            }
+            //다음 페이지 조회
+            else {
+               voteCursorList =  voteRepository.findNextForMyPageByLatest(userId, cursorDto.getCreatedAt(), cursorDto.getVoteId(), size+1);
+            }
+        }
+        //인기순 조회
+        //VoteDisplayStatus = HIDDEN 포함, 사용자가 신고한 투표 포함
+        else if (sortBy.equals(VoteSortCondition.POPULAR)) {
+            //첫번쨰 페이지 조회
+            if (cursorDto == null) {
+                voteCursorList =  voteRepository.findFirstForMyPageByPopular(userId,size+1);
+            }
+            //다음 페이지 조회
+            else {
+                voteCursorList =  voteRepository.findNextForMyPageByPopular(userId, cursorDto.getParticipantCnt(), cursorDto.getVoteId(), size+1);
+            }
+        }
+
+        //생성된 투표가 없는 경우
+        if (voteCursorList.isEmpty()) {
+            return VoteListResponseDTO.builder()
+                    .data(Collections.emptyList())
+                    .createVoteCnt(null)
+                    .isSuspended(false)
+                    .nextCursor(null)
+                    .hasNext(false)
+                    .build();
+        }
+
+        boolean hasNext = voteCursorList.size() > size;
+        List<VoteCursorProjection> currentVoteRows = hasNext ? voteCursorList.subList(0, size) : voteCursorList;
+
+        // voteId 추출
+        List<Long> voteIds = currentVoteRows.stream()
+                .map(VoteCursorProjection::getVoteId)
+                .toList();
+
+        //조회한 VoteId List로 옵션 조회
+        List<VoteProjection> projections = voteRepository.selectVoteDetails(voteIds, userId);
+
+        //DTO 조립
+        List<VoteResponseDTO> voteList = convertVoteResponse(voteIds, projections);
+
+        //다음 Cursor 생성
+        String nextCursor = createCursor(sortBy, hasNext, currentVoteRows);
+
+        return VoteListResponseDTO.builder()
+                .data(voteList)
+                .nextCursor(nextCursor)
+                .hasNext(hasNext)
+                .createVoteCnt(null)
                 .isSuspended(false)
                 .build();
     }
@@ -464,8 +538,14 @@ public class VoteServiceImpl implements VoteService{
      */
     private void validateParticipable(Long voteId) {
 
-        VoteEntity vote = voteRepository.findByVoteIdForUpdate(voteId)
-                .orElseThrow(() -> new VoteException(ErrorCode.VOTE_ALREADY_DELETED));
+//        VoteEntity vote = voteRepository.findByVoteIdForUpdate(voteId)
+//                .orElseThrow(() -> new VoteException(ErrorCode.VOTE_ALREADY_DELETED));
+        VoteEntity vote = voteRepository.findById(voteId)
+                .orElseThrow(() -> new VoteException(ErrorCode.VOTE_NOT_FOUND));
+
+        if ("Y".equals(vote.getDelYn())) {
+            throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
+        }
 
         if (vote.getStatus() == VoteDisplayStatus.HIDDEN) {
             throw new VoteException(ErrorCode.VOTE_HIDDEN_BY_REPORTS);
@@ -481,8 +561,14 @@ public class VoteServiceImpl implements VoteService{
      */
     private void validateLikeable(Long voteId) {
 
-        VoteEntity vote = voteRepository.findByVoteIdForUpdate(voteId)
-                .orElseThrow(() -> new VoteException(ErrorCode.VOTE_ALREADY_DELETED));
+//        VoteEntity vote = voteRepository.findByVoteIdForUpdate(voteId)
+//                .orElseThrow(() -> new VoteException(ErrorCode.VOTE_ALREADY_DELETED));
+        VoteEntity vote = voteRepository.findById(voteId)
+                .orElseThrow(() -> new VoteException(ErrorCode.VOTE_NOT_FOUND));
+
+        if ("Y".equals(vote.getDelYn())) {
+            throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
+        }
 
         if (vote.getStatus() == VoteDisplayStatus.HIDDEN) {
             throw new VoteException(ErrorCode.VOTE_HIDDEN_BY_REPORTS);

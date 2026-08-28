@@ -2,6 +2,7 @@ package com.todaktodot.TDTD.domain.vote.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteDisplayStatus;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteStatus;
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteProjection;
 import lombok.Builder;
@@ -19,6 +20,7 @@ public class VoteResponseDTO {
     private Long voteId;
     private String nickname;
     private VoteCategory category;
+    private VoteDisplayStatus displayStatus;
     private VoteStatus status;
     private String title;
     private List<OptionResponseDTO> options;
@@ -90,6 +92,7 @@ public class VoteResponseDTO {
                 .hasLiked("Y".equals(first.getHasLiked()))
                 .createdAt(first.getCreatedAt().toString())
                 .remainingTime(remainingTime)
+                .displayStatus(first.getDisplayStatus())
                 .options(options)
                  .build();
     }
