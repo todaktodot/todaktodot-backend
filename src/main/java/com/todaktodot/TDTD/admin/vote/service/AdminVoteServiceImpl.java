@@ -163,6 +163,9 @@ public class AdminVoteServiceImpl implements AdminVoteService {
 
         String prevStatus = resolveVoteStatusCode(vote);
         vote.deleteVote(ADMIN_USER_ID);
+        // 유저 셀프삭제와 동일하게 옵션까지 함께 삭제
+        voteOptionRepository.findAllByVoteIdAndDelYn(voteId, "N")
+                .forEach(option -> option.deleteOption(ADMIN_USER_ID));
         saveLog(voteId, prevStatus, "DELETED", actor, "관리자 삭제");
     }
 
