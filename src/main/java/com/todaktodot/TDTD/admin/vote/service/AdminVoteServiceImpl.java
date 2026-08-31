@@ -7,6 +7,8 @@ import com.todaktodot.TDTD.admin.vote.dto.AdminVoteStatsDTO;
 import com.todaktodot.TDTD.admin.vote.repository.AdminVoteRepository;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
+import com.todaktodot.TDTD.domain.notification.dto.PushMessage;
+import com.todaktodot.TDTD.domain.notification.service.FcmService;
 import com.todaktodot.TDTD.domain.vote.repository.VoteLikeRepository;
 import com.todaktodot.TDTD.domain.vote.repository.VoteModerationLogRepository;
 import com.todaktodot.TDTD.domain.vote.repository.VoteOptionRepository;
@@ -45,6 +47,7 @@ public class AdminVoteServiceImpl implements AdminVoteService {
     private final VoteReportRepository voteReportRepository;
     private final VoteModerationLogRepository voteModerationLogRepository;
     private final UserRepository userRepository;
+    private final FcmService fcmService;
 
     @Override
     public Page<AdminVoteListDTO> getList(AdminVoteSearchCondition condition, Pageable pageable) {
@@ -106,10 +109,7 @@ public class AdminVoteServiceImpl implements AdminVoteService {
 
         String voteStatusCode = resolveVoteStatusCode(vote);
         long deleteConfirmedCnt = voteModerationLogRepository.countDeleteConfirmedByAuthor(vote.getUserId());
-        // TODO(신고 유저 화면 작업 시): 정지 횟수 - USER_SUSPENSION 테이블/UserSuspensionEntity는 이미 있으나
-        // 아직 유저를 정지시키는 화면·API·Repository가 전혀 없음. 신고 유저 화면 구현 시 여기에
-        // userSuspensionRepository.countByUserIdAndStatus(vote.getUserId(), SuspensionStatus.SUSPENDED) 형태로 추가 필요.
-        // 현재 "작성자 제재 이력"엔 삭제 확정 횟수만 반영되고 정지는 표시되지 않음.
+        // TODO(신고 유저 화면 작업 시): 정지 횟수
 
         return new AdminVoteDetailDTO(
                 vote.getVoteId(),
@@ -141,6 +141,7 @@ public class AdminVoteServiceImpl implements AdminVoteService {
         String prevStatus = resolveVoteStatusCode(vote);
         vote.hide(HideReason.ADMIN, ADMIN_USER_ID);
         saveLog(voteId, prevStatus, "HIDDEN", actor, "관리자 수동 숨김");
+        fcmService.sendToUser(vote.getUserId(), PushMessage.voteHidden(vote.getVoteId(), vote.getTitle()));
     }
 
     @Override
@@ -162,6 +163,9 @@ public class AdminVoteServiceImpl implements AdminVoteService {
 
         String prevStatus = resolveVoteStatusCode(vote);
         vote.deleteVote(ADMIN_USER_ID);
+        // 유저 셀프삭제와 동일하게 옵션까지 함께 삭제
+        voteOptionRepository.findAllByVoteIdAndDelYn(voteId, "N")
+                .forEach(option -> option.deleteOption(ADMIN_USER_ID));
         saveLog(voteId, prevStatus, "DELETED", actor, "관리자 삭제");
     }
 
