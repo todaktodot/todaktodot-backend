@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>신고 유저</title>
+
+</head>
+
+<body>
+
+<h2 layout:fragment="pageTitle">신고 유저</h2>
+
+<div layout:fragment="content">
+    <div class="report-user-page">
+
+        <!-- =========================
+             상단 제목
+        ========================== -->
+        <div class="page-heading">
+            <h2>신고 유저</h2>
+            <div class="page-date">
+                <span th:text="${#temporals.format(currentDt, 'yyyy-MM-dd HH:mm')}">-</span> 기준
+            </div>
+        </div>
+
+        <!-- =========================
+             통계 영역
+        ========================== -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="value" th:text="${totalReportUserCount}">0</div>
+                <div class="label">신고 접수된 유저</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" th:text="${normalCount}">0</div>
+                <div class="label">정상</div>
+            </div>
+            <div class="stat-card">
+                <div class="value danger" th:text="${suspendCount}">0</div>
+                <div class="label">작성 정지</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" th:text="${weeklySuspendCount}">0</div>
+                <div class="label">이번 주 신규 정지</div>
+            </div>
+        </div>
+
+        <!-- =========================
+             검색 / 필터
+        ========================== -->
+        <div class="filter-section">
+            <form th:action="@{/admin/reports}" method="get" class="filter-row admin-vote-filter-row">
+                <div class="filter-group">
+                    <label>상태</label>
+                    <select name="status">
+                        <option value="" th:selected="${status == null || status == ''}">전체</option>
+                        <option value="NORMAL" th:selected="${status == 'NORMAL'}">정상</option>
+                        <option value="SUSPENDED" th:selected="${status == 'SUSPENDED'}">작성 정지</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>정렬</label>
+                    <select name="sortBy">
+                        <option value="REPORTED_COUNT" th:selected="${sortBy == 'REPORTED_COUNT'}">피신고 많은순</option>
+                        <option value="LATEST_REPORT" th:selected="${sortBy == 'LATEST_REPORT'}">최근 신고순</option>
+                        <option value="DELETED_COUNT" th:selected="${sortBy == 'DELETED_COUNT'}">삭제 확정 많은순</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>검색</label>
+                    <div class="admin-vote-search-wrap">
+                        <input type="text" name="keyword" placeholder="user_id 검색..." th:value="${keyword}">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-search">검색</button>
+            </form>
+        </div>
+
+        <!-- =========================
+             신고 유저 목록
+        ========================== -->
+        <div class="card">
+            <div class="card-header">
+                <div class="list-title">
+<!--                    <h3>신고 유저 목록 - 총<span th:text="${reports.totalElements}"> 0 </span>명</h3>-->
+                    <strong>신고 유저 목록</strong>
+                    <span>— 총 <span th:text="${reports.totalElements}"> 0 </span>명</span>
+                </div>
+            </div>
+
+            <div>
+                <div th:if="${reports.empty}" class="empty-state">
+                    <div class="icon">👥</div>
+                    <h3>신고된 유저가 없습니다</h3>
+<!--                    <p>현재 연결된 커플이 없습니다.</p>-->
+                </div>
+            </div>
+
+            <div th:unless="${reports.empty}" class="table-container">
+                <table>
+                    <colgroup>
+                        <col style="width: 55px;">
+                        <col style="width: 250px;">
+                        <col style="width: 90px;">
+                        <col style="width: 90px;">
+                        <col style="width: 90px;">
+                        <col style="width: 105px;">
+                        <col style="width: 105px;">
+                        <col style="width: 175px;">
+                    </colgroup>
+
+                    <thead>
+                        <tr>
+                            <th class="center">No.</th>
+                            <th>user_id</th>
+                            <th class="right">피신고 누적</th>
+                            <th class="right">삭제 확정</th>
+                            <th class="right">자동숨김</th>
+                            <th>최근 신고일</th>
+                            <th class="center">상태</th>
+                            <th class="right">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 임시 데이터 -->
+                        <tr th:each="report, stat : ${reports}">
+                            <td class="center" th:text="${stat.index+1}">1</td>
+                            <td>
+                                <a th:href="@{/admin/reports/{id}(id=${report.userId})}"
+                                   th:text="${report.userId}" style="color: #3498db;">1</a>
+                            </td>
+                            <td class="right report-count" th:text="${report.reportedCnt}">0</td>
+                            <td class="right danger-count" th:text="${report.deletedCnt}">0</td>
+                            <td class="right" th:text="${report.autoHiddenCnt}">0</td>
+                            <td th:text="${report.latestReportDt}">-</td>
+                            <td class="center">
+                                    <span class="badge"
+                                          th:classappend="${report.status == 'NORMAL'} ? 'badge-active' : 'badge-inactive'"
+                                          th:text="${report.status == 'NORMAL'} ? '정상' : '작성 정지'">정상</span>
+                            </td>
+                            <td class="right">
+                                <button type="button" class="btn btn-sm btn-outline-light"
+                                        th:onclick="'openReportDetail(' + ${report.userId} + ')'">상세</button>
+                                <button th:if="${report.suspendButtonVisible}" type="button" class="btn btn-sm btn-soft-red"
+                                        th:onclick="'requestSuspend(' + ${report.userId} + ')'">정지</button>
+                                <button th:if="${report.releaseButtonVisible}" type="button" class="btn btn-sm btn-soft-purple"
+                                        th:onclick="'requestRelease(' + ${report.userId} + ')'">해제</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- =========================
+                 Pagination
+            ========================== -->
+            <div th:if="${reports.totalPages > 1}" class="pagination">
+                <a th:if="${reports.hasPrevious()}"
+                   th:href="@{/admin/reports(page=${reports.number - 1}, status=${status}, sortBy=${sortBy})}">
+                    &laquo; 이전
+                </a>
+
+                <th:block th:each="i : ${#numbers.sequence(0, reports.totalPages - 1)}">
+                    <span th:if="${i == reports.number}" class="active" th:text="${i + 1}">1</span>
+                    <a th:unless="${i == reports.number}"
+                       th:href="@{/admin/reports(page=${i}, status=${status}, sortBy=${sortBy})}"
+                       th:text="${i + 1}">1</a>
+                </th:block>
+
+                <a th:if="${reports.hasNext()}"
+                   th:href="@{/admin/reports(page=${reports.number + 1},status=${status}, sortBy=${sortBy})}">
+                    다음 &raquo;
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 투표 상세 모달 (AJAX 로 admin/vote/detail 조각을 불러와 채움) -->
+    <div class="modal-overlay" id="reportDetailModal">
+        <div class="modal" style="max-width:1100px;" id="reportDetailModalContent"></div>
+    </div>
+
+    <!-- 정지 확인 모달 -->
+    <div class="modal-overlay" id="reportSuspendModal">
+        <div class="modal">
+            <div class="modal-body suspend-modal-body">
+
+                <h3 class="suspend-modal-title">
+                    이 유저의 투표 작성을 정지할까요?
+                </h3>
+
+                <p class="suspend-modal-description">
+                    새 투표를 올릴 수 없게 돼요.
+                    열람 · 참여 · 좋아요는 그대로 가능하고,
+                    유저에게 별도 안내는 가지 않아요.
+                </p>
+
+                <div class="suspend-reason-section">
+
+                    <div class="suspend-reason-label">
+                        정지 사유
+                        <span class="required">필수</span>
+                    </div>
+
+                    <div class="suspend-reason-options">
+                        <button
+                                type="button"
+                                class="suspend-reason-chip"
+                                data-reason="REPORT"
+                                data-message="반복적인 신고 누적으로 인해 투표 작성이 정지되었습니다.">
+                            반복 신고 누적
+                        </button>
+
+                        <button
+                                type="button"
+                                class="suspend-reason-chip"
+                                data-reason="PRIVACY"
+                                data-message="타인의 개인정보 또는 사생활을 노출하는 투표가 확인되어 투표 작성이 정지되었습니다.">
+                            타인 사생활 노출
+                        </button>
+
+                        <button
+                                type="button"
+                                class="suspend-reason-chip"
+                                data-reason="AD"
+                                data-message="거래 또는 홍보를 유도하는 내용이 반복적으로 확인되어 투표 작성이 정지되었습니다.">
+                            거래·홍보 유도
+                        </button>
+
+                        <button
+                                type="button"
+                                class="suspend-reason-chip"
+                                data-reason="DELETE"
+                                data-message="관리자에 의해 삭제 확정된 투표가 2회 이상 확인되어 투표 작성이 정지되었습니다.">
+                            삭제 확정 2회 이상
+                        </button>
+                    </div>
+
+                    <textarea id="suspendReason" class="suspend-reason-textarea" placeholder="정지 사유를 먼저 선택해주세요." disabled></textarea>
+
+                    <!-- 서버 전송용 -->
+                    <input type="hidden" id="suspendReasonType" name="reasonType">
+                </div>
+
+            </div>
+            <div class="modal-footer suspend-modal-footer">
+                <button type="button" class="btn suspend-cancel-btn" onclick="closeModal('reportSuspendModal')">취소</button>
+                <button type="button" id="suspendConfirmBtn" class="btn suspend-confirm-btn" disabled>정지</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+    <script th:src="@{/js/admin-report.js}"></script>
+</th:block>
+
+</body>
+</html>

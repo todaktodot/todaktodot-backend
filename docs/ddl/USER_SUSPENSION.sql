@@ -11,6 +11,8 @@ CREATE TABLE user_suspension (
     upd_dt          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     updr_id         BIGINT          NOT NULL COMMENT '수정자 ID',
     del_yn          CHAR(1)         NOT NULL DEFAULT 'N' COMMENT '삭제 여부 (Y/N)',
+    type            VARCHAR(100)    NULL COMMENT '정지 혹은 해제 사유 타입',
+    reason          VARCHAR(200)    NULL COMMENT '정지 혹은 해제 상세 사유',
     active_slot     INT             GENERATED ALWAYS AS (CASE WHEN status = 'SUSPENDED' AND del_yn = 'N' THEN 1 ELSE NULL END) VIRTUAL COMMENT '활성 row 유니크 제약용 슬롯',
     PRIMARY KEY (suspension_id),
     UNIQUE KEY uk_user_active (user_id, active_slot),
