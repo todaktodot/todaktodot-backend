@@ -8,6 +8,7 @@ import com.todaktodot.TDTD.domain.vote.repository.entity.*;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteCreateResponseDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteListResponseDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteResponseDTO;
+import com.todaktodot.TDTD.domain.vote.repository.projection.UserSuspensionRepository;
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteCursorProjection;
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteProjection;
 import com.todaktodot.TDTD.global.exception.ErrorCode;
@@ -34,6 +35,7 @@ public class VoteServiceImpl implements VoteService{
     private final VoteReportRepository voteReportRepository;
     private final VoteLikeRepository voteLikeRepository;
     private final VoteModerationLogRepository voteModerationLogRepository;
+    private final UserSuspensionRepository suspensionRepository;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -43,7 +45,11 @@ public class VoteServiceImpl implements VoteService{
         //오늘 생성한 투표 수
         int todayVoteCnt = todayVoteCount(userId);
 
+        //유저 정지 여부
+        boolean isSuspended = isSuspended(userId);
+
         Boolean isMine = "Y".equals(isMineStr) ? Boolean.TRUE : null;
+        String statusStr = status == null ? null : status.name();
 
         List<String> categoryParams = (categories != null && !categories.isEmpty()) ? categories.stream()
                 .map(VoteCategory::name).toList() : Arrays.stream(VoteCategory.values()).map(VoteCategory::name).toList();
@@ -59,11 +65,11 @@ public class VoteServiceImpl implements VoteService{
         if (sortBy.equals(VoteSortCondition.LATEST)) {
             //첫번쨰 페이지 조회
             if (cursorDto == null) {
-               voteCursorList =  voteRepository.findFirstByLatest(userId, categoryParams, isMine, status, size+1);
+               voteCursorList =  voteRepository.findFirstByLatest(userId, categoryParams, isMine, statusStr, size+1);
             }
             //다음 페이지 조회
             else {
-               voteCursorList =  voteRepository.findNextByLatest(userId, categoryParams, isMine, status, cursorDto.getCreatedAt(), cursorDto.getVoteId(), size+1);
+               voteCursorList =  voteRepository.findNextByLatest(userId, categoryParams, isMine, statusStr, cursorDto.getCreatedAt(), cursorDto.getVoteId(), size+1);
             }
         }
         //인기순 조회
@@ -71,11 +77,11 @@ public class VoteServiceImpl implements VoteService{
         else if (sortBy.equals(VoteSortCondition.POPULAR)) {
             //첫번쨰 페이지 조회
             if (cursorDto == null) {
-                voteCursorList =  voteRepository.findFirstByPopular(userId, categoryParams, isMine, status, size+1);
+                voteCursorList =  voteRepository.findFirstByPopular(userId, categoryParams, isMine, statusStr, size+1);
             }
             //다음 페이지 조회
             else {
-                voteCursorList =  voteRepository.findNextByPopular(userId, categoryParams, isMine, status, cursorDto.getParticipantCnt(), cursorDto.getVoteId(), size+1);
+                voteCursorList =  voteRepository.findNextByPopular(userId, categoryParams, isMine, statusStr, cursorDto.getParticipantCnt(), cursorDto.getVoteId(), size+1);
             }
         }
 
@@ -84,7 +90,7 @@ public class VoteServiceImpl implements VoteService{
             return VoteListResponseDTO.builder()
                     .data(Collections.emptyList())
                     .createVoteCnt(todayVoteCnt)
-                    .isSuspended(false)
+                    .isSuspended(isSuspended)
                     .nextCursor(null)
                     .hasNext(false)
                     .build();
@@ -112,7 +118,7 @@ public class VoteServiceImpl implements VoteService{
                 .nextCursor(nextCursor)
                 .hasNext(hasNext)
                 .createVoteCnt(todayVoteCnt)
-                .isSuspended(false)
+                .isSuspended(isSuspended)
                 .build();
     }
 
@@ -157,7 +163,7 @@ public class VoteServiceImpl implements VoteService{
             return VoteListResponseDTO.builder()
                     .data(Collections.emptyList())
                     .createVoteCnt(null)
-                    .isSuspended(false)
+                    .isSuspended(null)
                     .nextCursor(null)
                     .hasNext(false)
                     .build();
@@ -620,7 +626,7 @@ public class VoteServiceImpl implements VoteService{
         return adjective + animal + String.format("%04d", number);
     }
 
-    public String encode(VoteCursorDTO cursor) {
+    private String encode(VoteCursorDTO cursor) {
         try {
             String json = objectMapper.writeValueAsString(cursor);
 
@@ -633,7 +639,7 @@ public class VoteServiceImpl implements VoteService{
         }
     }
 
-    public VoteCursorDTO decode(String cursor) {
+    private VoteCursorDTO decode(String cursor) {
         try {
             byte[] decoded = Base64.getUrlDecoder().decode(cursor);
 
@@ -644,5 +650,9 @@ public class VoteServiceImpl implements VoteService{
         } catch (Exception e) {
             throw new IllegalArgumentException("유효하지 않은 커서입니다.", e);
         }
+    }
+
+    private boolean isSuspended(Long userId) {
+        return suspensionRepository.existsByUserIdAndStatusAndDelYn(userId, SuspensionStatus.SUSPENDED, "N");
     }
 }

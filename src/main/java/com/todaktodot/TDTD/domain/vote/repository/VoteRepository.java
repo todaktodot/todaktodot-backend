@@ -39,8 +39,8 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
           /* 투표 진행 상태 */
           AND (
                 :voteStatus IS NULL
-                OR (:voteStatus = 'OPEN' AND V.CLOSED_AT > NOW())
-                OR (:voteStatus = 'CLOSED' AND V.CLOSED_AT <= NOW())
+                OR (:voteStatus = 'ACTIVE' AND V.CLOSED_AT >= NOW())
+                OR (:voteStatus = 'CLOSED' AND V.CLOSED_AT < NOW())
           )
           AND NOT EXISTS (
                       SELECT 1
@@ -58,7 +58,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             @Param("userId") Long userId,
             @Param("categories") List<String> categories,
             @Param("isMine") Boolean isMine,
-            @Param("voteStatus") VoteStatus voteStatus,
+            @Param("voteStatus") String voteStatus,
             @Param("size") int size
     );
 
@@ -95,8 +95,8 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
           )
           AND (
                 :voteStatus IS NULL
-                OR (:voteStatus = 'OPEN' AND V.CLOSED_AT > NOW())
-                OR (:voteStatus = 'CLOSED' AND V.CLOSED_AT <= NOW())
+                OR (:voteStatus = 'ACTIVE' AND V.CLOSED_AT >= NOW())
+                OR (:voteStatus = 'CLOSED' AND V.CLOSED_AT < NOW())
           )
           AND NOT EXISTS (
               SELECT 1
@@ -122,7 +122,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             @Param("userId") Long userId,
             @Param("categories") List<String> categories,
             @Param("isMine") Boolean isMine,
-            @Param("voteStatus") VoteStatus voteStatus,
+            @Param("voteStatus") String voteStatus,
             @Param("cursorCreatedAt") LocalDateTime cursorCreatedAt,
             @Param("cursorVoteId") Long cursorVoteId,
             @Param("size") int size
@@ -171,8 +171,8 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
           )
           AND (
                 :voteStatus IS NULL
-                OR (:voteStatus = 'OPEN' AND V.CLOSED_AT > NOW())
-                OR (:voteStatus = 'CLOSED' AND V.CLOSED_AT <= NOW())
+                OR (:voteStatus = 'ACTIVE' AND V.CLOSED_AT >= NOW())
+                OR (:voteStatus = 'CLOSED' AND V.CLOSED_AT < NOW())
           )
           AND NOT EXISTS (
               SELECT 1
@@ -190,7 +190,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             @Param("userId") Long userId,
             @Param("categories") List<String> categories,
             @Param("isMine") Boolean isMine,
-            @Param("voteStatus") VoteStatus voteStatus,
+            @Param("voteStatus") String voteStatus,
             @Param("size") int size
     );
 
@@ -227,8 +227,8 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
           )
           AND (
                 :voteStatus IS NULL
-                OR (:voteStatus = 'OPEN' AND V.CLOSED_AT > NOW())
-                OR (:voteStatus = 'CLOSED' AND V.CLOSED_AT <= NOW())
+                OR (:voteStatus = 'ACTIVE' AND V.CLOSED_AT >= NOW())
+                OR (:voteStatus = 'CLOSED' AND V.CLOSED_AT < NOW())
           )
           AND NOT EXISTS (
               SELECT 1
@@ -253,7 +253,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             @Param("userId") Long userId,
             @Param("categories") List<String> categories,
             @Param("isMine") Boolean isMine,
-            @Param("voteStatus") VoteStatus voteStatus,
+            @Param("voteStatus") String voteStatus,
             @Param("cursorParticipantCnt") Integer cursorParticipantCnt,
             @Param("cursorVoteId") Long cursorVoteId,
             @Param("size") int size
@@ -293,7 +293,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             V.STATUS AS displayStatus,
             V.CATEGORY AS category,
             CASE
-                WHEN V.CLOSED_AT > NOW() THEN 'ACTIVE'
+                WHEN V.CLOSED_AT >= NOW() THEN 'ACTIVE'
                 ELSE 'CLOSED'
             END AS status,
             V.TITLE AS title,

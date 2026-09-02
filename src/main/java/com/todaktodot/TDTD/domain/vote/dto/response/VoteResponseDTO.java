@@ -45,8 +45,8 @@ public class VoteResponseDTO {
         private Boolean isSelected;
 
         public static OptionResponseDTO from(VoteProjection option) {
-            //내가 참여한 투표이면 투표수, 투표 비율 노출
-            if ("Y".equals(option.getHasVoted())) {
+            //투표 수가 0 이상이라면 득표율, 득표수 반환
+            if (!option.getParticipantCnt().equals(0)) {
                 return OptionResponseDTO.builder()
                         .optionId(option.getOptionId())
                         .content(option.getContent())
@@ -55,7 +55,7 @@ public class VoteResponseDTO {
                         .isSelected("Y".equals(option.getIsSelected()))
                         .build();
             }
-            //내가 참여한 투표가 아니면 투표수, 투표 비율 노출하지 않음
+            //투표 수가 0 이면 득표율, 득표수 반환X
             else {
                 return OptionResponseDTO.builder()
                         .optionId(option.getOptionId())
