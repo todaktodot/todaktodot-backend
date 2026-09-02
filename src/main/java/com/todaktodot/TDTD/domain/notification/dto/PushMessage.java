@@ -144,6 +144,21 @@ public class PushMessage {
     }
 
     /**
+     * 투표 숨김 처리 알림 생성
+     */
+    public static PushMessage voteHidden(Long voteId, String voteTitle) {
+        return PushMessage.builder()
+                .title("투표가 숨김 처리되었어요")
+                .body("\"" + voteTitle + "\" 투표가 신고 누적 또는 운영 정책 위반으로 숨김 처리되었어요.")
+                .pushType(PushType.VOTE_HIDDEN)
+                .data(Map.of(
+                        "type", PushType.VOTE_HIDDEN.getCode(),
+                        "voteId", String.valueOf(voteId)
+                ))
+                .build();
+    }
+
+    /**
      * 이모지 알림 생성
      */
     public static PushMessage emojiReaction(Long coupleId, Long coupleCardId) {
