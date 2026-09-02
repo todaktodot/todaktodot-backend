@@ -1,0 +1,144 @@
+<div xmlns:th="http://www.thymeleaf.org" class="vote-detail-modal">
+    <div class="modal-header">
+        <h3>
+            <span th:switch="${report.status}">
+                <span th:case="'SUSPENDED'" class="badge badge-inactive">작성 정지</span>
+                <span th:case="'NORMAL'" class="badge badge-active">정상</span>
+            </span>
+            <span class="vote-detail-id">USER ID :  <span th:text="${report.userId}">1</span></span>
+        </h3>
+        <button type="button" class="modal-close" onclick="closeModal('reportDetailModal')">&times;</button>
+    </div>
+
+    <div class="modal-body">
+<!--        <h3 class="vote-detail-title">닉네임</h3>-->
+
+        <div class="vote-meta-grid">
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">가입일</div>
+                <div class="vote-meta-value" th:text="${report.regDate}">-</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">작성한 투표</div>
+                <div class="vote-meta-value" th:text="${report.createdVoteCnt}">0</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">피신고 누적</div>
+                <div class="vote-meta-value danger-count" th:text="${report.reportedCnt}">0</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">삭제 확정</div>
+                <div class="vote-meta-value danger-count" th:text="${report.deletedCnt}">0</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">자동숨김 경험</div>
+                <div class="vote-meta-value" th:text="${report.autoHiddenCnt}">0</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">최근 신고일</div>
+                <div class="vote-meta-value" th:text="${#temporals.format(report.latestReportDt, 'MM-dd')}">-</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">정지 시각</div>
+                <div class="vote-meta-value" th:text="${report.suspendStartDt != null ? #temporals.format(report.suspendStartDt, 'MM-dd HH:mm') : '-'}">-</div>
+            </div>
+            <div class="vote-meta-cell">
+                <div class="vote-meta-label">정지 기간</div>
+                <div class="vote-meta-value"
+                     th:if="${report.suspendStartDt != null}"
+                     th:text="${report.suspendPeriod}">-</div>
+                <div class="vote-meta-value" th:unless="${report.suspendStartDt != null}">-</div>
+            </div>
+        </div>
+
+        <h4 class="vote-detail-section-title">신고된 투표 (<span th:text="${#lists.size(report.reportedVoteList)}">0</span>건)</h4>
+        <div class="report-table-wrap">
+            <table class="report-plain-table">
+                    <thead>
+                        <tr>
+                            <th class="left">ID</th>
+                            <th class="left">질문</th>
+                            <th class="center">신고</th>
+                            <th class="center">상태</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(report.reportedVoteList)}" class="vote-table-empty-row">
+                            <td colspan="4">신고된 투표가 없습니다.</td>
+                        </tr>
+                        <tr th:each="vote, rStat : ${report.reportedVoteList}">
+                            <td class="left" th:text="${vote.voteId}">-</td>
+                            <td class="left" th:text="${vote.title}">-</td>
+                            <td class="center danger-count" th:text="${vote.reportedCnt}">0</td>
+                            <td class="center">
+                                <span th:switch="${vote.status}">
+                                    <span th:case="'AUTO_HIDDEN'" class="vote-status-badge badge-hidden">
+                                        자동숨김
+                                    </span>
+
+                                    <span th:case="'ADMIN_HIDDEN'" class="vote-status-badge badge-hidden">
+                                        강제 숨김
+                                    </span>
+
+                                    <span th:case="'DELETED'" class="vote-status-badge badge-deleted">
+                                        삭제
+                                    </span>
+
+                                    <span th:case="'ACTIVE'" class="vote-status-badge badge-normal">
+                                        정상
+                                    </span>
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+            </table>
+        </div>
+
+        <h4 class="vote-detail-section-title">제재 이력</h4>
+        <div class="suspend-history-list">
+            <!-- 정지 사유 -->
+            <div class="suspend-history-card suspend-history-card-danger">
+                <div class="suspend-history-header">
+                <span class="suspend-history-title suspend-history-title-danger">
+                    정지 사유
+                </span>
+                    <span class="suspend-history-meta" th:if="${report.suspendHistory != null}">
+                    <span th:text="${report.suspendHistory.adminNm}">-</span>
+                    ·
+                    <span th:text="${#temporals.format(report.suspendHistory.suspendDt, 'MM-dd HH:mm')}">-</span>
+                </span>
+                    <span class="suspend-history-meta" th:unless="${report.suspendHistory != null}">정지 이력 없음</span>
+                </div>
+
+                <!-- 정지 이력 있음 -->
+                <div class="suspend-history-reason" th:if="${report.suspendHistory != null}" th:text="${report.suspendHistory.reason}">정지 사유가 표시됩니다.</div>
+
+                <!-- 정지 이력 없음 -->
+                <div class="suspend-history-empty-text" th:unless="${report.suspendHistory != null}">아직 정지 이력이 없어요. 정지 처리 시 관리자가 남긴 사유가 여기에 표시돼요.</div>
+            </div>
+
+
+            <!-- 정지 해제 사유 -->
+            <div class="suspend-history-card">
+                <div class="suspend-history-header">
+                <span class="suspend-history-title">
+                    정지 해제 사유
+                </span>
+                    <span class="suspend-history-meta" th:if="${report.releaseHistory != null}">
+                    <span th:text="${report.releaseHistory.adminNm}">-</span>
+                    ·
+                    <span th:text="${#temporals.format(report.releaseHistory.releaseDt, 'MM-dd HH:mm')}">-</span>
+                </span>
+                    <span class="suspend-history-meta" th:unless="${report.releaseHistory != null}">해제 이력 없음</span>
+                </div>
+
+                <!-- 해제 이력 있음 -->
+                <div class="suspend-history-reason" th:if="${report.releaseHistory != null}" th:text="${report.releaseHistory.reason}">정지 해제 사유가 표시됩니다.</div>
+
+                <!-- 해제 이력 없음 -->
+                <div class="suspend-history-empty-text" th:unless="${report.releaseHistory != null}">아직 정지 해제되지 않았어요. 해제 시 관리자가 남긴 사유가 여기에 표시돼요.</div>
+            </div>
+
+        </div>
+    </div>
+</div>
