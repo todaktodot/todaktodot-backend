@@ -20,6 +20,7 @@ public enum PushType {
     AI_FEEDBACK("AI_FEEDBACK", "AI 피드백 도착", INFORMATIONAL),
     AI_REPORT("AI_REPORT", "AI 리포트 도착", INFORMATIONAL),
     VOTE_HIDDEN("VOTE_HIDDEN", "투표 숨김 처리", INFORMATIONAL),
+    VOTE_HIDDEN_BY_REPORT("VOTE_HIDDEN_BY_REPORT", "신고에 의한 투표 숨김 처리", INFORMATIONAL),
 
     // 광고성 알림 (마케팅 동의 필요)
     EVENT("EVENT", "이벤트 알림", ADVERTISING),
