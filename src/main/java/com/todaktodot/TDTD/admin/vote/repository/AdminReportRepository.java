@@ -20,14 +20,11 @@ public interface AdminReportRepository extends JpaRepository<VoteEntity, Long> {
             /* 신고 누적 수 */
             COUNT(VR.report_id) AS reportedCnt,
 
-            /* 관리자 숨김 처리된 투표 수 */
-            COUNT(
-                DISTINCT CASE
-                    WHEN V.status = 'HIDDEN'
-                     AND V.hide_reason = 'ADMIN'
-                     AND V.del_yn = 'N'
-                    THEN V.vote_id
-                END
+            (
+            SELECT COUNT(*)
+                    FROM vote DV
+                    WHERE DV.user_id = V.user_id
+                      AND DV.del_yn = 'Y'
             ) AS deletedCnt,
 
             /* 자동 숨김 처리된 투표 수 */
@@ -233,14 +230,13 @@ public interface AdminReportRepository extends JpaRepository<VoteEntity, Long> {
             FROM vote V
             JOIN vote_report VR
               ON VR.vote_id = V.vote_id
-             AND VR.del_yn = 'N'
             WHERE V.user_id = U.id
         ) AS reportedCnt,
         (
             SELECT COUNT(*)
             FROM vote V
             WHERE V.user_id = U.id
-              AND V.del_yn = 'N'
+              AND V.del_yn = 'Y'
         ) AS deletedCnt,
         (
             SELECT COUNT(*)

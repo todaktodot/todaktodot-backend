@@ -18,21 +18,14 @@ function requestSuspend(userId) {
 
 function requestRelease(userId) {
     reportActionTargetId = userId;
+    resetReleaseModal();
     openModal('reportReleaseModal');
 }
 
-const suspendReasonChips =
-    document.querySelectorAll('.suspend-reason-chip');
-
-const suspendReason =
-    document.getElementById('suspendReason');
-
-const suspendReasonType =
-    document.getElementById('suspendReasonType');
-
-const suspendConfirmBtn =
-    document.getElementById('suspendConfirmBtn');
-
+const suspendReasonChips = document.querySelectorAll('.suspend-reason-chip');
+const suspendReason = document.getElementById('suspendReason');
+const suspendReasonType = document.getElementById('suspendReasonType');
+const suspendConfirmBtn = document.getElementById('suspendConfirmBtn');
 
 suspendReasonChips.forEach((chip) => {
     chip.addEventListener('click', () => {
@@ -50,6 +43,30 @@ suspendReasonChips.forEach((chip) => {
         suspendReason.disabled = false;
         // 6. 정지 버튼 활성화
         suspendConfirmBtn.disabled = false;
+    });
+});
+
+const releaseReasonChips = document.querySelectorAll('.release-reason-chip');
+const releaseReason = document.getElementById('releaseReason');
+const releaseReasonType = document.getElementById('releaseReasonType');
+const releaseConfirmBtn = document.getElementById('releaseConfirmBtn');
+
+releaseReasonChips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+        // 1. 기존 선택 제거
+        releaseReasonChips.forEach((item) => {
+            item.classList.remove('active');
+        });
+        // 2. 현재 선택
+        chip.classList.add('active');
+        // 3. 선택한 사유 코드 저장
+        releaseReasonType.value = chip.dataset.reason;
+        // 4. 대응되는 기본 문구 입력
+        releaseReason.value = chip.dataset.message;
+        // 5. textarea 활성화 → 직접 편집 가능
+        releaseReason.disabled = false;
+        // 6. 정지 버튼 활성화
+        releaseConfirmBtn.disabled = false;
     });
 });
 
@@ -72,7 +89,18 @@ function submitReportSuspend() {
 }
 
 function submitReportRelease() {
-    fetch('/admin/reports/' + reportActionTargetId + '/release', { method: 'POST' })
+    const type = document.getElementById('releaseReasonType').value;
+    const text = document.getElementById('releaseReason').value;
+
+    fetch('/admin/reports/release', { method: 'POST' ,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            userId: reportActionTargetId,
+            type: type,
+            reason: text,
+        })})
         .then(handleReportActionResponse)
         .catch(handleReportActionError);
 }
@@ -102,4 +130,20 @@ function resetSuspendModal() {
     suspendReasonType.value = '';
     suspendReason.disabled = true;
     suspendConfirmBtn.disabled = true;
+}
+
+function resetReleaseModal() {
+    const releaseReason = document.getElementById('releaseReason');
+    const releaseReasonType = document.getElementById('releaseReasonType');
+    const releaseConfirmBtn = document.getElementById('releaseConfirmBtn');
+    const releaseReasonChips = document.querySelectorAll('.release-reason-chip');
+
+    releaseReasonChips.forEach((chip) => {
+        chip.classList.remove('active');
+    });
+
+    releaseReason.value = '';
+    releaseReasonType.value = '';
+    releaseReason.disabled = true;
+    releaseConfirmBtn.disabled = true;
 }

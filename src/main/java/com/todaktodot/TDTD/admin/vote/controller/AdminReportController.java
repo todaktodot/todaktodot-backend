@@ -1,23 +1,22 @@
 package com.todaktodot.TDTD.admin.vote.controller;
 
-import com.todaktodot.TDTD.admin.couple.dto.CoupleListDTO;
+
+import com.todaktodot.TDTD.admin.vote.dto.AdminReleaseRequestDTO;
 import com.todaktodot.TDTD.admin.vote.dto.AdminReportListDTO;
+import com.todaktodot.TDTD.admin.vote.dto.AdminSuspendRequestDTO;
 import com.todaktodot.TDTD.admin.vote.service.AdminReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import java.util.Map;
+
 
 @Controller
 @RequiredArgsConstructor
@@ -61,5 +60,25 @@ public class AdminReportController {
         model.addAttribute("report", adminReportService.getDetail(userId));
 
         return "admin/vote/report/detail";
+    }
+
+    @PostMapping("/suspend")
+    @ResponseBody
+    public Map<String, String> suspend(@RequestBody AdminSuspendRequestDTO request, Authentication authentication) {
+
+        log.info("[Admin] 유저 정지 요청: userId={}, actor={}", request.getUserId(), authentication.getName());
+        adminReportService.suspend(request);
+
+        return Map.of("message", "정지 처리되었습니다.");
+    }
+
+    @PostMapping("/release")
+    @ResponseBody
+    public Map<String, String> release(@RequestBody AdminReleaseRequestDTO request, Authentication authentication) {
+
+        log.info("[Admin] 유저 해제 요청: userId={}, actor={}", request.getUserId(), authentication.getName());
+        adminReportService.release(request);
+
+        return Map.of("message", "해제 처리되었습니다.");
     }
 }

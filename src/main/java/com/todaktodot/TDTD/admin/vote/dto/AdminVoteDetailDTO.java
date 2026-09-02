@@ -22,6 +22,7 @@ public class AdminVoteDetailDTO {
     private final Long likeCnt;
     private final Long reportCnt;
     private final Long deleteConfirmedCnt;
+    private final Long suspendCnt;
     private final List<OptionResult> optionResults;
     private final List<ReportRow> reports;
     private final List<ModerationLogRow> moderationLogs;
@@ -29,7 +30,7 @@ public class AdminVoteDetailDTO {
     public AdminVoteDetailDTO(Long voteId, String title, String categoryLabel, String voteStatusCode,
                                String voteStatusLabel, String randomNickname, Long userId, LocalDateTime regDt,
                                LocalDateTime closedAt, String remainingTimeDisplay, Integer participantCnt,
-                               Long likeCnt, Long reportCnt, Long deleteConfirmedCnt, List<OptionResult> optionResults,
+                               Long likeCnt, Long reportCnt, Long deleteConfirmedCnt, Long suspendCnt, List<OptionResult> optionResults,
                                List<ReportRow> reports, List<ModerationLogRow> moderationLogs) {
         this.voteId = voteId;
         this.title = title;
@@ -44,6 +45,7 @@ public class AdminVoteDetailDTO {
         this.participantCnt = participantCnt;
         this.likeCnt = likeCnt;
         this.reportCnt = reportCnt;
+        this.suspendCnt = suspendCnt;
         this.deleteConfirmedCnt = deleteConfirmedCnt;
         this.optionResults = optionResults;
         this.reports = reports;

@@ -74,8 +74,8 @@
             </div>
             <div class="vote-meta-cell">
                 <div class="vote-meta-label">작성자 제재 이력</div>
-                <div class="vote-meta-value" th:classappend="${vote.deleteConfirmedCnt > 0} ? 'vote-meta-alert' : ''"
-                     th:text="'삭제 확정 ' + ${vote.deleteConfirmedCnt} + '회'">삭제 확정 0회</div>
+                <div class="vote-meta-value" th:classappend="${vote.deleteConfirmedCnt > 0 || vote.suspendCnt > 0} ? 'vote-meta-alert' : ''"
+                     th:text="'삭제 확정 ' + ${vote.deleteConfirmedCnt} + '회·정지'  + ${vote.suspendCnt} + '회'">삭제 확정 0회·정지 0회</div>
             </div>
         </div>
 

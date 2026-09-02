@@ -2025,6 +2025,44 @@ tr.row-alert:hover {
     font-weight: 700;
 }
 
+.release-reason-chip {
+    height: 34px;
+    padding: 0 12px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid #d9dde4;
+    border-radius: 999px;
+
+    background: #fff;
+    color: #555b66;
+
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+
+    cursor: pointer;
+    transition:
+            border-color 0.15s ease,
+            background-color 0.15s ease,
+            color 0.15s ease;
+}
+
+.release-reason-chip:hover {
+    border-color: #a993eb;
+    color: #7052dc;
+}
+
+/* 선택된 칩 */
+.release-reason-chip.active {
+    border-color: #7052dc;
+    background: #fff;
+    color: #7052dc;
+    font-weight: 700;
+}
+
 /* 사유 textarea */
 .suspend-reason-textarea {
     display: block;
@@ -2126,4 +2164,26 @@ tr.row-alert:hover {
     background: #e5e7eb;
     color: #9fa4ad;
     cursor: not-allowed;
+}
+
+/* 정지 */
+.release-confirm-btn {
+    min-width: 62px;
+    height: 38px;
+    padding: 0 15px;
+
+    border: 0;
+    border-radius: 8px;
+
+    background: #6D28D9;
+    color: #fff;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.release-confirm-btn:hover:not(:disabled) {
+    background: #6D28D9;
 }

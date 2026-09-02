@@ -4,6 +4,7 @@ import com.todaktodot.TDTD.admin.vote.dto.AdminVoteDetailDTO;
 import com.todaktodot.TDTD.admin.vote.dto.AdminVoteListDTO;
 import com.todaktodot.TDTD.admin.vote.dto.AdminVoteSearchCondition;
 import com.todaktodot.TDTD.admin.vote.dto.AdminVoteStatsDTO;
+import com.todaktodot.TDTD.admin.vote.repository.AdminSuspensionRepository;
 import com.todaktodot.TDTD.admin.vote.repository.AdminVoteRepository;
 import com.todaktodot.TDTD.domain.login.respository.UserRepository;
 import com.todaktodot.TDTD.domain.login.respository.entity.User;
@@ -13,11 +14,7 @@ import com.todaktodot.TDTD.domain.vote.repository.VoteOptionRepository;
 import com.todaktodot.TDTD.domain.vote.repository.VoteReportRepository;
 import com.todaktodot.TDTD.domain.vote.repository.VoteRepository;
 import com.todaktodot.TDTD.domain.vote.repository.VoteSelectRepository;
-import com.todaktodot.TDTD.domain.vote.repository.entity.HideReason;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteEntity;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteModerationLogEntity;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteOptionEntity;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteReportEntity;
+import com.todaktodot.TDTD.domain.vote.repository.entity.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +35,7 @@ public class AdminVoteServiceImpl implements AdminVoteService {
     private static final Long ADMIN_USER_ID = 0L;
 
     private final AdminVoteRepository adminVoteRepository;
+    private final AdminSuspensionRepository adminSuspensionRepository;
     private final VoteRepository voteRepository;
     private final VoteOptionRepository voteOptionRepository;
     private final VoteSelectRepository voteSelectRepository;
@@ -108,8 +106,8 @@ public class AdminVoteServiceImpl implements AdminVoteService {
         long deleteConfirmedCnt = voteModerationLogRepository.countDeleteConfirmedByAuthor(vote.getUserId());
         // TODO(신고 유저 화면 작업 시): 정지 횟수 - USER_SUSPENSION 테이블/UserSuspensionEntity는 이미 있으나
         // 아직 유저를 정지시키는 화면·API·Repository가 전혀 없음. 신고 유저 화면 구현 시 여기에
-        // userSuspensionRepository.countByUserIdAndStatus(vote.getUserId(), SuspensionStatus.SUSPENDED) 형태로 추가 필요.
         // 현재 "작성자 제재 이력"엔 삭제 확정 횟수만 반영되고 정지는 표시되지 않음.
+        long suspendCnt = adminSuspensionRepository.countByUserIdAndStatus(vote.getUserId(), SuspensionStatus.SUSPENDED);
 
         return new AdminVoteDetailDTO(
                 vote.getVoteId(),
@@ -126,6 +124,7 @@ public class AdminVoteServiceImpl implements AdminVoteService {
                 likeCnt,
                 reportCnt,
                 deleteConfirmedCnt,
+                suspendCnt,
                 optionResults,
                 reports,
                 moderationLogs
