@@ -1,6 +1,8 @@
 package com.todaktodot.TDTD.domain.vote.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.todaktodot.TDTD.domain.notification.dto.PushMessage;
+import com.todaktodot.TDTD.domain.notification.service.FcmService;
 import com.todaktodot.TDTD.domain.vote.dto.request.*;
 import com.todaktodot.TDTD.domain.vote.exception.VoteException;
 import com.todaktodot.TDTD.domain.vote.repository.*;
@@ -36,6 +38,7 @@ public class VoteServiceImpl implements VoteService{
     private final VoteLikeRepository voteLikeRepository;
     private final VoteModerationLogRepository voteModerationLogRepository;
     private final UserSuspensionRepository suspensionRepository;
+    private final FcmService fcmService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -449,7 +452,18 @@ public class VoteServiceImpl implements VoteService{
                     .memo("신고 10건 도달")
                     .regrId(userId)
                     .build());
+
+            //slient push 전송
+            voteHiddenByReportPushAlarm(vote.getUserId(), vote.getVoteId());
         }
+    }
+
+    /**
+     * 신고 누적으로 알림 전송
+     */
+    private void voteHiddenByReportPushAlarm(Long receiveUserId, Long voteId) {
+        PushMessage pushMessage = PushMessage.voteHiddenByReport(voteId);
+        fcmService.sendToUser(receiveUserId, pushMessage);
     }
 
     /**

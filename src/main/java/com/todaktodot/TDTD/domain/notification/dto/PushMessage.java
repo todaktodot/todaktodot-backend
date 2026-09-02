@@ -1,5 +1,6 @@
 package com.todaktodot.TDTD.domain.notification.dto;
 
+import com.todaktodot.TDTD.domain.notification.repository.entity.PushSendMode;
 import com.todaktodot.TDTD.domain.notification.repository.entity.PushType;
 import lombok.Builder;
 import lombok.Getter;
@@ -153,6 +154,21 @@ public class PushMessage {
                 .pushType(PushType.VOTE_HIDDEN)
                 .data(Map.of(
                         "type", PushType.VOTE_HIDDEN.getCode(),
+                        "voteId", String.valueOf(voteId)
+                ))
+                .build();
+    }
+
+    /**
+     * 신고에 의한 투표 숨김 처리 알림 생성
+     */
+    public static PushMessage voteHiddenByReport(Long voteId) {
+        return PushMessage.builder()
+                .title("신고에 의해 투표가 가려졌어요")
+                .body("신고 접수로 투표 1건이 피드에서 가려졌어요. MY > 내가 작성한 투표에서 확인 가능해요.")
+                .pushType(PushType.VOTE_HIDDEN_BY_REPORT)
+                .data(Map.of(
+                        "type", PushType.VOTE_HIDDEN_BY_REPORT.getCode(),
                         "voteId", String.valueOf(voteId)
                 ))
                 .build();
