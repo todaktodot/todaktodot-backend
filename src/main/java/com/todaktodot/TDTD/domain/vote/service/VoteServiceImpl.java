@@ -528,7 +528,7 @@ public class VoteServiceImpl implements VoteService{
         }
 
         long hours = Duration.between(now, closedAt).toHours();
-        return String.valueOf(hours);
+        return String.valueOf(Math.max(1, hours));
     }
 
     /**
