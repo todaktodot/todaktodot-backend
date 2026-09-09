@@ -28,6 +28,12 @@ public class UserSuspensionEntity {
     @Column(name = "STATUS", nullable = false, length = 20)
     private SuspensionStatus status = SuspensionStatus.SUSPENDED;
 
+    @Column(name = "TYPE", nullable = false, length = 100)
+    private String type;
+
+    @Column(name = "REASON", nullable = false, length = 200)
+    private String reason;
+
     @Column(name = "SUSPENDED_DT", nullable = false)
     private LocalDateTime suspendedDt;
 
@@ -59,10 +65,12 @@ public class UserSuspensionEntity {
     private Integer activeSlot;
 
     @Builder
-    public UserSuspensionEntity(Long userId, LocalDateTime suspendedDt, Long regrId) {
+    public UserSuspensionEntity(Long userId, SuspensionStatus status, String type, String reason, LocalDateTime suspendedDt, Long regrId) {
         this.userId = userId;
         this.suspendedDt = suspendedDt;
-        this.status = SuspensionStatus.SUSPENDED;
+        this.status = status;
+        this.type = type;
+        this.reason = reason;
         this.noticeAckYn = "N";
         this.regrId = regrId;
         this.updrId = regrId;

@@ -56,4 +56,10 @@ public class VoteLikeEntity {
         this.updrId = regrId;
         this.delYn = "N";
     }
+
+    // 좋아요 취소
+    public void softDelete(Long updrId) {
+        this.delYn = "Y";
+        this.updrId = updrId;
+    }
 }

@@ -194,9 +194,9 @@ function removeOption(button) {
     }
 }
 
-// Filter form auto-submit on change
+// Filter form auto-submit on change (opt out with class="no-auto-submit")
 document.addEventListener('DOMContentLoaded', function() {
-    const filterSelects = document.querySelectorAll('.filter-section select');
+    const filterSelects = document.querySelectorAll('.filter-section select:not(.no-auto-submit)');
     filterSelects.forEach(select => {
         select.addEventListener('change', function() {
             this.closest('form').submit();

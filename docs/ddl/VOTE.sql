@@ -11,6 +11,7 @@ CREATE TABLE vote (
     participant_cnt         INT             NOT NULL DEFAULT 0 COMMENT '총 참여 수',
     auto_hide_exempt_yn     CHAR(1)         NOT NULL DEFAULT 'N' COMMENT '자동 숨김 예외 플래그',
     hidden_notice_ack_yn    CHAR(1)         NOT NULL DEFAULT 'N' COMMENT '숨김 안내 팝업 확인 여부',
+    review_cycle_started_at DATETIME        NULL COMMENT '신고 검토 주기 시작 시각 - 복구 시 NOW()로 갱신, NULL이면 전체 기간 집계. 자동숨김 판정/어드민 목록 신고건수는 이 시각 이후 신고만 카운트하고, 상세 신고 이력은 이 값과 무관하게 항상 전체 표시',
     reg_dt                  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
     regr_id                 BIGINT          NOT NULL COMMENT '등록자 ID',
     upd_dt                  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',

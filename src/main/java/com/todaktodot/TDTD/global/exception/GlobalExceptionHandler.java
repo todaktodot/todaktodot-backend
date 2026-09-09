@@ -1,5 +1,6 @@
 package com.todaktodot.TDTD.global.exception;
 
+import com.todaktodot.TDTD.domain.vote.exception.VoteException;
 import com.todaktodot.TDTD.global.alert.DiscordNotificationService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -89,5 +90,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(response);
+    }
+
+    @ExceptionHandler(VoteException.class)
+    public ResponseEntity<ErrorResponse> handleVoteException(VoteException e) {
+        ErrorCode errorCode = e.getErrorCode();
+
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(ErrorResponse.of(errorCode));
     }
 }

@@ -57,4 +57,10 @@ public class VoteOptionEntity {
         this.updrId = regrId;
         this.delYn = "N";
     }
+
+    public void deleteOption(Long userId) {
+        this.delYn = "Y";
+        this.updrId = userId;
+        this.updDt = LocalDateTime.now();
+    }
 }
