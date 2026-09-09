@@ -101,6 +101,29 @@
                             </li>
                         </ul>
                     </li>
+                    <!-- 투표 -->
+                    <li class="nav-category" data-category="vote"
+                        th:classappend="${#strings.contains('vote,report',activeMenu)} ? 'open' : ''">
+                        <a href="javascript:void(0)" class="nav-category-toggle">
+                            <span class="icon">🗳️</span>
+                            <span>투표</span>
+                            <span class="arrow">&#9662;</span>
+                        </a>
+                        <ul class="nav-submenu">
+                            <li>
+                                <a th:href="@{/admin/vote}"
+                                   th:classappend="${activeMenu == 'vote'} ? 'active' : ''">
+                                    <span>투표 관리</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a th:href="@{/admin/reports}"
+                                   th:classappend="${activeMenu == 'report'} ? 'active' : ''">
+                                    <span>신고 관리</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                     <!-- 커플 -->
                     <li class="nav-category" data-category="couple"
                         th:classappend="${activeMenu == 'couple'} ? 'open' : ''">

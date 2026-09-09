@@ -389,7 +389,7 @@ public class FcmServiceImpl implements FcmService {
         /*
          * 푸시 발송 정책
          *
-         * 1. 커플 연결 해제
+         * 1. 커플 연결 해제, 어드민 숨김처리, 신고 누적 숨김처리
          *    - 알림 동의 여부와 관계없이 Silent Push 발송
          *
          * 2. 알림 동의
@@ -399,16 +399,12 @@ public class FcmServiceImpl implements FcmService {
          *    - 커플 연결인 경우에만 Silent Push 발송
          *    - 콕 찌르기, 답변 등록, 이모티콘 반응 등은 발송하지 않음
          */
-        if (PushType.DISCONNECT_COUPLE.equals(pushType)) {
+        if (PushType.DISCONNECT_COUPLE.equals(pushType) || PushType.VOTE_HIDDEN.equals(pushType) || PushType.VOTE_HIDDEN_BY_REPORT.equals(pushType)) {
             return PushSendMode.SILENT;
         }
 
         if (notificationEnabled) {
             return PushSendMode.NORMAL;
-        }
-
-        if (PushType.CONNECT_COUPLE.equals(pushType)) {
-            return PushSendMode.SILENT;
         }
 
         return PushSendMode.NONE;
