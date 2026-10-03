@@ -50,6 +50,13 @@ public class DiscordNotificationService {
     @Value("${discord.webhook.extra-statistics-urls:}")
     private String extraStatisticsWebhookUrls;
 
+    //투표 후보 전용 채널. 설정하지 않은 서버에서는 투표 알림을 보내지 않는다.
+    @Value("${discord.webhook.vote-url:}")
+    private String discordVoteWebhookUrl;
+
+    @Value("${discord.webhook.extra-vote-urls:}")
+    private String extraVoteWebhookUrls;
+
 
     @Value("${discord.webhook.profile:local}")
     private String discordWebhookProfile;
@@ -163,10 +170,10 @@ public class DiscordNotificationService {
         sendNotification(resolveWebhookUrls(discordStatisticsWebhookUrl, extraStatisticsWebhookUrls), payload, "WEEKLY_STATISTICS");
     }
 
-    //후보가 준비됐음을 알리고 어드민으로 유도한다. 배치 채널을 그대로 쓴다.
+    //후보가 준비됐음을 알리고 어드민으로 유도한다.
     public void sendVoteCandidateReport(String description, List<DiscordEmbedField> fields) {
         DiscordWebhookPayload payload = new DiscordWebhookPayload(
-                buildUsername(),
+                buildVoteUsername(),
                 List.of(new DiscordEmbed(
                         "🗳️ 오늘의 투표 후보",
                         description,
@@ -177,7 +184,24 @@ public class DiscordNotificationService {
                 ))
         );
 
-        sendNotification(resolveWebhookUrls(discordBatchWebhookUrl, extraBatchWebhookUrls), payload, "VOTE_CANDIDATE");
+        sendNotification(resolveWebhookUrls(discordVoteWebhookUrl, extraVoteWebhookUrls), payload, "VOTE_CANDIDATE");
+    }
+
+    //후보 생성 실패도 같은 채널로 보낸다. 팀이 "오늘은 후보가 없다"를 알아야 한다.
+    public void sendVoteCandidateError(String message) {
+        DiscordWebhookPayload payload = new DiscordWebhookPayload(
+                buildVoteUsername(),
+                List.of(new DiscordEmbed(
+                        "⚠️ 투표 후보 생성 실패",
+                        String.format("**%s** 서버에서 투표 후보를 만들지 못했습니다.", discordWebhookProfile),
+                        0xED4245,
+                        List.of(new DiscordEmbedField("사유", truncate(defaultString(message, "알 수 없는 오류"), 900), false)),
+                        new DiscordEmbedFooter(discordWebhookProfile + " • VOTE CANDIDATE"),
+                        OffsetDateTime.now().toString()
+                ))
+        );
+
+        sendNotification(resolveWebhookUrls(discordVoteWebhookUrl, extraVoteWebhookUrls), payload, "VOTE_CANDIDATE_ERROR");
     }
 
     public void sendSuccessNotificationForNewUser(String message) {
@@ -281,6 +305,12 @@ public class DiscordNotificationService {
         return StringUtils.hasText(discordWebhookProfile)
                 ? discordWebhookProfile + " 통계 리포트"
                 : "통계 리포트";
+    }
+
+    private String buildVoteUsername() {
+        return StringUtils.hasText(discordWebhookProfile)
+                ? discordWebhookProfile + " 투표 후보"
+                : "투표 후보";
     }
 
     private String formatCodeBlock(String value) {
