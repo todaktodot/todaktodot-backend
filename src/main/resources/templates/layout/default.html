@@ -103,13 +103,19 @@
                     </li>
                     <!-- 투표 -->
                     <li class="nav-category" data-category="vote"
-                        th:classappend="${#strings.contains('vote,report',activeMenu)} ? 'open' : ''">
+                        th:classappend="${#strings.contains('vote,report,vote-candidate',activeMenu)} ? 'open' : ''">
                         <a href="javascript:void(0)" class="nav-category-toggle">
                             <span class="icon">🗳️</span>
                             <span>투표</span>
                             <span class="arrow">&#9662;</span>
                         </a>
                         <ul class="nav-submenu">
+                            <li>
+                                <a th:href="@{/admin/vote-candidate}"
+                                   th:classappend="${activeMenu == 'vote-candidate'} ? 'active' : ''">
+                                    <span>✨ 투표 AI 생성</span>
+                                </a>
+                            </li>
                             <li>
                                 <a th:href="@{/admin/vote}"
                                    th:classappend="${activeMenu == 'vote'} ? 'active' : ''">

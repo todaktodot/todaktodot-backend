@@ -21,6 +21,16 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
 
     long countByUserIdAndRegDtBetweenAndDelYn(Long userId, LocalDateTime startDateTime, LocalDateTime endDateTime, String delYn);
 
+    //AI 후보 생성 시 중복 회피용. 숨김 여부와 무관하게 최근 등록분 제목만 본다.
+    @Query(value = """
+        SELECT V.TITLE
+        FROM vote V
+        WHERE V.DEL_YN = 'N'
+        ORDER BY V.REG_DT DESC, V.VOTE_ID DESC
+        LIMIT :size
+        """, nativeQuery = true)
+    List<String> findRecentTitles(@Param("size") int size);
+
     @Query(value = """
         SELECT
             V.VOTE_ID AS voteId,

@@ -163,6 +163,23 @@ public class DiscordNotificationService {
         sendNotification(resolveWebhookUrls(discordStatisticsWebhookUrl, extraStatisticsWebhookUrls), payload, "WEEKLY_STATISTICS");
     }
 
+    //후보가 준비됐음을 알리고 어드민으로 유도한다. 배치 채널을 그대로 쓴다.
+    public void sendVoteCandidateReport(String description, List<DiscordEmbedField> fields) {
+        DiscordWebhookPayload payload = new DiscordWebhookPayload(
+                buildUsername(),
+                List.of(new DiscordEmbed(
+                        "🗳️ 오늘의 투표 후보",
+                        description,
+                        0x7740AE,
+                        fields,
+                        new DiscordEmbedFooter(discordWebhookProfile + " • VOTE CANDIDATE"),
+                        OffsetDateTime.now().toString()
+                ))
+        );
+
+        sendNotification(resolveWebhookUrls(discordBatchWebhookUrl, extraBatchWebhookUrls), payload, "VOTE_CANDIDATE");
+    }
+
     public void sendSuccessNotificationForNewUser(String message) {
         DiscordWebhookPayload payload = new DiscordWebhookPayload(
                 buildUsername(),

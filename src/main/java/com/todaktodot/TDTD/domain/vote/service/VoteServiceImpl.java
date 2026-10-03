@@ -41,6 +41,8 @@ public class VoteServiceImpl implements VoteService{
     private final FcmService fcmService;
     private final ObjectMapper objectMapper;
 
+    private static final Long SYSTEM_USER = 0L;
+
     @Override
     @Transactional(readOnly = true)
     public VoteListResponseDTO getList(Long userId, List<VoteCategory> categories, VoteStatus status, String isMineStr, VoteSortCondition sortBy, String cursor, int size) {
@@ -242,6 +244,49 @@ public class VoteServiceImpl implements VoteService{
                                         .sortOrder(option.getOrder())
                                         .content(option.getContent())
                                         .regrId(userId)
+                                        .build()
+                        )
+                        .toList();
+
+        voteOptionRepository.saveAll(options);
+
+        return VoteCreateResponseDTO.builder()
+                .voteId(savedVote.getVoteId())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public VoteCreateResponseDTO createBySystem(VoteCreateRequestDTO request) {
+
+        if (request.getOptions().size() < 2 || request.getOptions().size() > 5) {
+            throw new IllegalArgumentException("옵션은 최소 2개, 최대 5개만 등록할 수 있습니다.");
+        }
+
+        //vote 저장 - 마감 시각은 사용자 등록과 동일하게 게시 시점 기준 24시간
+        LocalDateTime now = LocalDateTime.now();
+
+        VoteEntity vote = VoteEntity.builder()
+                .userId(SYSTEM_USER)
+                .randomNickname(generateRandomNickname())
+                .category(request.getCategory())
+                .title(request.getTitle())
+                .closedAt(now.plusHours(24))
+                .regrId(SYSTEM_USER)
+                .build();
+
+        VoteEntity savedVote = voteRepository.save(vote);
+
+        //option 저장
+        List<VoteOptionEntity> options =
+                request.getOptions()
+                        .stream()
+                        .map(option ->
+                                VoteOptionEntity.builder()
+                                        .voteId(savedVote.getVoteId())
+                                        .sortOrder(option.getOrder())
+                                        .content(option.getContent())
+                                        .regrId(SYSTEM_USER)
                                         .build()
                         )
                         .toList();
