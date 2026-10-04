@@ -7,23 +7,35 @@ function collectCheckedCards() {
         .filter(card => card.querySelector('.candidate-check').checked);
 }
 
+// 응답이 올 때까지 버튼을 막는다. 등록은 되돌릴 수 없어 두 번 눌리면 같은 투표가 두 개 올라간다.
+function lockToolbar(button) {
+    document.querySelectorAll('.candidate-toolbar button').forEach(btn => btn.disabled = true);
+    if (button) {
+        button.dataset.pending = 'true';
+    }
+}
+
+function unlockToolbar() {
+    document.querySelectorAll('.candidate-toolbar button').forEach(btn => {
+        btn.disabled = false;
+        delete btn.dataset.pending;
+    });
+}
+
 function generateCandidates(button) {
-    const loading = document.getElementById('generateLoading');
-    loading.classList.add('active');
+    document.getElementById('generateLoading').classList.add('active');
+    lockToolbar(button);
 
-    // AI 호출이 길어 두 번 눌리기 쉽다. 응답이 올 때까지 막는다.
-    button.disabled = true;
-
-    fetch('/admin/vote-candidate/generate', { method: 'POST' })
-        .then(handleCandidateResponse)
+    postJson('/admin/vote-candidate/generate', null)
+        .then(body => finishCandidateAction(body.message))
         .catch(error => {
-            loading.classList.remove('active');
-            button.disabled = false;
+            document.getElementById('generateLoading').classList.remove('active');
+            unlockToolbar();
             handleCandidateError(error);
         });
 }
 
-function approveSelected() {
+function approveSelected(button) {
     const cards = collectCheckedCards();
     if (cards.length === 0) {
         alert('등록할 후보를 선택해주세요.');
@@ -42,28 +54,23 @@ function approveSelected() {
             .map(input => input.value.trim())
     }));
 
-    fetch('/admin/vote-candidate/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(body => { throw new Error(body.message || '처리 중 오류가 발생했습니다.'); });
-            }
-            return response.json();
-        })
+    lockToolbar(button);
+
+    postJson('/admin/vote-candidate/approve', payload)
         .then(body => {
             // 일부만 실패할 수 있어 사유를 함께 보여준다.
-            if (body.failures && body.failures.length > 0) {
-                alert(body.message + '\n\n등록하지 못한 건:\n' + body.failures.join('\n'));
-            }
-            window.location.reload();
+            const message = (body.failures && body.failures.length > 0)
+                ? body.message + '\n\n등록하지 못한 건:\n' + body.failures.join('\n')
+                : body.message;
+            finishCandidateAction(message);
         })
-        .catch(handleCandidateError);
+        .catch(error => {
+            unlockToolbar();
+            handleCandidateError(error);
+        });
 }
 
-function rejectSelected() {
+function rejectSelected(button) {
     const cards = collectCheckedCards();
     if (cards.length === 0) {
         alert('반려할 후보를 선택해주세요.');
@@ -76,18 +83,39 @@ function rejectSelected() {
 
     const payload = cards.map(card => Number(card.dataset.candidateId));
 
-    fetch('/admin/vote-candidate/reject', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    })
-        .then(handleCandidateResponse)
-        .catch(handleCandidateError);
+    lockToolbar(button);
+
+    postJson('/admin/vote-candidate/reject', payload)
+        .then(body => finishCandidateAction(body.message))
+        .catch(error => {
+            unlockToolbar();
+            handleCandidateError(error);
+        });
 }
 
-function handleCandidateResponse(response) {
-    if (!response.ok) {
-        return response.json().then(body => { throw new Error(body.message || '처리 중 오류가 발생했습니다.'); });
+function postJson(url, payload) {
+    const options = { method: 'POST' };
+    if (payload !== null) {
+        options.headers = { 'Content-Type': 'application/json' };
+        options.body = JSON.stringify(payload);
+    }
+
+    return fetch(url, options).then(response => {
+        return response.json()
+            .catch(() => { throw new Error('처리 중 오류가 발생했습니다.'); })
+            .then(body => {
+                if (!response.ok) {
+                    throw new Error(body.message || '처리 중 오류가 발생했습니다.');
+                }
+                return body;
+            });
+    });
+}
+
+// 처리 결과를 반드시 보여준 뒤 새로고침한다. 0건 처리를 성공으로 오해하면 안 된다.
+function finishCandidateAction(message) {
+    if (message) {
+        alert(message);
     }
     window.location.reload();
 }

@@ -46,6 +46,12 @@
             font-size: 12px;
             font-weight: 600;
         }
+        /* 등록 실패 메시지가 #번호로 후보를 가리키므로 화면에도 번호를 보여준다 */
+        .candidate-head .candidate-id {
+            color: #6b7280;
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
         .candidate-head .reg-dt {
             color: #9ca3af;
             font-size: 12px;
@@ -105,8 +111,8 @@
             <button type="button" class="btn btn-secondary" onclick="generateCandidates(this)">지금 생성</button>
             <span id="generateLoading" class="candidate-loading">AI가 후보를 만드는 중입니다…</span>
             <span class="spacer"></span>
-            <button type="button" class="btn btn-secondary" onclick="rejectSelected()">선택 반려</button>
-            <button type="button" class="btn btn-primary" onclick="approveSelected()">선택 투표 등록</button>
+            <button type="button" class="btn btn-secondary" onclick="rejectSelected(this)">선택 반려</button>
+            <button type="button" class="btn btn-primary" onclick="approveSelected(this)">선택 투표 등록</button>
         </div>
 
         <div class="card">
@@ -129,6 +135,7 @@
                         <div class="candidate-head">
                             <input type="checkbox" class="candidate-check" onchange="toggleCandidateCard(this)">
                             <span class="category-badge" th:text="${candidate.categoryLabel}">연애관</span>
+                            <span class="candidate-id" th:text="'#' + ${candidate.candidateId}">#1</span>
                             <span class="reg-dt"
                                   th:text="${#temporals.format(candidate.regDt, 'yyyy-MM-dd HH:mm')}">2026-01-01 09:00</span>
                         </div>
