@@ -2,6 +2,20 @@ function toggleCandidateCard(checkbox) {
     checkbox.closest('.candidate-card').classList.toggle('checked', checkbox.checked);
 }
 
+// 카드 아무 곳이나 눌러도 선택되게 한다. 문구를 고치는 중에 선택이 바뀌면 안 되므로 입력란과 라벨은 뺀다.
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.candidate-card').forEach(function (card) {
+        card.addEventListener('click', function (event) {
+            if (event.target.closest('input, label, textarea, button')) {
+                return;
+            }
+            const checkbox = card.querySelector('.candidate-check');
+            checkbox.checked = !checkbox.checked;
+            toggleCandidateCard(checkbox);
+        });
+    });
+});
+
 function collectCheckedCards() {
     return Array.from(document.querySelectorAll('.candidate-card'))
         .filter(card => card.querySelector('.candidate-check').checked);

@@ -53,6 +53,11 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     private static final int OPTION_MIN_COUNT = 2;
     private static final int OPTION_MAX_COUNT = 5;
 
+    //AI 에게 요청하는 제목 길이. 너무 짧으면 밋밋하고 길면 피드에서 잘린다.
+    //검증은 컬럼 길이(100자)로만 하고 여기 값은 프롬프트 지시로만 쓴다. 길이를 어겼다고 후보를 버리면 매일 생성이 실패할 수 있다.
+    private static final int TITLE_TARGET_MIN = 30;
+    private static final int TITLE_TARGET_MAX = 50;
+
     @Override
     @Transactional
     public List<VoteCandidateDTO> generate() {
@@ -298,7 +303,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
         return String.format("""
             [반드시 지킬 것]
             - 카테고리는 %s 중 하나
-            - 제목은 %d자 이내, 물음표로 끝낸다
+            - 제목은 %d~%d자, 물음표로 끝낸다 (공백 포함, 이 범위를 지킨다)
             - 선택지는 %d~%d개, 각 선택지는 %d자 이내
             - 선택지끼리 내용이 겹치지 않게, 서로 다른 입장으로 만든다
             - 정답이 있는 질문은 만들지 않는다. 취향이 갈려야 한다
@@ -318,7 +323,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             [주의사항]
             - 한국어로 작성
             - JSON 외에 다른 텍스트를 포함하지 말 것
-            """, categories, TITLE_MAX_LENGTH, OPTION_MIN_COUNT, OPTION_MAX_COUNT, OPTION_MAX_LENGTH);
+            """, categories, TITLE_TARGET_MIN, TITLE_TARGET_MAX, OPTION_MIN_COUNT, OPTION_MAX_COUNT, OPTION_MAX_LENGTH);
     }
 
     private String extractJsonFromResponse(String response) {

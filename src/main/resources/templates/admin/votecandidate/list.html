@@ -27,6 +27,11 @@
             padding: 16px;
             margin-bottom: 12px;
             background: #fff;
+            /* 카드 어디를 눌러도 선택된다 */
+            cursor: pointer;
+        }
+        .candidate-card input {
+            cursor: auto;
         }
         .candidate-card.checked {
             border-color: #7740ae;
@@ -73,14 +78,27 @@
             border-radius: 6px;
             font-size: 14px;
         }
+        /* 선택지는 세로로 쌓는다. 번호 순서가 그대로 앱의 선택지 순서라 위아래로 읽히는 쪽이 맞다 */
         .candidate-options {
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
             gap: 8px;
         }
-        .candidate-options input {
+        .candidate-option-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .candidate-option-no {
+            flex: 0 0 auto;
+            width: 20px;
+            text-align: right;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+        .candidate-option-row input {
             flex: 1;
-            min-width: 140px;
+            min-width: 0;
         }
         .char-hint {
             color: #9ca3af;
@@ -141,17 +159,20 @@
                         </div>
 
                         <div class="candidate-field">
-                            <label>질문 <span class="char-hint">100자 이내</span></label>
+                            <label>질문 <span class="char-hint">30~50자 권장 · 100자 이내</span></label>
                             <input type="text" class="candidate-title" maxlength="100"
                                    th:value="${candidate.title}">
                         </div>
 
                         <div class="candidate-field">
-                            <label>선택지 <span class="char-hint">각 20자 이내</span></label>
+                            <label>선택지 <span class="char-hint">2~5개 · 각 20자 이내</span></label>
                             <div class="candidate-options">
-                                <input th:each="option : ${candidate.options}"
-                                       type="text" class="candidate-option" maxlength="20"
-                                       th:value="${option}">
+                                <div class="candidate-option-row"
+                                     th:each="option, stat : ${candidate.options}">
+                                    <span class="candidate-option-no" th:text="${stat.count}">1</span>
+                                    <input type="text" class="candidate-option" maxlength="20"
+                                           th:value="${option}">
+                                </div>
                             </div>
                         </div>
                     </div>

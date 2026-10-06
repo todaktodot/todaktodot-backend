@@ -410,6 +410,17 @@ class VoteCandidateServiceImplTest {
     }
 
     @Test
+    @DisplayName("지시문에 질문 길이 30~50자가 들어간다")
+    void instruction_AsksForTitleLengthRange() {
+        // When
+        String instruction = ReflectionTestUtils.invokeMethod(
+                voteCandidateService, "buildInstruction", "어드민이 등록한 프롬프트");
+
+        // Then
+        assertThat(instruction).contains("제목은 30~50자");
+    }
+
+    @Test
     @DisplayName("AI 후보 생성 - 전부 검증에 걸리면 예외를 던진다")
     void generate_AllInvalid_Throws() {
         // Given
