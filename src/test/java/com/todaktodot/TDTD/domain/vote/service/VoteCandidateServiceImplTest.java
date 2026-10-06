@@ -27,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -371,6 +372,46 @@ class VoteCandidateServiceImplTest {
         assertThat(result).extracting(VoteCandidateDTO::getTitle)
                 .containsExactly("기념일 챙기는 편이야?", "주말에 뭐 할래?");
         verify(voteCandidateRepository, times(2)).save(any(VoteCandidateEntity.class));
+    }
+
+    @Test
+    @DisplayName("AI 후보 생성 - 지난 묶음에 남은 후보는 자동 반려된다")
+    void generate_ExpiresLeftoverCandidates() {
+        // Given - 어제 생성됐지만 처리하지 않은 후보
+        VoteCandidateEntity yesterday = pendingCandidate(1L, "어제 남은 질문인가요?", "[\"선택1\",\"선택2\"]");
+        ReflectionTestUtils.setField(yesterday, "batchKey", "2026-10-05");
+
+        givenAiResponds("[{\"category\":\"LOVE\",\"title\":\"오늘 만든 질문인가요?\",\"options\":[\"선택1\",\"선택2\"]}]");
+        when(voteCandidateRepository.save(any(VoteCandidateEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(voteCandidateRepository.findAllByStatusAndDelYnOrderByRegDtDescCandidateIdDesc(
+                VoteCandidateStatus.PENDING, "N")).thenReturn(List.of(yesterday));
+
+        // When
+        voteCandidateService.generate();
+
+        // Then
+        assertThat(yesterday.getStatus()).isEqualTo(VoteCandidateStatus.REJECTED);
+    }
+
+    @Test
+    @DisplayName("AI 후보 생성 - 같은 날 생성한 후보는 정리하지 않는다")
+    void generate_KeepsSameDayCandidates() {
+        // Given - 오늘 "지금 생성"으로 이미 만들어 둔 후보
+        VoteCandidateEntity today = pendingCandidate(1L, "아까 만든 질문인가요?", "[\"선택1\",\"선택2\"]");
+        ReflectionTestUtils.setField(today, "batchKey", LocalDate.now().toString());
+
+        givenAiResponds("[{\"category\":\"LOVE\",\"title\":\"방금 만든 질문인가요?\",\"options\":[\"선택1\",\"선택2\"]}]");
+        when(voteCandidateRepository.save(any(VoteCandidateEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(voteCandidateRepository.findAllByStatusAndDelYnOrderByRegDtDescCandidateIdDesc(
+                VoteCandidateStatus.PENDING, "N")).thenReturn(List.of(today));
+
+        // When
+        voteCandidateService.generate();
+
+        // Then
+        assertThat(today.getStatus()).isEqualTo(VoteCandidateStatus.PENDING);
     }
 
     @Test

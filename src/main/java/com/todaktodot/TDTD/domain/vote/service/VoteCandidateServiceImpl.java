@@ -103,8 +103,32 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             throw new IllegalStateException("검증을 통과한 후보가 없습니다. 프롬프트를 확인해주세요.");
         }
 
+        //새 후보가 저장된 뒤에만 정리한다. 생성이 실패한 날 지난 후보까지 잃지 않도록.
+        expirePreviousCandidates(batchKey);
+
         log.info("=====투표 AI 후보 생성 완료===== {}건 저장", saved.size());
         return saved;
+    }
+
+    /**
+     * 지난 묶음에서 처리하지 않고 남은 후보를 자동 반려한다.
+     * 목록에 "오늘의 후보"만 남기기 위한 것으로, 같은 날 여러 번 생성한 분은 건드리지 않는다.
+     * @param batchKey 이번에 생성한 묶음 키
+     */
+    private void expirePreviousCandidates(String batchKey) {
+
+        List<VoteCandidateEntity> leftovers = voteCandidateRepository
+                .findAllByStatusAndDelYnOrderByRegDtDescCandidateIdDesc(VoteCandidateStatus.PENDING, "N")
+                .stream()
+                .filter(entity -> !batchKey.equals(entity.getBatchKey()))
+                .toList();
+
+        if (leftovers.isEmpty()) {
+            return;
+        }
+
+        leftovers.forEach(entity -> entity.reject(SYSTEM_USER));
+        log.info("· 지난 후보 {}건을 자동 반려했습니다.", leftovers.size());
     }
 
     @Override
