@@ -44,8 +44,9 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
 
     private static final Long SYSTEM_USER = 0L;
     private static final String AI_MODEL = "gpt-5.4";
-    private static final int CANDIDATE_COUNT = 3;
-    private static final int RECENT_TITLE_SIZE = 50;
+    private static final int CANDIDATE_COUNT = 5;
+    //중복 회피 재료. 늘릴수록 겹칠 확률은 줄지만 매 호출 토큰이 늘어남
+    private static final int RECENT_TITLE_SIZE = 30;
 
     //VOTE / VOTE_OPTION 컬럼 길이와 VoteServiceImpl.create 의 옵션 개수 제한을 그대로 적용
     private static final int TITLE_MAX_LENGTH = 100;
@@ -287,7 +288,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             - 사용자 메시지로 최근 등록된 투표 제목 목록을 준다.
             - 그 목록과 주제가 겹치면 안 된다. 표현만 바꾼 것도 겹치는 것으로 본다.
             - 다만 완전히 동떨어진 주제가 아니라, 목록과 결이 이어지는 주제로 만든다.
-            - %d개를 서로 다른 카테고리로 만든다.
+            - %d개를 만들되 카테고리가 한쪽에 몰리지 않게 고루 섞는다.
             """, CANDIDATE_COUNT);
     }
 
