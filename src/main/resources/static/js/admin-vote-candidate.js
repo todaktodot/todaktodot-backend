@@ -2,7 +2,7 @@ function toggleCandidateCard(checkbox) {
     checkbox.closest('.candidate-card').classList.toggle('checked', checkbox.checked);
 }
 
-// 카드 아무 곳이나 눌러도 선택되게 한다. 문구를 고치는 중에 선택이 바뀌면 안 되므로 입력란과 라벨은 뺀다.
+// 카드 아무 곳이나 눌러도 선택. 문구 수정 중 선택이 바뀌지 않게 입력란·라벨은 제외
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.candidate-card').forEach(function (card) {
         card.addEventListener('click', function (event) {
@@ -21,7 +21,7 @@ function collectCheckedCards() {
         .filter(card => card.querySelector('.candidate-check').checked);
 }
 
-// 응답이 올 때까지 버튼을 막는다. 등록은 되돌릴 수 없어 두 번 눌리면 같은 투표가 두 개 올라간다.
+// 응답까지 버튼 잠금. 등록은 되돌릴 수 없어 두 번 눌리면 같은 투표가 두 개 게시됨
 function lockToolbar(button) {
     document.querySelectorAll('.candidate-toolbar button').forEach(btn => btn.disabled = true);
     if (button) {
@@ -63,7 +63,7 @@ function approveSelected(button) {
     const payload = cards.map(card => ({
         candidateId: Number(card.dataset.candidateId),
         title: card.querySelector('.candidate-title').value.trim(),
-        // 빈 값을 걸러내지 않는다. 걸러내면 어드민이 지운 선택지가 서버에서 원래 값으로 되돌아간다.
+        // 빈 값을 거르지 않음. 거르면 어드민이 지운 선택지가 서버에서 원래 값으로 복원됨
         options: Array.from(card.querySelectorAll('.candidate-option'))
             .map(input => input.value.trim())
     }));
@@ -72,7 +72,7 @@ function approveSelected(button) {
 
     postJson('/admin/vote-candidate/approve', payload)
         .then(body => {
-            // 일부만 실패할 수 있어 사유를 함께 보여준다.
+            // 일부만 실패할 수 있어 사유를 함께 노출
             const message = (body.failures && body.failures.length > 0)
                 ? body.message + '\n\n등록하지 못한 건:\n' + body.failures.join('\n')
                 : body.message;
@@ -126,7 +126,7 @@ function postJson(url, payload) {
     });
 }
 
-// 처리 결과를 반드시 보여준 뒤 새로고침한다. 0건 처리를 성공으로 오해하면 안 된다.
+// 처리 결과를 보여준 뒤 새로고침. 0건 처리를 성공으로 오해하지 않도록
 function finishCandidateAction(message) {
     if (message) {
         alert(message);

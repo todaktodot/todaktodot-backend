@@ -34,7 +34,7 @@ public class VoteCandidateGenerateTasklet implements Tasklet {
             sendSuccessReport(candidates);
 
         } catch (Exception e) {
-            //스케줄러가 예외를 삼키므로 실패 알림은 여기서 직접 보낸다.
+            //스케줄러가 예외를 삼켜 실패 알림은 여기서 직접 발송
             log.error("투표 AI 후보 생성 배치 중 오류 발생", e);
             try {
                 discordNotificationService.sendVoteCandidateError(e.getMessage());
@@ -54,7 +54,7 @@ public class VoteCandidateGenerateTasklet implements Tasklet {
                     voteCandidateReportFormatter.buildDescription(candidates),
                     voteCandidateReportFormatter.buildFields(candidates));
         } catch (Exception e) {
-            //알림 실패로 생성된 후보를 날리지 않는다.
+            //알림 실패로 생성된 후보를 잃지 않도록
             log.warn("투표 후보 생성 보고 전송 실패", e);
         }
     }

@@ -50,7 +50,7 @@ public class DiscordNotificationService {
     @Value("${discord.webhook.extra-statistics-urls:}")
     private String extraStatisticsWebhookUrls;
 
-    //투표 후보 전용 채널. 설정하지 않은 서버에서는 투표 알림을 보내지 않는다.
+    //투표 후보 전용 채널. 미설정 서버에서는 알림 미발송
     @Value("${discord.webhook.vote-url:}")
     private String discordVoteWebhookUrl;
 
@@ -170,7 +170,7 @@ public class DiscordNotificationService {
         sendNotification(resolveWebhookUrls(discordStatisticsWebhookUrl, extraStatisticsWebhookUrls), payload, "WEEKLY_STATISTICS");
     }
 
-    //후보가 준비됐음을 알리고 어드민으로 유도한다.
+    //후보 준비 알림 - 어드민으로 유도
     public void sendVoteCandidateReport(String description, List<DiscordEmbedField> fields) {
         DiscordWebhookPayload payload = new DiscordWebhookPayload(
                 buildVoteUsername(),
@@ -187,7 +187,7 @@ public class DiscordNotificationService {
         sendNotification(resolveWebhookUrls(discordVoteWebhookUrl, extraVoteWebhookUrls), payload, "VOTE_CANDIDATE");
     }
 
-    //후보 생성 실패도 같은 채널로 보낸다. 팀이 "오늘은 후보가 없다"를 알아야 한다.
+    //후보 생성 실패도 같은 채널로 발송 - 팀이 "오늘은 후보 없음"을 알아야 함
     public void sendVoteCandidateError(String message) {
         DiscordWebhookPayload payload = new DiscordWebhookPayload(
                 buildVoteUsername(),

@@ -12,7 +12,7 @@ public class VoteCandidateReportFormatter {
 
     private static final String ADMIN_PATH = "/admin/vote-candidate";
 
-    //어드민 주소를 모르면 링크 없이 보낸다. 설정이 없어도 알림 자체는 깨지지 않게 한다.
+    //어드민 주소가 없으면 링크 없이 발송. 설정이 없어도 알림은 유지
     @Value("${admin.base-url:}")
     private String adminBaseUrl;
 

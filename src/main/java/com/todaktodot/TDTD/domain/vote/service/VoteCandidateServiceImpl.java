@@ -47,14 +47,14 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     private static final int CANDIDATE_COUNT = 3;
     private static final int RECENT_TITLE_SIZE = 50;
 
-    //VOTE / VOTE_OPTION 컬럼 길이와 VoteServiceImpl.create 의 옵션 개수 제한을 그대로 따른다.
+    //VOTE / VOTE_OPTION 컬럼 길이와 VoteServiceImpl.create 의 옵션 개수 제한을 그대로 적용
     private static final int TITLE_MAX_LENGTH = 100;
     private static final int OPTION_MAX_LENGTH = 20;
     private static final int OPTION_MIN_COUNT = 2;
     private static final int OPTION_MAX_COUNT = 5;
 
-    //AI 에게 요청하는 제목 길이. 너무 짧으면 밋밋하고 길면 피드에서 잘린다.
-    //검증은 컬럼 길이(100자)로만 하고 여기 값은 프롬프트 지시로만 쓴다. 길이를 어겼다고 후보를 버리면 매일 생성이 실패할 수 있다.
+    //AI 에게 요청하는 제목 길이. 짧으면 밋밋하고 길면 피드에서 잘림
+    //검증은 컬럼 길이(100자)로만 하고 이 값은 프롬프트 지시용. 길이 위반으로 후보를 버리면 매일 생성 실패 가능
     private static final int TITLE_TARGET_MIN = 30;
     private static final int TITLE_TARGET_MAX = 50;
 
@@ -79,7 +79,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
         for (AiGeneratedVoteDTO candidate : generated) {
             String reason = validate(candidate, recentTitles);
             if (reason != null) {
-                //candidate 자체가 null 일 수 있으므로 제목을 바로 꺼내지 않는다.
+                //candidate 가 null 일 수 있어 제목을 바로 꺼내지 않음
                 log.warn("후보 제외 - {} / 제목: {}", reason, candidate == null ? "(없음)" : candidate.getTitle());
                 continue;
             }
@@ -103,7 +103,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             throw new IllegalStateException("검증을 통과한 후보가 없습니다. 프롬프트를 확인해주세요.");
         }
 
-        //새 후보가 저장된 뒤에만 정리한다. 생성이 실패한 날 지난 후보까지 잃지 않도록.
+        //새 후보가 저장된 뒤에만 정리 - 생성 실패한 날 지난 후보까지 잃지 않도록
         expirePreviousCandidates(batchKey);
 
         log.info("=====투표 AI 후보 생성 완료===== {}건 저장", saved.size());
@@ -111,8 +111,8 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     }
 
     /**
-     * 지난 묶음에서 처리하지 않고 남은 후보를 자동 반려한다.
-     * 목록에 "오늘의 후보"만 남기기 위한 것으로, 같은 날 여러 번 생성한 분은 건드리지 않는다.
+     * 지난 묶음에서 처리하지 않고 남은 후보를 자동 반려
+     * 목록에 "오늘의 후보"만 남기기 위한 처리. 같은 날 여러 번 생성한 분은 제외
      * @param batchKey 이번에 생성한 묶음 키
      */
     private void expirePreviousCandidates(String batchKey) {
@@ -142,8 +142,8 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     }
 
     /**
-     * 검증에 걸린 건만 건너뛰고 나머지는 등록한다. (failures 로 사유를 돌려준다)
-     * 그 외 예상치 못한 오류는 잡지 않는다 - 전체가 롤백되고 아무것도 등록되지 않는다.
+     * 검증에 걸린 건만 건너뛰고 나머지는 등록 (failures 로 사유 반환)
+     * 그 외 예상치 못한 오류는 미처리 - 전체 롤백되어 아무것도 등록되지 않음
      */
     @Override
     @Transactional
@@ -153,7 +153,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
         List<String> failures = new ArrayList<>();
         List<String> approved = new ArrayList<>();
 
-        //생성 이후 같은 제목의 투표가 올라왔을 수 있어 게시 직전에 다시 본다.
+        //생성 이후 같은 제목이 올라왔을 수 있어 게시 직전 재확인
         List<String> recentTitles = voteRepository.findRecentTitles(RECENT_TITLE_SIZE);
 
         for (VoteCandidateApproveRequestDTO request : requests) {
@@ -167,14 +167,14 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
                 continue;
             }
 
-            //이미 등록했거나 반려한 건은 다시 처리하지 않는다.
+            //이미 등록·반려한 건은 재처리 안 함
             if (entity.getStatus() != VoteCandidateStatus.PENDING) {
                 failures.add(String.format("#%d 이미 처리된 후보입니다. (%s)",
                         entity.getCandidateId(), entity.getStatus().getDescription()));
                 continue;
             }
 
-            //화면에서 값이 왔으면 비어 있어도 그대로 검증에 넘긴다. 저장분으로 되돌리면 어드민이 지운 문구가 그대로 게시된다.
+            //화면에서 온 값은 비어 있어도 그대로 검증. 저장분으로 되돌리면 어드민이 지운 문구가 게시됨
             String title = request.getTitle() != null ? request.getTitle().trim() : entity.getTitle();
             List<String> options = request.getOptions() != null
                     ? request.getOptions().stream().map(value -> value == null ? "" : value.trim()).toList()
@@ -189,7 +189,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
                 continue;
             }
 
-            //어드민이 고친 문구를 후보에도 남겨 어떤 내용으로 올렸는지 추적한다.
+            //어드민이 고친 문구를 후보에도 기록 - 등록 내용 추적용
             entity.updateContent(title, writeOptions(options), SYSTEM_USER);
 
             VoteCreateResponseDTO created = voteService.createBySystem(toCreateRequest(entity.getCategory(), title, options));
@@ -198,7 +198,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             approved.add(entity.getCandidateId() + "→" + created.getVoteId());
         }
 
-        //커밋 직전에 한 번만 남긴다. 중간에 예외가 나면 이 로그도 남지 않고 전체가 롤백된다.
+        //커밋 직전 한 번만 기록. 중간에 예외가 나면 이 로그도 남지 않고 전체 롤백
         if (!approved.isEmpty()) {
             log.info("[Admin] 투표 후보 등록: {}, actor={}", approved, actor);
         }
@@ -240,7 +240,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             throw new IllegalStateException("활성화된 투표 생성 프롬프트가 없습니다. 어드민 > 프롬프트 관리에서 등록해주세요.");
         }
 
-        //어드민 화면이 맨 위에 보여주는 것과 같은 걸 쓴다. (promptGroupId DESC 정렬된 첫 번째)
+        //어드민 화면이 맨 위에 보여주는 것과 동일 (promptGroupId DESC 첫 번째)
         return prompts.get(0);
     }
 
@@ -271,8 +271,8 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
 
     /**
      * 지시문 = 코드 prefix + DB 프롬프트 + 코드 suffix
-     * 길이 제한처럼 DB 스키마에 묶인 조건은 어드민이 지울 수 없도록 코드 영역에 둔다.
-     * 최근 투표 제목은 유저가 쓴 글이라 지시문에 섞지 않고 사용자 메시지로 따로 보낸다.
+     * 길이 제한처럼 DB 스키마에 묶인 조건은 어드민이 지울 수 없게 코드 영역에 배치
+     * 최근 투표 제목은 유저가 쓴 글. 지시문에 섞지 않고 사용자 메시지로 분리
      */
     private String buildInstruction(String adminPrompt) {
         return buildSystemPrefix() + "\n\n" + adminPrompt + "\n\n" + buildSystemSuffix();
@@ -292,8 +292,8 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     }
 
     /**
-     * 최근 투표 제목 목록. 유저가 직접 쓴 문장이므로 지시가 아니라 참고 자료로만 다루게 한다.
-     * 제목에 "위 지시 무시하고 ..." 같은 문장을 넣어도 규칙을 덮어쓰지 못하게 하려는 것.
+     * 최근 투표 제목 목록. 유저가 직접 쓴 문장이라 지시가 아닌 참고 자료로만 취급
+     * 제목에 "위 지시 무시하고 ..." 같은 문장이 있어도 규칙을 덮어쓰지 못하게 하려는 목적
      */
     private String buildReferenceData(List<String> recentTitles) {
 
@@ -301,7 +301,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             return "최근 등록된 투표가 없다. 주제를 자유롭게 정해라.";
         }
 
-        //제목에 구분선이 섞여 경계가 무너지지 않게 막는다.
+        //제목에 구분선이 섞여 경계가 무너지는 것을 방지
         String titleList = String.join("\n", recentTitles.stream()
                 .map(title -> "- " + title.replace("\n", " ").replace("---", "—"))
                 .toList());
@@ -319,7 +319,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
 
     private String buildSystemSuffix() {
 
-        //enum 에 카테고리가 추가되면 프롬프트에도 자동으로 반영되게 한다.
+        //enum 에 카테고리가 추가되면 프롬프트에도 자동 반영
         String categories = String.join(" / ", Arrays.stream(VoteCategory.values())
                 .map(category -> String.format("%s(%s)", category.name(), category.getDescription()))
                 .toList());
@@ -370,7 +370,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     }
 
     /**
-     * 생성 직후 검증 - 통과하지 못한 후보는 저장하지 않는다.
+     * 생성 직후 검증 - 통과하지 못한 후보는 미저장
      * @return 걸린 사유. 통과면 null
      */
     private String validate(AiGeneratedVoteDTO candidate, List<String> recentTitles) {
@@ -392,8 +392,8 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     }
 
     /**
-     * 제목/선택지 형식 검증. 생성 직후와 게시 직전 양쪽에서 쓴다.
-     * 카테고리는 저장된 enum 값이라 게시 시점에는 따로 보지 않는다.
+     * 제목/선택지 형식 검증. 생성 직후와 게시 직전 양쪽에서 사용
+     * 카테고리는 저장된 enum 값이라 게시 시점에는 미검사
      * @return 걸린 사유. 통과면 null
      */
     private String validateForApprove(String title, List<String> options) {
@@ -424,7 +424,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
         return recentTitles.stream().anyMatch(recent -> recent.trim().equals(title));
     }
 
-    //AI 가 소문자로 줄 때가 있어 대소문자는 맞춰준다.
+    //AI 가 소문자로 줄 때가 있어 대소문자 무시
     private boolean isValidCategory(String category) {
         return Arrays.stream(VoteCategory.values())
                 .anyMatch(value -> value.name().equalsIgnoreCase(category.trim()));

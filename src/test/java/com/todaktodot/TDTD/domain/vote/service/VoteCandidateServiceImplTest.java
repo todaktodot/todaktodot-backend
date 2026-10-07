@@ -48,7 +48,7 @@ import static org.mockito.Mockito.when;
 @DisplayName("투표 AI 후보 서비스 테스트")
 class VoteCandidateServiceImplTest {
 
-    //ChatClient 는 체인 호출이라 깊은 스텁으로 둔다.
+    //ChatClient 는 체인 호출이라 깊은 스텁 사용
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private ChatClient.Builder chatClientBuilder;
 
@@ -64,7 +64,7 @@ class VoteCandidateServiceImplTest {
     @Mock
     private VoteService voteService;
 
-    //JSON 직렬화는 실제 동작을 그대로 검증한다.
+    //JSON 직렬화는 실제 동작으로 검증
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -73,7 +73,7 @@ class VoteCandidateServiceImplTest {
 
     private static final String ACTOR = "admin";
 
-    //candidateId 는 DB 가 채우는 값이라 테스트에서는 직접 넣어준다. 실패 메시지의 #번호 검증에 필요하다.
+    //candidateId 는 DB 가 채우는 값이라 테스트에서 직접 주입. 실패 메시지의 #번호 검증용
     private VoteCandidateEntity pendingCandidate(Long candidateId, String title, String optionsJson) {
         VoteCandidateEntity entity = VoteCandidateEntity.builder()
                 .batchKey("2026-01-01")
@@ -143,7 +143,7 @@ class VoteCandidateServiceImplTest {
         VoteCandidateApproveResultDTO result = voteCandidateService.approve(
                 List.of(approveRequest(1L, "질문인가요?", List.of())), ACTOR);
 
-        // Then - 저장된 원본("원래1","원래2")으로 게시되면 안 된다
+        // Then - 저장된 원본("원래1","원래2")으로 게시되면 안 됨
         assertThat(result.getApprovedCount()).isZero();
         assertThat(result.getFailures()).hasSize(1);
         assertThat(result.getFailures().get(0)).contains("2~5개");
@@ -241,7 +241,7 @@ class VoteCandidateServiceImplTest {
         when(voteService.createBySystem(any(VoteCreateRequestDTO.class)))
                 .thenReturn(VoteCreateResponseDTO.builder().voteId(200L).build());
 
-        // When - 2번은 선택지가 1개라 검증에 걸린다
+        // When - 2번은 선택지가 1개라 검증에 걸림
         VoteCandidateApproveResultDTO result = voteCandidateService.approve(
                 List.of(
                         approveRequest(1L, "정상 질문인가요?", List.of("선택1", "선택2")),
@@ -328,7 +328,7 @@ class VoteCandidateServiceImplTest {
 
         // Then
         assertThat(result.getApprovedCount()).isZero();
-        //실패 메시지에 후보 번호가 들어가야 어드민이 어느 카드인지 찾을 수 있다
+        //실패 메시지의 후보 번호로 어드민이 카드를 찾음
         assertThat(result.getFailures().get(0)).isEqualTo("#412 이미 같은 제목의 투표가 있습니다");
         verify(voteService, never()).createBySystem(any());
     }
@@ -353,7 +353,7 @@ class VoteCandidateServiceImplTest {
     @Test
     @DisplayName("AI 후보 생성 - 검증을 통과한 건만 저장한다")
     void generate_SavesOnlyValidCandidates() {
-        // Given - 2번째는 선택지가 1개라 저장되면 안 된다
+        // Given - 2번째는 선택지가 1개라 저장 대상 아님
         givenAiResponds("""
             [
               {"category":"LOVE","title":"기념일 챙기는 편이야?","options":["챙긴다","안 챙긴다"]},
@@ -442,7 +442,7 @@ class VoteCandidateServiceImplTest {
         String referenceData = ReflectionTestUtils.invokeMethod(
                 voteCandidateService, "buildReferenceData", List.of(injection));
 
-        // Then - 규칙은 지시문에, 유저가 쓴 글은 참고 자료에만 있어야 한다
+        // Then - 규칙은 지시문에, 유저가 쓴 글은 참고 자료에만
         assertThat(instruction).doesNotContain(injection);
         assertThat(instruction).contains("JSON 외에 다른 텍스트를 포함하지 말 것");
 

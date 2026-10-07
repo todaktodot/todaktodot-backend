@@ -47,7 +47,7 @@ public class AdminVoteCandidateController {
                                        Authentication authentication) {
         VoteCandidateApproveResultDTO result = voteCandidateService.approve(requests, authentication.getName());
 
-        //일부만 실패해도 성공분은 이미 등록됐으므로 함께 돌려준다.
+        //일부만 실패해도 성공분은 이미 등록된 상태라 함께 반환
         return Map.of(
                 "message", result.getApprovedCount() + "개의 투표를 등록했습니다.",
                 "approvedCount", result.getApprovedCount(),

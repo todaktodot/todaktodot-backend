@@ -21,7 +21,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
 
     long countByUserIdAndRegDtBetweenAndDelYn(Long userId, LocalDateTime startDateTime, LocalDateTime endDateTime, String delYn);
 
-    //AI 후보 생성 시 중복 회피용. 신고로 숨겨진 투표는 참고 자료로 쓰지 않는다.
+    //AI 후보 생성 시 중복 회피용. 신고로 숨겨진 투표는 제외
     @Query(value = """
         SELECT V.TITLE
         FROM vote V

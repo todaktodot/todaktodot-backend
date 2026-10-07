@@ -49,7 +49,7 @@ public interface VoteService {
 
     /**
      * 시스템 투표 생성 - AI 후보를 어드민이 승인했을 때 사용
-     * 작성자는 시스템 계정이므로 사용자 대상 하루 생성 제한을 적용하지 않는다.
+     * 작성자가 시스템 계정이라 사용자 대상 하루 생성 제한은 미적용
      * @param request 카테고리 / 제목 / 선택지
      */
     VoteCreateResponseDTO createBySystem(VoteCreateRequestDTO request);

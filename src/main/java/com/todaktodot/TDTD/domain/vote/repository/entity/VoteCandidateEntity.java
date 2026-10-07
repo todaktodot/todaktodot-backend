@@ -21,7 +21,7 @@ public class VoteCandidateEntity {
     @Column(name = "CANDIDATE_ID")
     private Long candidateId;
 
-    // 한 번의 AI 호출로 나온 후보들을 묶는 키. yyyy-MM-dd 형식.
+    // 한 번의 AI 호출로 나온 후보를 묶는 키. yyyy-MM-dd 형식
     @Column(name = "BATCH_KEY", nullable = false, length = 20)
     private String batchKey;
 
@@ -29,11 +29,11 @@ public class VoteCandidateEntity {
     @Column(name = "CATEGORY", nullable = false, length = 20)
     private VoteCategory category;
 
-    // VOTE.TITLE 과 같은 길이 제한. 어드민이 등록 전에 수정할 수 있다.
+    // VOTE.TITLE 과 같은 길이 제한. 어드민이 등록 전 수정 가능
     @Column(name = "TITLE", nullable = false, length = 100)
     private String title;
 
-    // 초안이라 자식 테이블 없이 JSON 배열 문자열로 보관한다. 각 항목은 VOTE_OPTION.CONTENT 제한과 같은 20자.
+    // 초안이라 자식 테이블 없이 JSON 배열 문자열로 보관. 각 항목은 VOTE_OPTION.CONTENT 와 같은 20자 제한
     @Column(name = "OPTIONS_JSON", nullable = false, length = 500)
     private String optionsJson;
 
@@ -83,7 +83,7 @@ public class VoteCandidateEntity {
         this.delYn = "N";
     }
 
-    // 등록 완료 - 생성된 투표 ID 를 남겨 중복 등록을 막는다.
+    // 등록 완료 - 생성된 투표 ID 기록으로 중복 등록 방지
     public void approve(Long voteId, Long updrId) {
         this.status = VoteCandidateStatus.APPROVED;
         this.voteId = voteId;

@@ -10,7 +10,7 @@ public interface VoteCandidateService {
 
     /**
      * AI 후보 생성
-     * 최근 투표 제목을 재료로 중복되지 않는 후보를 만들어 PENDING 으로 저장한다.
+     * 최근 투표 제목을 재료로 중복되지 않는 후보를 만들어 PENDING 으로 저장
      * @return 저장된 후보 목록
      */
     List<VoteCandidateDTO> generate();
