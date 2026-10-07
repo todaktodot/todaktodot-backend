@@ -48,6 +48,13 @@ public interface VoteService {
     VoteCreateResponseDTO create(Long userId, VoteCreateRequestDTO request);
 
     /**
+     * 시스템 투표 생성 - AI 후보를 어드민이 승인했을 때 사용
+     * 작성자가 시스템 계정이라 사용자 대상 하루 생성 제한은 미적용
+     * @param request 카테고리 / 제목 / 선택지
+     */
+    VoteCreateResponseDTO createBySystem(VoteCreateRequestDTO request);
+
+    /**
      * 투표 수정
      */
     void update(Long userId, VoteUpdateRequestDTO request);

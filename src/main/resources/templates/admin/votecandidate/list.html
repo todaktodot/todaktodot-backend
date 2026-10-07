@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/default}">
+<head>
+    <title>투표 AI 생성</title>
+    <style>
+        .candidate-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .candidate-toolbar .spacer {
+            flex: 1;
+        }
+        .candidate-guide {
+            color: #6b7280;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+        .candidate-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            background: #fff;
+            /* 카드 어디를 눌러도 선택 */
+            cursor: pointer;
+        }
+        .candidate-card input {
+            cursor: auto;
+        }
+        .candidate-card.checked {
+            border-color: #7740ae;
+            box-shadow: 0 0 0 1px #7740ae;
+        }
+        .candidate-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .candidate-head .category-badge {
+            background: #f3e8ff;
+            color: #7740ae;
+            border-radius: 999px;
+            padding: 3px 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        /* 실패 메시지가 #번호로 후보를 가리켜 화면에도 번호 노출 */
+        .candidate-head .candidate-id {
+            color: #6b7280;
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+        .candidate-head .reg-dt {
+            color: #9ca3af;
+            font-size: 12px;
+            margin-left: auto;
+        }
+        .candidate-field {
+            margin-bottom: 10px;
+        }
+        .candidate-field label {
+            display: block;
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .candidate-field input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        /* 선택지 세로 배치. 번호 순서가 그대로 앱의 선택지 순서 */
+        .candidate-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .candidate-option-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .candidate-option-no {
+            flex: 0 0 auto;
+            width: 20px;
+            text-align: right;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+        .candidate-option-row input {
+            flex: 1;
+            min-width: 0;
+        }
+        .char-hint {
+            color: #9ca3af;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+        .candidate-loading {
+            display: none;
+            color: #7740ae;
+            font-size: 13px;
+        }
+        .candidate-loading.active {
+            display: inline;
+        }
+    </style>
+</head>
+<body>
+    <h2 layout:fragment="pageTitle">투표 AI 생성</h2>
+
+    <div layout:fragment="content">
+        <p class="candidate-guide">
+            매일 아침 AI가 최근 투표와 겹치지 않는 후보를 만들어 둡니다.
+            문구를 고칠 수 있고, 여러 개를 한 번에 등록할 수 있습니다.
+            <br>등록하면 바로 앱에 게시되며 되돌릴 수 없습니다.
+            <br>처리하지 않고 남은 후보는 다음 생성 때 자동으로 정리됩니다.
+        </p>
+
+        <div class="candidate-toolbar">
+            <button type="button" class="btn btn-secondary" onclick="generateCandidates(this)">지금 생성</button>
+            <span id="generateLoading" class="candidate-loading">AI가 후보를 만드는 중입니다…</span>
+            <span class="spacer"></span>
+            <button type="button" class="btn btn-secondary" onclick="rejectSelected(this)">선택 반려</button>
+            <button type="button" class="btn btn-primary" onclick="approveSelected(this)">선택 투표 등록</button>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>대기 중인 후보
+                    <span class="admin-vote-count-muted">— 총 <span th:text="${#lists.size(candidates)}">0</span>개</span>
+                </h3>
+            </div>
+            <div class="card-body">
+                <div th:if="${#lists.isEmpty(candidates)}" class="empty-state">
+                    <div class="icon">✨</div>
+                    <h3>대기 중인 후보가 없습니다</h3>
+                    <p>'지금 생성'을 누르면 AI가 후보를 만듭니다.</p>
+                </div>
+
+                <div th:unless="${#lists.isEmpty(candidates)}" id="candidateList">
+                    <div th:each="candidate : ${candidates}"
+                         class="candidate-card"
+                         th:data-candidate-id="${candidate.candidateId}">
+                        <div class="candidate-head">
+                            <input type="checkbox" class="candidate-check" onchange="toggleCandidateCard(this)">
+                            <span class="category-badge" th:text="${candidate.categoryLabel}">연애관</span>
+                            <span class="candidate-id" th:text="'#' + ${candidate.candidateId}">#1</span>
+                            <span class="reg-dt"
+                                  th:text="${#temporals.format(candidate.regDt, 'yyyy-MM-dd HH:mm')}">2026-01-01 09:00</span>
+                        </div>
+
+                        <div class="candidate-field">
+                            <label>질문 <span class="char-hint">30~50자 권장 · 100자 이내</span></label>
+                            <input type="text" class="candidate-title" maxlength="100"
+                                   th:value="${candidate.title}">
+                        </div>
+
+                        <div class="candidate-field">
+                            <label>선택지 <span class="char-hint">2~5개 · 각 20자 이내</span></label>
+                            <div class="candidate-options">
+                                <div class="candidate-option-row"
+                                     th:each="option, stat : ${candidate.options}">
+                                    <span class="candidate-option-no" th:text="${stat.count}">1</span>
+                                    <input type="text" class="candidate-option" maxlength="20"
+                                           th:value="${option}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <th:block layout:fragment="scripts">
+        <script th:src="@{/js/admin-vote-candidate.js}"></script>
+    </th:block>
+</body>
+</html>

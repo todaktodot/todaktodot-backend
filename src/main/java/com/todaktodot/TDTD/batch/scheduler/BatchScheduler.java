@@ -21,6 +21,7 @@ public class BatchScheduler {
     private final Job aiReportAssignAlarmJob;
     private final Job aiReportCreateJob;
     private final Job weeklyStatisticsReportJob;
+    private final Job voteCandidateGenerateJob;
 
     // 매일 오전 8시에 한 번만 실행됨
     @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Seoul")
@@ -50,6 +51,12 @@ public class BatchScheduler {
     @Scheduled(cron = "0 30 9 * * WED", zone = "Asia/Seoul")
     public void runWeeklyStatisticsDiscordReport() {
         runJob(weeklyStatisticsReportJob);
+    }
+
+    // 매일 오전 9시에 투표 AI 후보를 만들고 디스코드로 알림
+    @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
+    public void runVoteCandidateGenerateJob() {
+        runJob(voteCandidateGenerateJob);
     }
 
     private void runJob(Job job){
