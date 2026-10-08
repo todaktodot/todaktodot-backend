@@ -1233,8 +1233,7 @@ public class DailyCardServiceImpl implements DailyCardService {
 
             if (!selectedRows.isEmpty()) {
                 //콕 찌르기 여부
-                NotificationEntity notification = notificationRepository.findByCoupleDailyCardIdAndPushTypeAndSuccessYn(selectedRows.get(0).getCoupleCardId(), PushType.POKE, "Y")
-                        .orElse(null);
+                List<NotificationEntity> notifications = notificationRepository.findAllByCoupleDailyCardIdAndPushTypeAndSuccessYn(selectedRows.get(0).getCoupleCardId(), PushType.POKE, "Y");
 
                 // 선택 완료: 전체 상세 정보 조립
                 HistoryDetailProjection first = selectedRows.get(0);
@@ -1298,7 +1297,7 @@ public class DailyCardServiceImpl implements DailyCardService {
                         .questions(questions)
                         .feedback(feedbackMap.get(first.getCoupleCardId()))
                         .feedbackStatus(feedbackStatusMap.getOrDefault(first.getCoupleCardId(), "NOT_STARTED"))
-                        .isPocked(notification != null)
+                        .isPocked(!notifications.isEmpty())
                         .build());
             } else {
                 // 미선택: 모드/주제만 노출
@@ -1453,11 +1452,10 @@ public class DailyCardServiceImpl implements DailyCardService {
         //커플이 아닌 경우
         if (couple.getUserId2() == null) throw new IllegalStateException("혼자 둘러보기의 경우 콕찌르기가 불가합니다.");
 
-        NotificationEntity notification = notificationRepository.findByCoupleDailyCardIdAndPushTypeAndSuccessYn(coupleCardId, PushType.POKE, "Y")
-                .orElse(null);
+        List<NotificationEntity> notifications = notificationRepository.findAllByCoupleDailyCardIdAndPushTypeAndSuccessYn(coupleCardId, PushType.POKE, "Y");
 
         //이미 콕찌르기 한 경우
-        if (notification != null) throw new IllegalStateException("이미 콕찌르기한 데일리카드입니다.");
+        if (!notifications.isEmpty()) throw new IllegalStateException("이미 콕찌르기한 데일리카드입니다.");
 
         User user = userRepository.findByIdAndDelYn(userId, "N").orElse(null);
 
