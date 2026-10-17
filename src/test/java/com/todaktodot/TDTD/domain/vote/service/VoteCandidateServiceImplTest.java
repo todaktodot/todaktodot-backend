@@ -333,6 +333,33 @@ class VoteCandidateServiceImplTest {
         verify(voteService, never()).createBySystem(any());
     }
 
+    @Test
+    @DisplayName("제목이 같은 후보를 한 번에 고르면 하나만 게시한다")
+    void approve_SameTitleInOneRequest_PublishesOnlyOne() {
+        // Given - 어드민이 제목이 같은 후보 두 장을 함께 선택
+        VoteCandidateEntity first = pendingCandidate(21L, "주말엔 집에서 쉬는 게 좋아?", "[\"선택1\",\"선택2\"]");
+        VoteCandidateEntity second = pendingCandidate(22L, "주말엔 집에서 쉬는 게 좋아?", "[\"선택1\",\"선택2\"]");
+
+        when(voteCandidateRepository.findByCandidateIdAndDelYn(21L, "N")).thenReturn(Optional.of(first));
+        when(voteCandidateRepository.findByCandidateIdAndDelYn(22L, "N")).thenReturn(Optional.of(second));
+        when(voteService.createBySystem(any(VoteCreateRequestDTO.class)))
+                .thenReturn(VoteCreateResponseDTO.builder().voteId(300L).build());
+
+        // When
+        VoteCandidateApproveResultDTO result = voteCandidateService.approve(
+                List.of(
+                        approveRequest(21L, "주말엔 집에서 쉬는 게 좋아?", List.of("선택1", "선택2")),
+                        approveRequest(22L, "주말엔 집에서 쉬는 게 좋아?", List.of("선택1", "선택2"))
+                ), ACTOR);
+
+        // Then - 먼저 온 건만 게시되고 뒤에 온 건은 사유와 함께 남는다
+        assertThat(result.getApprovedCount()).isEqualTo(1);
+        assertThat(result.getFailures()).containsExactly("#22 이미 같은 제목의 투표가 있습니다");
+        assertThat(first.getStatus()).isEqualTo(VoteCandidateStatus.APPROVED);
+        assertThat(second.getStatus()).isEqualTo(VoteCandidateStatus.PENDING);
+        verify(voteService, times(1)).createBySystem(any());
+    }
+
     private void givenAiResponds(String json) {
         when(chatClientBuilder.build()
                 .prompt()
@@ -372,6 +399,28 @@ class VoteCandidateServiceImplTest {
         assertThat(result).extracting(VoteCandidateDTO::getTitle)
                 .containsExactly("기념일 챙기는 편이야?", "주말에 뭐 할래?");
         verify(voteCandidateRepository, times(2)).save(any(VoteCandidateEntity.class));
+    }
+
+    @Test
+    @DisplayName("AI 후보 생성 - 같은 제목을 두 번 주면 하나만 저장한다")
+    void generate_SameTitleTwice_SavesOnlyOne() {
+        // Given - 카테고리만 다르고 제목이 같은 후보 두 개
+        givenAiResponds("""
+            [
+              {"category":"LOVE","title":"기념일 챙기는 편이야?","options":["챙긴다","안 챙긴다"]},
+              {"category":"LIFESTYLE","title":"기념일 챙기는 편이야?","options":["매번","가끔"]}
+            ]
+            """);
+        when(voteCandidateRepository.save(any(VoteCandidateEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        List<VoteCandidateDTO> result = voteCandidateService.generate();
+
+        // Then - 뒤에 온 건은 앞에서 통과한 제목과 겹쳐 제외된다
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getTitle()).isEqualTo("기념일 챙기는 편이야?");
+        verify(voteCandidateRepository, times(1)).save(any(VoteCandidateEntity.class));
     }
 
     @Test

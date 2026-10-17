@@ -27,8 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -77,26 +80,31 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
         String batchKey = LocalDate.now().toString();
         List<VoteCandidateDTO> saved = new ArrayList<>();
 
+        //통과한 제목을 쌓아가며 비교 - AI 가 같은 제목을 두 번 주면 후보 카드가 두 장 생김
+        Set<String> usedTitles = toTitleSet(recentTitles);
+
         for (AiGeneratedVoteDTO candidate : generated) {
-            String reason = validate(candidate, recentTitles);
+            String reason = validate(candidate, usedTitles);
             if (reason != null) {
                 //candidate 가 null 일 수 있어 제목을 바로 꺼내지 않음
                 log.warn("후보 제외 - {} / 제목: {}", reason, candidate == null ? "(없음)" : candidate.getTitle());
                 continue;
             }
 
+            String title = candidate.getTitle().trim();
             List<String> options = candidate.getOptions().stream().map(String::trim).toList();
 
             VoteCandidateEntity entity = VoteCandidateEntity.builder()
                     .batchKey(batchKey)
                     .category(VoteCategory.valueOf(candidate.getCategory().trim().toUpperCase(Locale.ROOT)))
-                    .title(candidate.getTitle().trim())
+                    .title(title)
                     .optionsJson(writeOptions(options))
                     .promptId(adminPrompt.getPromptId())
                     .aiModel(AI_MODEL)
                     .regrId(SYSTEM_USER)
                     .build();
 
+            usedTitles.add(title);
             saved.add(VoteCandidateDTO.of(voteCandidateRepository.save(entity), options));
         }
 
@@ -155,7 +163,8 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
         List<String> approved = new ArrayList<>();
 
         //생성 이후 같은 제목이 올라왔을 수 있어 게시 직전 재확인
-        List<String> recentTitles = voteRepository.findRecentTitles(RECENT_TITLE_SIZE);
+        //게시한 제목을 쌓아가며 비교 - 제목이 같은 후보를 한 번에 고르면 투표가 두 개 게시됨
+        Set<String> usedTitles = toTitleSet(voteRepository.findRecentTitles(RECENT_TITLE_SIZE));
 
         for (VoteCandidateApproveRequestDTO request : requests) {
 
@@ -182,7 +191,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
                     : readOptions(entity.getOptionsJson());
 
             String reason = validateForApprove(title, options);
-            if (reason == null && isDuplicatedTitle(title, recentTitles)) {
+            if (reason == null && usedTitles.contains(title)) {
                 reason = "이미 같은 제목의 투표가 있습니다";
             }
             if (reason != null) {
@@ -195,6 +204,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
 
             VoteCreateResponseDTO created = voteService.createBySystem(toCreateRequest(entity.getCategory(), title, options));
             entity.approve(created.getVoteId(), SYSTEM_USER);
+            usedTitles.add(title);
             approvedCount++;
             approved.add(entity.getCandidateId() + "→" + created.getVoteId());
         }
@@ -374,7 +384,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
      * 생성 직후 검증 - 통과하지 못한 후보는 미저장
      * @return 걸린 사유. 통과면 null
      */
-    private String validate(AiGeneratedVoteDTO candidate, List<String> recentTitles) {
+    private String validate(AiGeneratedVoteDTO candidate, Set<String> usedTitles) {
 
         if (candidate == null) {
             return "응답이 비어 있음";
@@ -385,8 +395,8 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
         }
 
         String title = candidate.getTitle() == null ? "" : candidate.getTitle().trim();
-        if (isDuplicatedTitle(title, recentTitles)) {
-            return "최근 투표와 제목이 완전히 같음";
+        if (usedTitles.contains(title)) {
+            return "최근 투표 또는 같은 묶음 후보와 제목이 같음";
         }
 
         return validateForApprove(title, candidate.getOptions());
@@ -421,8 +431,9 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
         return null;
     }
 
-    private boolean isDuplicatedTitle(String title, List<String> recentTitles) {
-        return recentTitles.stream().anyMatch(recent -> recent.trim().equals(title));
+    //제목 비교용 집합. 저장분에 공백이 섞여 있어 담을 때 다듬는다
+    private Set<String> toTitleSet(List<String> titles) {
+        return titles.stream().map(String::trim).collect(Collectors.toCollection(HashSet::new));
     }
 
     //AI 가 소문자로 줄 때가 있어 대소문자 무시
