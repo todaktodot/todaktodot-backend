@@ -45,7 +45,13 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     private final VoteService voteService;
     private final ObjectMapper objectMapper;
 
+    //배치·시스템이 만든 레코드. DailyCardServiceImpl 과 같은 이름
     private static final Long SYSTEM_USER = 0L;
+
+    //어드민이 처리한 레코드. 어드민 로그인은 users 레코드가 없어 0 을 쓴다
+    //AdminVoteServiceImpl 등 기존 어드민 서비스와 같은 이름
+    private static final Long ADMIN_USER_ID = 0L;
+
     private static final String AI_MODEL = "gpt-5.4";
     private static final int CANDIDATE_COUNT = 5;
     //중복 회피 재료. 늘릴수록 겹칠 확률은 줄지만 매 호출 토큰이 늘어남
@@ -200,10 +206,10 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             }
 
             //어드민이 고친 문구를 후보에도 기록 - 등록 내용 추적용
-            entity.updateContent(title, writeOptions(options), SYSTEM_USER);
+            entity.updateContent(title, writeOptions(options), ADMIN_USER_ID);
 
             VoteCreateResponseDTO created = voteService.createBySystem(toCreateRequest(entity.getCategory(), title, options));
-            entity.approve(created.getVoteId(), SYSTEM_USER);
+            entity.approve(created.getVoteId(), ADMIN_USER_ID);
             usedTitles.add(title);
             approvedCount++;
             approved.add(entity.getCandidateId() + "→" + created.getVoteId());
@@ -235,7 +241,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
                 continue;
             }
 
-            entity.reject(SYSTEM_USER);
+            entity.reject(ADMIN_USER_ID);
             rejectedCount++;
 
             log.info("[Admin] 투표 후보 반려: candidateId={}, actor={}", candidateId, actor);
