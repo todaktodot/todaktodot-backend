@@ -1,0 +1,116 @@
+package com.todaktodot.TDTD.domain.vote.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.todaktodot.TDTD.domain.notification.service.FcmService;
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteCreateRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteCreateResponseDTO;
+import com.todaktodot.TDTD.domain.vote.repository.VoteLikeRepository;
+import com.todaktodot.TDTD.domain.vote.repository.VoteModerationLogRepository;
+import com.todaktodot.TDTD.domain.vote.repository.VoteOptionRepository;
+import com.todaktodot.TDTD.domain.vote.repository.VoteReportRepository;
+import com.todaktodot.TDTD.domain.vote.repository.VoteRepository;
+import com.todaktodot.TDTD.domain.vote.repository.VoteSelectRepository;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteEntity;
+import com.todaktodot.TDTD.domain.vote.repository.projection.UserSuspensionRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("투표 서비스 테스트")
+class VoteServiceImplTest {
+
+    @Mock
+    private VoteRepository voteRepository;
+    @Mock
+    private VoteOptionRepository voteOptionRepository;
+    @Mock
+    private VoteSelectRepository voteSelectRepository;
+    @Mock
+    private VoteReportRepository voteReportRepository;
+    @Mock
+    private VoteLikeRepository voteLikeRepository;
+    @Mock
+    private VoteModerationLogRepository voteModerationLogRepository;
+    @Mock
+    private UserSuspensionRepository suspensionRepository;
+    @Mock
+    private FcmService fcmService;
+    @Mock
+    private ObjectMapper objectMapper;
+
+    @InjectMocks
+    private VoteServiceImpl voteService;
+
+    private static final Long BOT_USER = 777L;
+
+    @Test
+    @DisplayName("시스템 투표 등록 - 설정한 봇 계정이 작성자로 저장된다")
+    void createBySystem_UsesConfiguredBotUser() {
+        // Given
+        ReflectionTestUtils.setField(voteService, "botUserId", BOT_USER);
+        when(voteRepository.save(any(VoteEntity.class))).thenAnswer(invocation -> {
+            VoteEntity saved = invocation.getArgument(0);
+            ReflectionTestUtils.setField(saved, "voteId", 500L);
+            return saved;
+        });
+
+        // When
+        VoteCreateResponseDTO result = voteService.createBySystem(createRequest());
+
+        // Then
+        ArgumentCaptor<VoteEntity> captor = ArgumentCaptor.forClass(VoteEntity.class);
+        verify(voteRepository).save(captor.capture());
+
+        assertThat(result.getVoteId()).isEqualTo(500L);
+        assertThat(captor.getValue().getUserId()).isEqualTo(BOT_USER);
+        //감사 컬럼은 다른 시스템 생성 레코드와 같은 0 을 유지한다
+        assertThat(captor.getValue().getRegrId()).isZero();
+    }
+
+    @Test
+    @DisplayName("시스템 투표 등록 - 봇 계정 설정이 없으면 게시하지 않는다")
+    void createBySystem_BotUserNotConfigured_Throws() {
+        // Given - vote.bot.user-id 기본값(0) 그대로인 상태
+        ReflectionTestUtils.setField(voteService, "botUserId", 0L);
+
+        // When & Then - 되돌릴 수 없는 작업이라 저장 전에 멈춘다
+        assertThatThrownBy(() -> voteService.createBySystem(createRequest()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("vote.bot.user-id");
+
+        verify(voteRepository, never()).save(any(VoteEntity.class));
+        verify(voteOptionRepository, never()).saveAll(anyList());
+    }
+
+    private VoteCreateRequestDTO createRequest() {
+        VoteCreateRequestDTO request = new VoteCreateRequestDTO();
+        request.setCategory(VoteCategory.LOVE);
+        request.setTitle("기념일 챙기는 편이야?");
+        request.setOptions(List.of(optionRequest("챙긴다", 1), optionRequest("안 챙긴다", 2)));
+        return request;
+    }
+
+    private VoteCreateRequestDTO.OptionRequest optionRequest(String content, int order) {
+        VoteCreateRequestDTO.OptionRequest option = new VoteCreateRequestDTO.OptionRequest();
+        option.setContent(content);
+        option.setOrder(order);
+        return option;
+    }
+}

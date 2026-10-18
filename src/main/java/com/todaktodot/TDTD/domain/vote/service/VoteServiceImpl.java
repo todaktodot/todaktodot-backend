@@ -15,6 +15,7 @@ import com.todaktodot.TDTD.domain.vote.repository.projection.VoteCursorProjectio
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteProjection;
 import com.todaktodot.TDTD.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -42,6 +43,11 @@ public class VoteServiceImpl implements VoteService{
     private final ObjectMapper objectMapper;
 
     private static final Long SYSTEM_USER = 0L;
+
+    //시스템 투표의 작성자. 개발·운영 DB 의 봇 계정 ID 가 달라 설정으로 받는다
+    //0 은 미설정. 감사 컬럼(REGR_ID)의 0 과 역할이 달라 SYSTEM_USER 를 쓰지 않는다
+    @Value("${vote.bot.user-id:0}")
+    private Long botUserId;
 
     @Override
     @Transactional(readOnly = true)
@@ -263,11 +269,17 @@ public class VoteServiceImpl implements VoteService{
             throw new IllegalArgumentException("옵션은 최소 2개, 최대 5개만 등록할 수 있습니다.");
         }
 
+        //설정이 빠진 채 게시하면 작성자 없는 투표가 남고 어드민 신고 상세가 터진다
+        //되돌릴 수 없는 작업이라 게시 전에 멈춘다
+        if (botUserId == null || botUserId <= 0) {
+            throw new IllegalStateException("투표 봇 계정이 설정되지 않았습니다. vote.bot.user-id 를 확인해주세요.");
+        }
+
         //vote 저장 - 마감 시각은 사용자 등록과 동일하게 게시 시점 기준 24시간
         LocalDateTime now = LocalDateTime.now();
 
         VoteEntity vote = VoteEntity.builder()
-                .userId(SYSTEM_USER)
+                .userId(botUserId)
                 .randomNickname(generateRandomNickname())
                 .category(request.getCategory())
                 .title(request.getTitle())
