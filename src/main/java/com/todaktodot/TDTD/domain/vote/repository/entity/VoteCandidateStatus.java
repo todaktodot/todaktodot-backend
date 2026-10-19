@@ -6,10 +6,10 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-@Schema(description = "투표 후보 처리 상태 - PENDING: 대기, APPROVED: 등록됨, REJECTED: 반려")
+@Schema(description = "투표 후보 처리 상태 - PENDING: 대기, APPROVED: 등록, REJECTED: 반려")
 public enum VoteCandidateStatus {
     PENDING("대기"),
-    APPROVED("등록됨"),
+    APPROVED("등록"),
     REJECTED("반려");
 
     private final String description;
