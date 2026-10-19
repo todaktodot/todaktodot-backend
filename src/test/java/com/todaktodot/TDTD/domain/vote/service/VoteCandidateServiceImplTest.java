@@ -14,6 +14,7 @@ import com.todaktodot.TDTD.domain.vote.repository.VoteRepository;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCandidateEntity;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCandidateStatus;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
+import jakarta.persistence.LockModeType;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
@@ -463,6 +465,69 @@ class VoteCandidateServiceImplTest {
         ArgumentCaptor<VoteCandidateEntity> captor = ArgumentCaptor.forClass(VoteCandidateEntity.class);
         verify(voteCandidateRepository).save(captor.capture());
         assertThat(captor.getValue().getAiModel()).isEqualTo(CONFIG_MODEL);
+    }
+
+    @Test
+    @DisplayName("후보 조회에 비관적 락이 걸려 있다")
+    void candidateLookup_IsPessimisticallyLocked() throws Exception {
+        // Given - 동시 승인으로 같은 투표가 두 번 게시되는 것을 막는 유일한 장치
+        var lookup = VoteCandidateRepository.class
+                .getMethod("findByCandidateIdAndDelYn", Long.class, String.class);
+
+        // When
+        Lock lock = lookup.getAnnotation(Lock.class);
+
+        // Then
+        assertThat(lock).isNotNull();
+        assertThat(lock.value()).isEqualTo(LockModeType.PESSIMISTIC_WRITE);
+    }
+
+    @Test
+    @DisplayName("AI 후보 생성 - 대기 중인 후보와 제목이 같으면 저장하지 않는다")
+    void generate_SameTitleAsPendingCandidate_Skipped() {
+        // Given - 아침 배치가 만들어 둔 후보. vote 에는 아직 없어 findRecentTitles 로는 안 걸린다
+        VoteCandidateEntity pending = pendingCandidate(7L, "기념일 챙기는 편이야?", "[\"선택1\",\"선택2\"]");
+
+        givenAiResponds("""
+            [
+              {"category":"LOVE","title":"기념일 챙기는 편이야?","options":["챙긴다","안 챙긴다"]},
+              {"category":"LIFESTYLE","title":"주말에 뭐 할래?","options":["집","밖"]}
+            ]
+            """);
+        when(voteCandidateRepository.findAllByStatusAndDelYnOrderByRegDtDescCandidateIdDesc(
+                VoteCandidateStatus.PENDING, "N")).thenReturn(List.of(pending));
+        when(voteCandidateRepository.save(any(VoteCandidateEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        List<VoteCandidateDTO> result = voteCandidateService.generate();
+
+        // Then - 겹치는 건만 빠지고 나머지는 저장된다
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getTitle()).isEqualTo("주말에 뭐 할래?");
+    }
+
+    @Test
+    @DisplayName("AI 후보 생성 - 지시한 개수를 넘겨받으면 그만큼만 저장한다")
+    void generate_MoreThanRequested_CapsAtLimit() {
+        // Given - 어드민이 프롬프트에 개수를 더 적으면 지시가 무시될 수 있다
+        givenAiResponds("""
+            [
+              {"category":"LOVE","title":"질문 1번인가요?","options":["선택1","선택2"]},
+              {"category":"LOVE","title":"질문 2번인가요?","options":["선택1","선택2"]},
+              {"category":"LOVE","title":"질문 3번인가요?","options":["선택1","선택2"]},
+              {"category":"LOVE","title":"질문 4번인가요?","options":["선택1","선택2"]},
+              {"category":"LOVE","title":"질문 5번인가요?","options":["선택1","선택2"]},
+              {"category":"LOVE","title":"질문 6번인가요?","options":["선택1","선택2"]},
+              {"category":"LOVE","title":"질문 7번인가요?","options":["선택1","선택2"]}
+            ]
+            """);
+        when(voteCandidateRepository.save(any(VoteCandidateEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Then - 디스코드 embed 필드 상한(25)을 넘기지 않도록 5건에서 멈춘다
+        assertThat(voteCandidateService.generate()).hasSize(5);
+        verify(voteCandidateRepository, times(5)).save(any(VoteCandidateEntity.class));
     }
 
     @Test

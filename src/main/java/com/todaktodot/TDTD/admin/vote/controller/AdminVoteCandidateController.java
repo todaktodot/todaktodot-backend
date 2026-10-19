@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -39,8 +40,9 @@ public class AdminVoteCandidateController {
     @GetMapping
     public String list(Model model) {
         model.addAttribute("candidates", voteCandidateService.getPendingList());
-        model.addAttribute("aiModels", AI_MODELS);
-        model.addAttribute("defaultAiModel", voteCandidateService.getDefaultAiModel());
+        String defaultAiModel = voteCandidateService.getDefaultAiModel();
+        model.addAttribute("aiModels", modelOptions(defaultAiModel));
+        model.addAttribute("defaultAiModel", defaultAiModel);
         model.addAttribute("activeMenu", "vote-candidate");
 
         return "admin/votecandidate/list";
@@ -62,13 +64,28 @@ public class AdminVoteCandidateController {
         return aiModel != null && AI_MODELS.stream().anyMatch(model -> model.get("id").equals(aiModel));
     }
 
+    //설정값이 목록에 없으면 맨 앞에 끼워 넣는다
+    //없으면 아무 항목도 선택되지 않아 브라우저가 첫 항목을 고르고, 그게 설정값처럼 보인다
+    private List<Map<String, String>> modelOptions(String defaultAiModel) {
+
+        if (defaultAiModel == null || defaultAiModel.isBlank() || isKnownModel(defaultAiModel)) {
+            return AI_MODELS;
+        }
+
+        List<Map<String, String>> options = new ArrayList<>();
+        options.add(Map.of("id", defaultAiModel, "name", defaultAiModel, "desc", "서버 설정값"));
+        options.addAll(AI_MODELS);
+
+        return options;
+    }
+
     @PostMapping("/approve")
     @ResponseBody
     public Map<String, Object> approve(@RequestBody List<VoteCandidateApproveRequestDTO> requests,
                                        Authentication authentication) {
         VoteCandidateApproveResultDTO result = voteCandidateService.approve(requests, authentication.getName());
 
-        //일부만 실패해도 성공분은 이미 등록된 상태라 함께 반환
+        //검증에 걸린 건만 사유로 돌려준다. 예외가 나면 전체 롤백이라 여기까지 오지 않는다
         return Map.of(
                 "message", result.getApprovedCount() + "개의 투표를 등록했습니다.",
                 "approvedCount", result.getApprovedCount(),

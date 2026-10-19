@@ -104,13 +104,30 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
                 buildReferenceData(recentTitles),
                 aiModel);
 
+        //AI 가 배열 대신 null 을 주면 파싱 결과가 null 이다
+        if (generated == null) {
+            throw new IllegalStateException("AI 응답을 후보 목록으로 읽지 못했습니다.");
+        }
+
         String batchKey = LocalDate.now().toString();
         List<VoteCandidateDTO> saved = new ArrayList<>();
 
         //통과한 제목을 쌓아가며 비교 - AI 가 같은 제목을 두 번 주면 후보 카드가 두 장 생김
+        //대기 중인 후보도 함께 담는다. 아직 vote 에 없어 findRecentTitles 로는 안 걸린다
         Set<String> usedTitles = toTitleSet(recentTitles);
+        voteCandidateRepository
+                .findAllByStatusAndDelYnOrderByRegDtDescCandidateIdDesc(VoteCandidateStatus.PENDING, "N")
+                .forEach(entity -> usedTitles.add(entity.getTitle().trim()));
 
         for (AiGeneratedVoteDTO candidate : generated) {
+
+            //프롬프트는 어드민이 고칠 수 있어 개수 지시가 무시될 수 있다
+            //디스코드 embed 는 필드 25개가 상한이고, 넘치면 발송이 조용히 실패한다
+            if (saved.size() >= CANDIDATE_COUNT) {
+                log.warn("후보 {}건을 받아 {}건까지만 저장합니다.", generated.size(), CANDIDATE_COUNT);
+                break;
+            }
+
             String reason = validate(candidate, usedTitles);
             if (reason != null) {
                 //candidate 가 null 일 수 있어 제목을 바로 꺼내지 않음
