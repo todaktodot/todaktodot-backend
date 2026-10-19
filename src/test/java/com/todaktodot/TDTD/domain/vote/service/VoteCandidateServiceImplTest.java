@@ -15,6 +15,7 @@ import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCandidateEntity;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCandidateStatus;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,6 +73,13 @@ class VoteCandidateServiceImplTest {
     private VoteCandidateServiceImpl voteCandidateService;
 
     private static final String ACTOR = "admin";
+    private static final String CONFIG_MODEL = "gpt-5.4";
+
+    //@Value 필드라 스프링 없이는 null. 설정값이 들어온 상태를 만든다
+    @BeforeEach
+    void setUpDefaultModel() {
+        ReflectionTestUtils.setField(voteCandidateService, "defaultAiModel", CONFIG_MODEL);
+    }
 
     //candidateId 는 DB 가 채우는 값이라 테스트에서 직접 주입. 실패 메시지의 #번호 검증용
     private VoteCandidateEntity pendingCandidate(Long candidateId, String title, String optionsJson) {
@@ -421,6 +429,40 @@ class VoteCandidateServiceImplTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getTitle()).isEqualTo("기념일 챙기는 편이야?");
         verify(voteCandidateRepository, times(1)).save(any(VoteCandidateEntity.class));
+    }
+
+    @Test
+    @DisplayName("AI 후보 생성 - 화면에서 고른 모델로 호출하고 후보에 기록한다")
+    void generate_WithSelectedModel_UsesIt() {
+        // Given
+        givenAiResponds("[{\"category\":\"LOVE\",\"title\":\"기념일 챙기는 편이야?\",\"options\":[\"챙긴다\",\"안 챙긴다\"]}]");
+        when(voteCandidateRepository.save(any(VoteCandidateEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When - 어드민이 설정값과 다른 모델을 고름
+        voteCandidateService.generate("gpt-4o-mini");
+
+        // Then
+        ArgumentCaptor<VoteCandidateEntity> captor = ArgumentCaptor.forClass(VoteCandidateEntity.class);
+        verify(voteCandidateRepository).save(captor.capture());
+        assertThat(captor.getValue().getAiModel()).isEqualTo("gpt-4o-mini");
+    }
+
+    @Test
+    @DisplayName("AI 후보 생성 - 모델을 안 고르면 설정값을 쓴다")
+    void generate_WithoutModel_FallsBackToConfig() {
+        // Given
+        givenAiResponds("[{\"category\":\"LOVE\",\"title\":\"기념일 챙기는 편이야?\",\"options\":[\"챙긴다\",\"안 챙긴다\"]}]");
+        when(voteCandidateRepository.save(any(VoteCandidateEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When - 빈 값으로 들어오는 경우(화면 밖 호출, 목록에 없는 모델)
+        voteCandidateService.generate("  ");
+
+        // Then
+        ArgumentCaptor<VoteCandidateEntity> captor = ArgumentCaptor.forClass(VoteCandidateEntity.class);
+        verify(voteCandidateRepository).save(captor.capture());
+        assertThat(captor.getValue().getAiModel()).isEqualTo(CONFIG_MODEL);
     }
 
     @Test

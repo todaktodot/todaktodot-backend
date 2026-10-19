@@ -105,6 +105,14 @@
             font-size: 11px;
             margin-left: 4px;
         }
+        /* 이번 생성에만 적용. 매일 도는 배치는 vote.ai-model 설정값을 쓴다 */
+        .candidate-model {
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 13px;
+            max-width: 260px;
+        }
         .candidate-loading {
             display: none;
             color: #7740ae;
@@ -124,10 +132,18 @@
             문구를 고칠 수 있고, 여러 개를 한 번에 등록할 수 있습니다.
             <br>등록하면 바로 앱에 게시되며 되돌릴 수 없습니다.
             <br>처리하지 않고 남은 후보는 다음 생성 때 자동으로 정리됩니다.
+            <br>모델 선택은 '지금 생성'에만 적용되며, 매일 아침 생성은 서버 설정값을 사용합니다.
         </p>
 
         <div class="candidate-toolbar">
             <button type="button" class="btn btn-secondary" onclick="generateCandidates(this)">지금 생성</button>
+            <select id="aiModel" class="candidate-model">
+                <option th:each="m : ${aiModels}"
+                        th:value="${m.get('id')}"
+                        th:text="|${m.get('name')} - ${m.get('desc')}|"
+                        th:selected="${m.get('id') == defaultAiModel}">
+                </option>
+            </select>
             <span id="generateLoading" class="candidate-loading">AI가 후보를 만드는 중입니다…</span>
             <span class="spacer"></span>
             <button type="button" class="btn btn-secondary" onclick="rejectSelected(this)">선택 반려</button>

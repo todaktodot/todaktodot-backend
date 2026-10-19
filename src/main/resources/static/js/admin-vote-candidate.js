@@ -40,7 +40,10 @@ function generateCandidates(button) {
     document.getElementById('generateLoading').classList.add('active');
     lockToolbar(button);
 
-    postJson('/admin/vote-candidate/generate', null)
+    // 이번 생성에만 쓰는 모델. 목록 밖의 값이면 서버가 설정값으로 되돌린다
+    const aiModel = document.getElementById('aiModel').value;
+
+    postJson('/admin/vote-candidate/generate?aiModel=' + encodeURIComponent(aiModel), null)
         .then(body => finishCandidateAction(body.message))
         .catch(error => {
             document.getElementById('generateLoading').classList.remove('active');

@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,7 +53,9 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     //AdminVoteServiceImpl 등 기존 어드민 서비스와 같은 이름
     private static final Long ADMIN_USER_ID = 0L;
 
-    private static final String AI_MODEL = "gpt-5.4";
+    //배치가 쓰는 기본 모델. 어드민 수동 생성은 화면에서 고른 값이 우선
+    @Value("${vote.ai-model:gpt-5.4}")
+    private String defaultAiModel;
     private static final int CANDIDATE_COUNT = 5;
     //중복 회피 재료. 늘릴수록 겹칠 확률은 줄지만 매 호출 토큰이 늘어남
     private static final int RECENT_TITLE_SIZE = 30;
@@ -71,17 +74,35 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     @Override
     @Transactional
     public List<VoteCandidateDTO> generate() {
+        return doGenerate(defaultAiModel);
+    }
+
+    @Override
+    @Transactional
+    public List<VoteCandidateDTO> generate(String aiModel) {
+        return doGenerate(hasText(aiModel) ? aiModel.trim() : defaultAiModel);
+    }
+
+    @Override
+    public String getDefaultAiModel() {
+        return defaultAiModel;
+    }
+
+    //두 진입점이 공유하는 본체. private 이라 프록시를 안 타므로 바깥 트랜잭션에 그대로 참여한다
+    private List<VoteCandidateDTO> doGenerate(String aiModel) {
 
         //중복 회피 재료
         List<String> recentTitles = voteRepository.findRecentTitles(RECENT_TITLE_SIZE);
 
         AiPromptEntity adminPrompt = findActivePrompt();
 
-        log.info("=====투표 AI 후보 생성 시작===== 최근 투표 {}건 참고, 프롬프트ID {}", recentTitles.size(), adminPrompt.getPromptId());
+        log.info("=====투표 AI 후보 생성 시작===== 최근 투표 {}건 참고, 프롬프트ID {}, 모델 {}",
+                recentTitles.size(), adminPrompt.getPromptId(), aiModel);
 
         List<AiGeneratedVoteDTO> generated = callAi(
                 buildInstruction(adminPrompt.getPromptContent()),
-                buildReferenceData(recentTitles));
+                buildReferenceData(recentTitles),
+                aiModel);
 
         String batchKey = LocalDate.now().toString();
         List<VoteCandidateDTO> saved = new ArrayList<>();
@@ -106,7 +127,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
                     .title(title)
                     .optionsJson(writeOptions(options))
                     .promptId(adminPrompt.getPromptId())
-                    .aiModel(AI_MODEL)
+                    .aiModel(aiModel)
                     .regrId(SYSTEM_USER)
                     .build();
 
@@ -261,12 +282,13 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
         return prompts.get(0);
     }
 
-    private List<AiGeneratedVoteDTO> callAi(String instruction, String referenceData) {
+    private List<AiGeneratedVoteDTO> callAi(String instruction, String referenceData, String aiModel) {
 
         ChatClient chatClient = chatClientBuilder.build();
 
+        //temperature 는 넘기지 않는다. gpt-5 계열이 미지원이고 기본값으로 충분
         String response = chatClient.prompt()
-                .options(OpenAiChatOptions.builder().model(AI_MODEL).build())
+                .options(OpenAiChatOptions.builder().model(aiModel).build())
                 .system(instruction)
                 .user(referenceData)
                 .call()

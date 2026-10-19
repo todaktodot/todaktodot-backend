@@ -9,11 +9,23 @@ import java.util.List;
 public interface VoteCandidateService {
 
     /**
-     * AI 후보 생성
+     * AI 후보 생성 - 배치용. 모델은 설정값(vote.ai-model) 사용
      * 최근 투표 제목을 재료로 중복되지 않는 후보를 만들어 PENDING 으로 저장
      * @return 저장된 후보 목록
      */
     List<VoteCandidateDTO> generate();
+
+    /**
+     * AI 후보 생성 - 어드민 수동용. 이번 호출에만 쓸 모델을 지정
+     * @param aiModel 사용할 모델. 비어 있으면 설정값으로 대체
+     * @return 저장된 후보 목록
+     */
+    List<VoteCandidateDTO> generate(String aiModel);
+
+    /**
+     * 배치가 쓰는 기본 AI 모델. 화면에서 선택값을 미리 고르는 데 사용
+     */
+    String getDefaultAiModel();
 
     /**
      * 대기 중인 후보 목록 조회
