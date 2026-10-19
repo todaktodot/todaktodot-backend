@@ -62,7 +62,7 @@ class VoteServiceImplTest {
 
     @Test
     @DisplayName("시스템 투표 등록 - 설정한 봇 계정이 작성자로 저장된다")
-    void createBySystem_UsesConfiguredBotUser() {
+    void createByAdmin_UsesConfiguredBotUser() {
         // Given
         ReflectionTestUtils.setField(voteService, "botUserId", BOT_USER);
         when(voteRepository.save(any(VoteEntity.class))).thenAnswer(invocation -> {
@@ -72,7 +72,7 @@ class VoteServiceImplTest {
         });
 
         // When
-        VoteCreateResponseDTO result = voteService.createBySystem(createRequest());
+        VoteCreateResponseDTO result = voteService.createByAdmin(createRequest());
 
         // Then
         ArgumentCaptor<VoteEntity> captor = ArgumentCaptor.forClass(VoteEntity.class);
@@ -86,12 +86,12 @@ class VoteServiceImplTest {
 
     @Test
     @DisplayName("시스템 투표 등록 - 봇 계정 설정이 없으면 게시하지 않는다")
-    void createBySystem_BotUserNotConfigured_Throws() {
+    void createByAdmin_BotUserNotConfigured_Throws() {
         // Given - vote.bot.user-id 기본값(0) 그대로인 상태
         ReflectionTestUtils.setField(voteService, "botUserId", 0L);
 
         // When & Then - 되돌릴 수 없는 작업이라 저장 전에 멈춘다
-        assertThatThrownBy(() -> voteService.createBySystem(createRequest()))
+        assertThatThrownBy(() -> voteService.createByAdmin(createRequest()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("vote.bot.user-id");
 

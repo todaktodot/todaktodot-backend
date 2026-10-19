@@ -263,7 +263,7 @@ public class VoteServiceImpl implements VoteService{
 
     @Override
     @Transactional
-    public VoteCreateResponseDTO createBySystem(VoteCreateRequestDTO request) {
+    public VoteCreateResponseDTO createByAdmin(VoteCreateRequestDTO request) {
 
         if (request.getOptions().size() < 2 || request.getOptions().size() > 5) {
             throw new IllegalArgumentException("옵션은 최소 2개, 최대 5개만 등록할 수 있습니다.");

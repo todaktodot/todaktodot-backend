@@ -208,7 +208,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             //어드민이 고친 문구를 후보에도 기록 - 등록 내용 추적용
             entity.updateContent(title, writeOptions(options), ADMIN_USER_ID);
 
-            VoteCreateResponseDTO created = voteService.createBySystem(toCreateRequest(entity.getCategory(), title, options));
+            VoteCreateResponseDTO created = voteService.createByAdmin(toCreateRequest(entity.getCategory(), title, options));
             entity.approve(created.getVoteId(), ADMIN_USER_ID);
             usedTitles.add(title);
             approvedCount++;

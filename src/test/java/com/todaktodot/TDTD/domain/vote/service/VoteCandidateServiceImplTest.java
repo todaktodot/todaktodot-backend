@@ -104,7 +104,7 @@ class VoteCandidateServiceImplTest {
 
         when(voteCandidateRepository.findByCandidateIdAndDelYn(anyLong(), anyString()))
                 .thenReturn(Optional.of(candidate));
-        when(voteService.createBySystem(any(VoteCreateRequestDTO.class)))
+        when(voteService.createByAdmin(any(VoteCreateRequestDTO.class)))
                 .thenReturn(VoteCreateResponseDTO.builder().voteId(100L).build());
 
         // When
@@ -117,7 +117,7 @@ class VoteCandidateServiceImplTest {
 
         //화면에서 고친 값이 그대로 게시되는지 확인
         ArgumentCaptor<VoteCreateRequestDTO> captor = ArgumentCaptor.forClass(VoteCreateRequestDTO.class);
-        verify(voteService).createBySystem(captor.capture());
+        verify(voteService).createByAdmin(captor.capture());
 
         VoteCreateRequestDTO created = captor.getValue();
         assertThat(created.getTitle()).isEqualTo("고친 질문인가요?");
@@ -148,7 +148,7 @@ class VoteCandidateServiceImplTest {
         assertThat(result.getFailures()).hasSize(1);
         assertThat(result.getFailures().get(0)).contains("2~5개");
 
-        verify(voteService, never()).createBySystem(any());
+        verify(voteService, never()).createByAdmin(any());
         assertThat(candidate.getStatus()).isEqualTo(VoteCandidateStatus.PENDING);
     }
 
@@ -168,7 +168,7 @@ class VoteCandidateServiceImplTest {
         // Then
         assertThat(result.getApprovedCount()).isZero();
         assertThat(result.getFailures().get(0)).contains("선택지가 비었거나");
-        verify(voteService, never()).createBySystem(any());
+        verify(voteService, never()).createByAdmin(any());
     }
 
     @Test
@@ -187,7 +187,7 @@ class VoteCandidateServiceImplTest {
         // Then
         assertThat(result.getApprovedCount()).isZero();
         assertThat(result.getFailures().get(0)).contains("20자");
-        verify(voteService, never()).createBySystem(any());
+        verify(voteService, never()).createByAdmin(any());
     }
 
     @Test
@@ -206,7 +206,7 @@ class VoteCandidateServiceImplTest {
         // Then
         assertThat(result.getApprovedCount()).isZero();
         assertThat(result.getFailures().get(0)).contains("2~5개");
-        verify(voteService, never()).createBySystem(any());
+        verify(voteService, never()).createByAdmin(any());
     }
 
     @Test
@@ -226,7 +226,7 @@ class VoteCandidateServiceImplTest {
         // Then
         assertThat(result.getApprovedCount()).isZero();
         assertThat(result.getFailures().get(0)).contains("이미 처리된 후보");
-        verify(voteService, never()).createBySystem(any());
+        verify(voteService, never()).createByAdmin(any());
     }
 
     @Test
@@ -238,7 +238,7 @@ class VoteCandidateServiceImplTest {
 
         when(voteCandidateRepository.findByCandidateIdAndDelYn(1L, "N")).thenReturn(Optional.of(valid));
         when(voteCandidateRepository.findByCandidateIdAndDelYn(2L, "N")).thenReturn(Optional.of(invalid));
-        when(voteService.createBySystem(any(VoteCreateRequestDTO.class)))
+        when(voteService.createByAdmin(any(VoteCreateRequestDTO.class)))
                 .thenReturn(VoteCreateResponseDTO.builder().voteId(200L).build());
 
         // When - 2번은 선택지가 1개라 검증에 걸림
@@ -330,7 +330,7 @@ class VoteCandidateServiceImplTest {
         assertThat(result.getApprovedCount()).isZero();
         //실패 메시지의 후보 번호로 어드민이 카드를 찾음
         assertThat(result.getFailures().get(0)).isEqualTo("#412 이미 같은 제목의 투표가 있습니다");
-        verify(voteService, never()).createBySystem(any());
+        verify(voteService, never()).createByAdmin(any());
     }
 
     @Test
@@ -342,7 +342,7 @@ class VoteCandidateServiceImplTest {
 
         when(voteCandidateRepository.findByCandidateIdAndDelYn(21L, "N")).thenReturn(Optional.of(first));
         when(voteCandidateRepository.findByCandidateIdAndDelYn(22L, "N")).thenReturn(Optional.of(second));
-        when(voteService.createBySystem(any(VoteCreateRequestDTO.class)))
+        when(voteService.createByAdmin(any(VoteCreateRequestDTO.class)))
                 .thenReturn(VoteCreateResponseDTO.builder().voteId(300L).build());
 
         // When
@@ -357,7 +357,7 @@ class VoteCandidateServiceImplTest {
         assertThat(result.getFailures()).containsExactly("#22 이미 같은 제목의 투표가 있습니다");
         assertThat(first.getStatus()).isEqualTo(VoteCandidateStatus.APPROVED);
         assertThat(second.getStatus()).isEqualTo(VoteCandidateStatus.PENDING);
-        verify(voteService, times(1)).createBySystem(any());
+        verify(voteService, times(1)).createByAdmin(any());
     }
 
     private void givenAiResponds(String json) {
