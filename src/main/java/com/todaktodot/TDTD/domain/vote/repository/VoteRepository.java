@@ -1,6 +1,7 @@
 package com.todaktodot.TDTD.domain.vote.repository;
 
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteEntity;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteDisplayStatus;
 import com.todaktodot.TDTD.domain.vote.repository.entity.VoteStatus;
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteCursorProjection;
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteProjection;
@@ -19,7 +20,9 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
 
     Optional<VoteEntity> findByVoteIdAndDelYn(Long voteId, String delYn);
 
-    long countByUserIdAndRegDtBetweenAndDelYn(Long userId, LocalDateTime startDateTime, LocalDateTime endDateTime, String delYn);
+    // 하루 10개 제한 집계. 초안은 세지 않는다
+    long countByUserIdAndRegDtBetweenAndDelYnAndStatusNot(Long userId, LocalDateTime startDateTime, LocalDateTime endDateTime,
+                                                          String delYn, VoteDisplayStatus status);
 
     //AI 후보 생성 시 중복 회피용. 신고로 숨겨진 투표는 제외
     @Query(value = """
@@ -80,6 +83,8 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             V.PARTICIPANT_CNT AS participantCnt
         FROM vote V
         WHERE V.DEL_YN = 'N'
+          /* 초안 제외 - 숨김(HIDDEN)은 노출 */
+          AND V.STATUS <> 'DRAFT'
           AND  V.USER_ID = :userId
         ORDER BY
             V.REG_DT DESC,
@@ -146,6 +151,8 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             V.PARTICIPANT_CNT AS participantCnt
         FROM vote V
         WHERE V.DEL_YN = 'N'
+          /* 초안 제외 - 숨김(HIDDEN)은 노출 */
+          AND V.STATUS <> 'DRAFT'
           AND  V.USER_ID = :userId
           /* 커서 */
           AND (
@@ -212,6 +219,8 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             V.PARTICIPANT_CNT AS participantCnt
         FROM vote V
         WHERE V.DEL_YN = 'N'
+          /* 초안 제외 - 숨김(HIDDEN)은 노출 */
+          AND V.STATUS <> 'DRAFT'
           AND V.USER_ID = :userId
         ORDER BY
             V.PARTICIPANT_CNT DESC,
@@ -277,6 +286,8 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             V.PARTICIPANT_CNT AS participantCnt
         FROM vote V
         WHERE V.DEL_YN = 'N'
+          /* 초안 제외 - 숨김(HIDDEN)은 노출 */
+          AND V.STATUS <> 'DRAFT'
           AND V.USER_ID = :userId
           AND (
                 V.PARTICIPANT_CNT < :cursorParticipantCnt
@@ -378,6 +389,8 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
            AND UL.USER_ID = :userId
            AND UL.DEL_YN = 'N'
         WHERE V.VOTE_ID IN (:voteIds)
+          /* 초안 제외 */
+          AND V.STATUS <> 'DRAFT'
         ORDER BY
             V.VOTE_ID DESC,
             O.SORT_ORDER ASC

@@ -3,7 +3,11 @@ package com.todaktodot.TDTD.domain.vote.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.todaktodot.TDTD.domain.notification.service.FcmService;
 import com.todaktodot.TDTD.domain.vote.dto.request.VoteCreateRequestDTO;
+import com.todaktodot.TDTD.domain.vote.dto.request.VoteSelectRequestDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteCreateResponseDTO;
+import com.todaktodot.TDTD.domain.vote.exception.VoteException;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteDisplayStatus;
+import com.todaktodot.TDTD.global.exception.ErrorCode;
 import com.todaktodot.TDTD.domain.vote.repository.VoteLikeRepository;
 import com.todaktodot.TDTD.domain.vote.repository.VoteModerationLogRepository;
 import com.todaktodot.TDTD.domain.vote.repository.VoteOptionRepository;
@@ -23,11 +27,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -97,6 +103,60 @@ class VoteServiceImplTest {
 
         verify(voteRepository, never()).save(any(VoteEntity.class));
         verify(voteOptionRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("초안은 참여할 수 없다 - 마감 시각이 비어 있어도 터지지 않는다")
+    void select_Draft_TreatedAsNotFound() {
+        // Given
+        VoteEntity draft = VoteEntity.draft(BOT_USER, "용감한 수달0001", VoteCategory.LOVE, "초안 질문?", 0L);
+        when(voteRepository.findById(900L)).thenReturn(Optional.of(draft));
+
+        VoteSelectRequestDTO request = new VoteSelectRequestDTO();
+        ReflectionTestUtils.setField(request, "voteId", 900L);
+        ReflectionTestUtils.setField(request, "optionId", 9001L);
+
+        // When & Then - CLOSED_AT 이 null 이라 가드가 없으면 NPE 가 난다
+        assertThatThrownBy(() -> voteService.select(1L, request))
+                .isInstanceOf(VoteException.class)
+                .extracting(e -> ((VoteException) e).getErrorCode())
+                .isEqualTo(ErrorCode.VOTE_NOT_FOUND);
+
+        verify(voteRepository, never()).increaseParticipantCnt(any(), any());
+    }
+
+    @Test
+    @DisplayName("초안은 좋아요할 수 없다")
+    void like_Draft_TreatedAsNotFound() {
+        // Given
+        VoteEntity draft = VoteEntity.draft(BOT_USER, "용감한 수달0001", VoteCategory.LOVE, "초안 질문?", 0L);
+        when(voteRepository.findById(900L)).thenReturn(Optional.of(draft));
+
+        // When & Then
+        assertThatThrownBy(() -> voteService.like(1L, 900L))
+                .isInstanceOf(VoteException.class)
+                .extracting(e -> ((VoteException) e).getErrorCode())
+                .isEqualTo(ErrorCode.VOTE_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("하루 10개 제한 집계에서 초안은 제외한다")
+    void create_DailyLimit_ExcludesDraft() {
+        // Given
+        when(voteRepository.countByUserIdAndRegDtBetweenAndDelYnAndStatusNot(
+                any(), any(), any(), any(), any())).thenReturn(0L);
+        when(voteRepository.save(any(VoteEntity.class))).thenAnswer(invocation -> {
+            VoteEntity saved = invocation.getArgument(0);
+            ReflectionTestUtils.setField(saved, "voteId", 501L);
+            return saved;
+        });
+
+        // When
+        voteService.create(1L, createRequest());
+
+        // Then - 집계 대상에서 DRAFT 를 빼고 세는지 확인
+        verify(voteRepository).countByUserIdAndRegDtBetweenAndDelYnAndStatusNot(
+                any(), any(), any(), any(), eq(VoteDisplayStatus.DRAFT));
     }
 
     private VoteCreateRequestDTO createRequest() {
