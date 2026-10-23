@@ -62,6 +62,11 @@ public class AdminVoteServiceImpl implements AdminVoteService {
         VoteEntity vote = voteRepository.findByVoteIdAndDelYn(voteId, "N")
                 .orElseThrow(() -> new IllegalArgumentException("투표 정보를 찾을 수 없습니다: " + voteId));
 
+        //초안은 투표 관리 대상이 아님.
+        if (vote.isDraft()) {
+            throw new IllegalArgumentException("아직 게시되지 않은 초안입니다: " + voteId);
+        }
+
         List<VoteOptionEntity> options = voteOptionRepository.findByVoteIdAndDelYnOrderBySortOrderAsc(voteId, "N");
         Map<Long, Long> selectCntByOptionId = options.stream()
                 .collect(Collectors.toMap(VoteOptionEntity::getOptionId,
@@ -140,6 +145,11 @@ public class AdminVoteServiceImpl implements AdminVoteService {
         VoteEntity vote = voteRepository.findByVoteIdAndDelYn(voteId, "N")
                 .orElseThrow(() -> new IllegalArgumentException("투표 정보를 찾을 수 없습니다: " + voteId));
 
+        //초안은 투표 관리 대상이 아님.
+        if (vote.isDraft()) {
+            throw new IllegalArgumentException("아직 게시되지 않은 초안입니다: " + voteId);
+        }
+
         String prevStatus = resolveVoteStatusCode(vote);
         vote.hide(HideReason.ADMIN, ADMIN_USER_ID);
         saveLog(voteId, prevStatus, "HIDDEN", actor, "관리자 수동 숨김");
@@ -152,6 +162,11 @@ public class AdminVoteServiceImpl implements AdminVoteService {
         VoteEntity vote = voteRepository.findByVoteIdAndDelYn(voteId, "N")
                 .orElseThrow(() -> new IllegalArgumentException("투표 정보를 찾을 수 없습니다: " + voteId));
 
+        //초안은 투표 관리 대상이 아님.
+        if (vote.isDraft()) {
+            throw new IllegalArgumentException("아직 게시되지 않은 초안입니다: " + voteId);
+        }
+
         String prevStatus = resolveVoteStatusCode(vote);
         vote.restore(ADMIN_USER_ID);
         saveLog(voteId, prevStatus, resolveVoteStatusCode(vote), actor, "관리자 복구");
@@ -162,6 +177,11 @@ public class AdminVoteServiceImpl implements AdminVoteService {
     public void delete(Long voteId, String actor) {
         VoteEntity vote = voteRepository.findByVoteIdAndDelYn(voteId, "N")
                 .orElseThrow(() -> new IllegalArgumentException("투표 정보를 찾을 수 없습니다: " + voteId));
+
+        //초안은 투표 관리 대상이 아님.
+        if (vote.isDraft()) {
+            throw new IllegalArgumentException("아직 게시되지 않은 초안입니다: " + voteId);
+        }
 
         String prevStatus = resolveVoteStatusCode(vote);
         vote.deleteVote(ADMIN_USER_ID);
@@ -196,6 +216,10 @@ public class AdminVoteServiceImpl implements AdminVoteService {
     }
 
     private String resolveVoteStatusCode(VoteEntity vote) {
+        // 초안은 CLOSED_AT 이 비어 있다
+        if (vote.isDraft()) {
+            return "DRAFT";
+        }
         if (vote.getStatus() == com.todaktodot.TDTD.domain.vote.repository.entity.VoteDisplayStatus.HIDDEN) {
             return vote.getHideReason() == HideReason.AUTO ? "AUTO_HIDDEN" : "HIDDEN";
         }
@@ -204,6 +228,7 @@ public class AdminVoteServiceImpl implements AdminVoteService {
 
     private String labelOfVoteStatus(String code) {
         return switch (code) {
+            case "DRAFT" -> "초안";
             case "ACTIVE" -> "진행중";
             case "CLOSED" -> "마감";
             case "AUTO_HIDDEN" -> "자동숨김";

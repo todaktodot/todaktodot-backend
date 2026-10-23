@@ -15,6 +15,7 @@ import com.todaktodot.TDTD.domain.vote.repository.projection.VoteCursorProjectio
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteProjection;
 import com.todaktodot.TDTD.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -40,6 +41,13 @@ public class VoteServiceImpl implements VoteService{
     private final UserSuspensionRepository suspensionRepository;
     private final FcmService fcmService;
     private final ObjectMapper objectMapper;
+
+    private static final Long SYSTEM_USER = 0L;
+
+    //시스템 투표의 작성자. 개발·운영 DB 의 봇 계정 ID 가 달라 설정으로 받는다
+    //0 은 미설정. 감사 컬럼(REGR_ID)의 0 과 역할이 달라 SYSTEM_USER 를 쓰지 않는다
+    @Value("${vote.bot.user-id:0}")
+    private Long botUserId;
 
     @Override
     @Transactional(readOnly = true)
@@ -255,6 +263,55 @@ public class VoteServiceImpl implements VoteService{
 
     @Override
     @Transactional
+    public VoteCreateResponseDTO createByAdmin(VoteCreateRequestDTO request) {
+
+        if (request.getOptions().size() < 2 || request.getOptions().size() > 5) {
+            throw new IllegalArgumentException("옵션은 최소 2개, 최대 5개만 등록할 수 있습니다.");
+        }
+
+        //설정이 빠진 채 게시하면 작성자 없는 투표가 남고 어드민 신고 상세가 터진다
+        //되돌릴 수 없는 작업이라 게시 전에 멈춘다
+        if (botUserId == null || botUserId <= 0) {
+            throw new IllegalStateException("투표 봇 계정이 설정되지 않았습니다. vote.bot.user-id 를 확인해주세요.");
+        }
+
+        //vote 저장 - 마감 시각은 사용자 등록과 동일하게 게시 시점 기준 24시간
+        LocalDateTime now = LocalDateTime.now();
+
+        VoteEntity vote = VoteEntity.builder()
+                .userId(botUserId)
+                .randomNickname(generateRandomNickname())
+                .category(request.getCategory())
+                .title(request.getTitle())
+                .closedAt(now.plusHours(24))
+                .regrId(SYSTEM_USER)
+                .build();
+
+        VoteEntity savedVote = voteRepository.save(vote);
+
+        //option 저장
+        List<VoteOptionEntity> options =
+                request.getOptions()
+                        .stream()
+                        .map(option ->
+                                VoteOptionEntity.builder()
+                                        .voteId(savedVote.getVoteId())
+                                        .sortOrder(option.getOrder())
+                                        .content(option.getContent())
+                                        .regrId(SYSTEM_USER)
+                                        .build()
+                        )
+                        .toList();
+
+        voteOptionRepository.saveAll(options);
+
+        return VoteCreateResponseDTO.builder()
+                .voteId(savedVote.getVoteId())
+                .build();
+    }
+
+    @Override
+    @Transactional
     public void update(Long userId, VoteUpdateRequestDTO request) {
         LocalDateTime now = LocalDateTime.now();
         // 1. 투표 조회
@@ -264,6 +321,11 @@ public class VoteServiceImpl implements VoteService{
         // 2. 삭제된 투표인지 확인
         if ("Y".equals(vote.getDelYn())) {
             throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
+        }
+
+        // 초안은 게시 전이라 없는 것으로 취급
+        if (vote.isDraft()) {
+            throw new VoteException(ErrorCode.VOTE_NOT_FOUND);
         }
 
         // 3. 작성자 본인 확인
@@ -312,6 +374,11 @@ public class VoteServiceImpl implements VoteService{
         // 2. 삭제된 투표인지 확인
         if ("Y".equals(vote.getDelYn())) {
             throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
+        }
+
+        // 초안은 게시 전이라 없는 것으로 취급
+        if (vote.isDraft()) {
+            throw new VoteException(ErrorCode.VOTE_NOT_FOUND);
         }
 
         // 3. 작성자 본인 확인
@@ -418,6 +485,11 @@ public class VoteServiceImpl implements VoteService{
             throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
         }
 
+        // 초안은 게시 전이라 없는 것으로 취급
+        if (vote.isDraft()) {
+            throw new VoteException(ErrorCode.VOTE_NOT_FOUND);
+        }
+
         // 3. 타유저 투표인지 확인
         if (vote.getUserId().equals(userId)) {
             throw new IllegalStateException("본인이 생성한 투표에 신고할 수 없습니다.");
@@ -474,7 +546,8 @@ public class VoteServiceImpl implements VoteService{
         LocalDateTime todayStart = today.atStartOfDay();
         LocalDateTime tomorrowStart = today.plusDays(1).atStartOfDay();
 
-        return (int) voteRepository.countByUserIdAndRegDtBetweenAndDelYn(userId, todayStart, tomorrowStart, "N");
+        return (int) voteRepository.countByUserIdAndRegDtBetweenAndDelYnAndStatusNot(
+                userId, todayStart, tomorrowStart, "N", VoteDisplayStatus.DRAFT);
     }
 
     /**
@@ -567,6 +640,11 @@ public class VoteServiceImpl implements VoteService{
             throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
         }
 
+        // 초안은 게시 전이라 없는 것으로 취급
+        if (vote.isDraft()) {
+            throw new VoteException(ErrorCode.VOTE_NOT_FOUND);
+        }
+
         if (vote.getStatus() == VoteDisplayStatus.HIDDEN) {
             throw new VoteException(ErrorCode.VOTE_HIDDEN_BY_REPORTS);
         }
@@ -588,6 +666,11 @@ public class VoteServiceImpl implements VoteService{
 
         if ("Y".equals(vote.getDelYn())) {
             throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
+        }
+
+        // 초안은 게시 전이라 없는 것으로 취급
+        if (vote.isDraft()) {
+            throw new VoteException(ErrorCode.VOTE_NOT_FOUND);
         }
 
         if (vote.getStatus() == VoteDisplayStatus.HIDDEN) {

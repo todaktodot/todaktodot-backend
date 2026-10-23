@@ -4,6 +4,7 @@ import com.todaktodot.TDTD.batch.tasklet.AiReportAssignTasklet;
 import com.todaktodot.TDTD.batch.tasklet.AiReportCreateTasklet;
 import com.todaktodot.TDTD.batch.tasklet.DailyCardAssignTasklet;
 import com.todaktodot.TDTD.batch.tasklet.DailyCardBatchAssignTasklet;
+import com.todaktodot.TDTD.batch.tasklet.VoteCandidateGenerateTasklet;
 import com.todaktodot.TDTD.batch.tasklet.WeeklyStatisticsReportTasklet;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -23,13 +24,15 @@ public class BatchConfig {
     private final AiReportAssignTasklet aiReportAssignTasklet;
     private final AiReportCreateTasklet aiReportCreateTasklet;
     private final WeeklyStatisticsReportTasklet weeklyStatisticsReportTasklet;
+    private final VoteCandidateGenerateTasklet voteCandidateGenerateTasklet;
 
-    public BatchConfig(DailyCardAssignTasklet dailyCardAssignTasklet, DailyCardBatchAssignTasklet dailyCardBatchAssignTasklet, AiReportAssignTasklet aiReportAssignTasklet, AiReportCreateTasklet aiReportCreateTasklet, WeeklyStatisticsReportTasklet weeklyStatisticsReportTasklet) {
+    public BatchConfig(DailyCardAssignTasklet dailyCardAssignTasklet, DailyCardBatchAssignTasklet dailyCardBatchAssignTasklet, AiReportAssignTasklet aiReportAssignTasklet, AiReportCreateTasklet aiReportCreateTasklet, WeeklyStatisticsReportTasklet weeklyStatisticsReportTasklet, VoteCandidateGenerateTasklet voteCandidateGenerateTasklet) {
         this.dailyCardAssignTasklet = dailyCardAssignTasklet;
         this.dailyCardBatchAssignTasklet = dailyCardBatchAssignTasklet;
         this.aiReportAssignTasklet = aiReportAssignTasklet;
         this.aiReportCreateTasklet = aiReportCreateTasklet;
         this.weeklyStatisticsReportTasklet = weeklyStatisticsReportTasklet;
+        this.voteCandidateGenerateTasklet = voteCandidateGenerateTasklet;
     }
 
     //데일리카드 도착 알림
@@ -104,6 +107,21 @@ public class BatchConfig {
     public Step weeklyStatisticsReportStep(JobRepository jopRepository, PlatformTransactionManager transactionManager) {
         return new StepBuilder("weeklyStatisticsReportStep", jopRepository)
                 .tasklet(weeklyStatisticsReportTasklet, transactionManager)
+                .build();
+    }
+
+    //투표 AI 후보 생성
+    @Bean
+    public Job voteCandidateGenerateJob(JobRepository jobRepository, Step voteCandidateGenerateStep) {
+        return new JobBuilder("voteCandidateGenerateJob", jobRepository)
+                .start(voteCandidateGenerateStep)
+                .build();
+    }
+
+    @Bean
+    public Step voteCandidateGenerateStep(JobRepository jopRepository, PlatformTransactionManager transactionManager) {
+        return new StepBuilder("voteCandidateGenerateStep", jopRepository)
+                .tasklet(voteCandidateGenerateTasklet, transactionManager)
                 .build();
     }
 }

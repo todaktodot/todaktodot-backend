@@ -44,8 +44,9 @@ public class VoteEntity {
     @Column(name = "HIDE_REASON", length = 20)
     private HideReason hideReason;
 
-    // 등록 시각 + 24시간. 수정해도 갱신하지 않는다.
-    @Column(name = "CLOSED_AT", nullable = false)
+    // 게시 시각 + 24시간. 수정해도 갱신하지 않는다.
+    // DRAFT 는 아직 마감 시계가 돌면 안 되므로 NULL, 게시 시점에 채운다.
+    @Column(name = "CLOSED_AT")
     private LocalDateTime closedAt;
 
     @Column(name = "PARTICIPANT_CNT", nullable = false)
@@ -94,6 +95,40 @@ public class VoteEntity {
         this.delYn = "N";
     }
 
+    // 초안 생성 - 어드민 승인 전 상태. 마감 시각은 게시 시점에 정한다
+    public static VoteEntity draft(Long userId, String randomNickname, VoteCategory category,
+                                   String title, Long regrId) {
+        VoteEntity vote = new VoteEntity();
+        vote.userId = userId;
+        vote.randomNickname = randomNickname;
+        vote.category = category;
+        vote.title = title;
+        vote.closedAt = null;
+        vote.status = VoteDisplayStatus.DRAFT;
+        vote.participantCnt = 0;
+        vote.autoHideExemptYn = "N";
+        vote.hiddenNoticeAckYn = "N";
+        vote.regrId = regrId;
+        vote.updrId = regrId;
+        vote.delYn = "N";
+        return vote;
+    }
+
+    public boolean isDraft() {
+        return this.status == VoteDisplayStatus.DRAFT;
+    }
+
+    // 초안 게시 - 마감 시계는 이 시점부터 돈다
+    public void publish(LocalDateTime closedAt, Long updrId) {
+        if (!isDraft()) {
+            throw new IllegalStateException("초안 상태의 투표만 게시할 수 있습니다.");
+        }
+        this.status = VoteDisplayStatus.POSTED;
+        this.closedAt = closedAt;
+        this.updrId = updrId;
+        this.updDt = LocalDateTime.now();
+    }
+
     public void updateVote(VoteCategory category, String title, Long userId) {
         this.category = category;
         this.title = title;
@@ -109,6 +144,10 @@ public class VoteEntity {
 
     //표출 상태 변경
     public void updateDisplayStatus(VoteDisplayStatus status, Long userId) {
+        // 초안은 publish() 로만 게시한다
+        if (isDraft() || status == VoteDisplayStatus.DRAFT) {
+            throw new IllegalStateException("초안 상태는 이 방법으로 변경할 수 없습니다.");
+        }
         this.status = status;
         this.updrId = userId;
         this.updDt = LocalDateTime.now();
@@ -116,6 +155,10 @@ public class VoteEntity {
 
     // 신고 누적(자동) 또는 어드민 조치(수동)로 피드 비노출 처리
     public void hide(HideReason hideReason, Long updrId) {
+        // 초안은 숨길 대상이 아니다
+        if (isDraft()) {
+            throw new IllegalStateException("초안은 숨길 수 없습니다.");
+        }
         this.status = VoteDisplayStatus.HIDDEN;
         this.hideReason = hideReason;
         this.hiddenNoticeAckYn = "N";
@@ -124,6 +167,10 @@ public class VoteEntity {
 
     // 복구 - 재노출 + 신고 검토 주기 초기화(이 시각 이전 신고는 신고건수 집계에서 제외)
     public void restore(Long updrId) {
+        // 초안은 복구 대상이 아니다
+        if (isDraft()) {
+            throw new IllegalStateException("초안은 복구 대상이 아닙니다.");
+        }
         this.status = VoteDisplayStatus.POSTED;
         this.hideReason = null;
         this.reviewCycleStartedAt = LocalDateTime.now();
