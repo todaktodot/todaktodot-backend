@@ -269,9 +269,8 @@ public class VoteServiceImpl implements VoteService{
             throw new IllegalArgumentException("옵션은 최소 2개, 최대 5개만 등록할 수 있습니다.");
         }
 
-        //설정이 빠진 채 게시하면 작성자 없는 투표가 남고 어드민 신고 상세가 터진다
-        //되돌릴 수 없는 작업이라 게시 전에 멈춘다
-        if (botUserId == null || botUserId <= 0) {
+        //유효한 봇계정인지 검증
+        if (botUserId == null || botUserId <= 0L) {
             throw new IllegalStateException("투표 봇 계정이 설정되지 않았습니다. vote.bot.user-id 를 확인해주세요.");
         }
 

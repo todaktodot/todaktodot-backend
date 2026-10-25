@@ -1,7 +1,7 @@
 package com.todaktodot.TDTD.admin.vote.controller;
 
 import com.todaktodot.TDTD.domain.vote.dto.request.VoteCandidateApproveRequestDTO;
-import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateApproveResultDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateApproveResponseDTO;
 import com.todaktodot.TDTD.domain.vote.service.VoteCandidateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,7 +83,7 @@ public class AdminVoteCandidateController {
     @ResponseBody
     public Map<String, Object> approve(@RequestBody List<VoteCandidateApproveRequestDTO> requests,
                                        Authentication authentication) {
-        VoteCandidateApproveResultDTO result = voteCandidateService.approve(requests, authentication.getName());
+        VoteCandidateApproveResponseDTO result = voteCandidateService.approve(requests, authentication.getName());
 
         //검증에 걸린 건만 사유로 돌려준다. 예외가 나면 전체 롤백이라 여기까지 오지 않는다
         return Map.of(

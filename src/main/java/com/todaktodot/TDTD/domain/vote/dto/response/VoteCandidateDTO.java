@@ -1,6 +1,6 @@
 package com.todaktodot.TDTD.domain.vote.dto.response;
 
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCandidateEntity;
+import com.todaktodot.TDTD.domain.vote.repository.entity.VoteEntity;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -11,21 +11,21 @@ import java.util.List;
 @Builder
 public class VoteCandidateDTO {
 
-    private final Long candidateId;
+    private final Long voteId;
     private final String category;
     private final String categoryLabel;
     private final String title;
     private final List<String> options;
     private final LocalDateTime regDt;
 
-    public static VoteCandidateDTO of(VoteCandidateEntity entity, List<String> options) {
+    public static VoteCandidateDTO of(VoteEntity vote, List<String> options) {
         return VoteCandidateDTO.builder()
-                .candidateId(entity.getCandidateId())
-                .category(entity.getCategory().name())
-                .categoryLabel(entity.getCategory().getDescription())
-                .title(entity.getTitle())
+                .voteId(vote.getVoteId())
+                .category(vote.getCategory().name())
+                .categoryLabel(vote.getCategory().getDescription())
+                .title(vote.getTitle())
                 .options(options)
-                .regDt(entity.getRegDt())
+                .regDt(vote.getRegDt())
                 .build();
     }
 }

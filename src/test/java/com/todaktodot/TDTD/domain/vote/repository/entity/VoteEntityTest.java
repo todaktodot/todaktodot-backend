@@ -37,7 +37,7 @@ class VoteEntityTest {
         VoteEntity vote = draft();
         LocalDateTime closedAt = LocalDateTime.now().plusHours(24);
 
-        vote.publish(closedAt, ADMIN_USER);
+        vote.publish(vote.getTitle(), closedAt, ADMIN_USER);
 
         assertThat(vote.getStatus()).isEqualTo(VoteDisplayStatus.POSTED);
         assertThat(vote.isDraft()).isFalse();
@@ -48,10 +48,10 @@ class VoteEntityTest {
     @DisplayName("이미 게시한 투표는 다시 게시할 수 없다")
     void publish_AlreadyPosted_Throws() {
         VoteEntity vote = draft();
-        vote.publish(LocalDateTime.now().plusHours(24), ADMIN_USER);
+        vote.publish(vote.getTitle(),LocalDateTime.now().plusHours(24), ADMIN_USER);
 
         //두 번 게시되면 마감 시각이 밀려 참여 가능 시간이 늘어난다
-        assertThatThrownBy(() -> vote.publish(LocalDateTime.now().plusHours(24), ADMIN_USER))
+        assertThatThrownBy(() -> vote.publish(vote.getTitle(),LocalDateTime.now().plusHours(24), ADMIN_USER))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("초안 상태의 투표만");
     }
@@ -91,7 +91,7 @@ class VoteEntityTest {
     @DisplayName("게시된 투표를 DRAFT 로 되돌릴 수 없다")
     void updateDisplayStatus_ToDraft_Throws() {
         VoteEntity vote = draft();
-        vote.publish(LocalDateTime.now().plusHours(24), ADMIN_USER);
+        vote.publish(vote.getTitle(), LocalDateTime.now().plusHours(24), ADMIN_USER);
 
         assertThatThrownBy(() -> vote.updateDisplayStatus(VoteDisplayStatus.DRAFT, ADMIN_USER))
                 .isInstanceOf(IllegalStateException.class)
@@ -102,7 +102,7 @@ class VoteEntityTest {
     @DisplayName("게시된 투표는 기존대로 숨김·복구가 된다")
     void hideAndRestore_Posted_Works() {
         VoteEntity vote = draft();
-        vote.publish(LocalDateTime.now().plusHours(24), ADMIN_USER);
+        vote.publish(vote.getTitle(),LocalDateTime.now().plusHours(24), ADMIN_USER);
 
         vote.hide(HideReason.AUTO, ADMIN_USER);
         assertThat(vote.getStatus()).isEqualTo(VoteDisplayStatus.HIDDEN);

@@ -2,7 +2,7 @@ package com.todaktodot.TDTD.domain.vote.service;
 
 import com.todaktodot.TDTD.domain.vote.dto.request.VoteCandidateApproveRequestDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateDTO;
-import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateApproveResultDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateApproveResponseDTO;
 
 import java.util.List;
 
@@ -37,7 +37,7 @@ public interface VoteCandidateService {
      * @param requests 후보 ID 와 어드민이 수정한 문구
      * @param actor 처리한 어드민 계정명
      */
-    VoteCandidateApproveResultDTO approve(List<VoteCandidateApproveRequestDTO> requests, String actor);
+    VoteCandidateApproveResponseDTO approve(List<VoteCandidateApproveRequestDTO> requests, String actor);
 
     /**
      * 후보 반려

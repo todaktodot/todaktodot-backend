@@ -11,8 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 public class VoteCandidateApproveRequestDTO {
 
-    private Long candidateId;
-
+    private Long voteId;
     // 어드민이 화면에서 고친 값. 비어 있으면 저장된 후보 내용 사용
     private String title;
     private List<String> options;

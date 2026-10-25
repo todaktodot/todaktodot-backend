@@ -119,10 +119,11 @@ public class VoteEntity {
     }
 
     // 초안 게시 - 마감 시계는 이 시점부터 돈다
-    public void publish(LocalDateTime closedAt, Long updrId) {
+    public void publish(String title, LocalDateTime closedAt, Long updrId) {
         if (!isDraft()) {
             throw new IllegalStateException("초안 상태의 투표만 게시할 수 있습니다.");
         }
+        this.title = title;
         this.status = VoteDisplayStatus.POSTED;
         this.closedAt = closedAt;
         this.updrId = updrId;

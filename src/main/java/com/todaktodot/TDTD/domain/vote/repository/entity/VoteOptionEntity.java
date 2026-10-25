@@ -63,4 +63,11 @@ public class VoteOptionEntity {
         this.updrId = userId;
         this.updDt = LocalDateTime.now();
     }
+
+    //투표 후보 게시
+    public void publish(String content, Long userId) {
+        this.content = content;
+        this.updrId = userId;
+        this.updDt = LocalDateTime.now();
+    }
 }

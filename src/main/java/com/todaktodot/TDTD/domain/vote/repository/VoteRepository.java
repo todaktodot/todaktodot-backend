@@ -1,8 +1,6 @@
 package com.todaktodot.TDTD.domain.vote.repository;
 
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteEntity;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteDisplayStatus;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteStatus;
+import com.todaktodot.TDTD.domain.vote.repository.entity.*;
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteCursorProjection;
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteProjection;
 import jakarta.persistence.LockModeType;
@@ -419,4 +417,8 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Long> {
             WHERE v.voteId = :voteId AND v.participantCnt > 0
             """)
     void decreaseParticipantCnt(@Param("voteId") Long voteId, @Param("userId") Long userId);
+
+    List<VoteEntity> findAllByStatusAndDelYnOrderByRegDtDescVoteIdDesc(VoteDisplayStatus status, String delYn);
+
+    List<VoteEntity> findAllByStatusAndDelYnAndRegDtBefore(VoteDisplayStatus status, String delYn, LocalDateTime regDt);
 }

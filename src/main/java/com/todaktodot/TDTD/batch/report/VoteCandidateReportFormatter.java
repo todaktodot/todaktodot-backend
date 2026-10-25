@@ -18,7 +18,7 @@ public class VoteCandidateReportFormatter {
 
     public String buildDescription(List<VoteCandidateDTO> candidates) {
 
-        String summary = String.format("후보 **%d개**가 준비됐습니다. 확인 후 등록해주세요.", candidates.size());
+        String summary = String.format("투표 후보 **%d개**가 준비됐습니다. 확인 후 등록해주세요.", candidates.size());
 
         if (adminBaseUrl == null || adminBaseUrl.isBlank()) {
             return summary;
@@ -27,8 +27,8 @@ public class VoteCandidateReportFormatter {
         return summary + String.format("\n\n👉 [어드민에서 확인하기](%s%s)", adminBaseUrl.replaceAll("/+$", ""), ADMIN_PATH);
     }
 
-    public List<DiscordEmbedField> buildFields(List<VoteCandidateDTO> candidates) {
-        return candidates.stream()
+    public List<DiscordEmbedField> buildFields(List<VoteCandidateDTO> voteCandidates) {
+        return voteCandidates.stream()
                 .map(candidate -> new DiscordEmbedField(
                         String.format("[%s] %s", candidate.getCategoryLabel(), candidate.getTitle()),
                         String.join(" / ", candidate.getOptions()),

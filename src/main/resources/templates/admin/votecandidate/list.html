@@ -166,11 +166,11 @@
                 <div th:unless="${#lists.isEmpty(candidates)}" id="candidateList">
                     <div th:each="candidate : ${candidates}"
                          class="candidate-card"
-                         th:data-candidate-id="${candidate.candidateId}">
+                         th:data-candidate-id="${candidate.getVoteId}">
                         <div class="candidate-head">
                             <input type="checkbox" class="candidate-check" onchange="toggleCandidateCard(this)">
                             <span class="category-badge" th:text="${candidate.categoryLabel}">연애관</span>
-                            <span class="candidate-id" th:text="'#' + ${candidate.candidateId}">#1</span>
+                            <span class="candidate-id" th:text="'#' + ${candidate.getVoteId}">#1</span>
                             <span class="reg-dt"
                                   th:text="${#temporals.format(candidate.regDt, 'yyyy-MM-dd HH:mm')}">2026-01-01 09:00</span>
                         </div>

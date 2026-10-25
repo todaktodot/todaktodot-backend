@@ -7,7 +7,7 @@ import java.util.List;
 
 @Getter
 @Builder
-public class VoteCandidateApproveResultDTO {
+public class VoteCandidateApproveResponseDTO {
 
     private final int approvedCount;
 

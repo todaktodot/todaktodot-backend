@@ -6,7 +6,7 @@ import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.PromptType;
 import com.todaktodot.TDTD.domain.vote.dto.request.VoteCandidateApproveRequestDTO;
 import com.todaktodot.TDTD.domain.vote.dto.request.VoteCreateRequestDTO;
-import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateApproveResultDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateApproveResponseDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteCreateResponseDTO;
 import com.todaktodot.TDTD.domain.vote.repository.VoteCandidateRepository;
@@ -100,7 +100,7 @@ class VoteCandidateServiceImplTest {
 
     private VoteCandidateApproveRequestDTO approveRequest(Long candidateId, String title, List<String> options) {
         VoteCandidateApproveRequestDTO request = new VoteCandidateApproveRequestDTO();
-        request.setCandidateId(candidateId);
+        request.setVoteId(candidateId);
         request.setTitle(title);
         request.setOptions(options);
         return request;
@@ -118,7 +118,7 @@ class VoteCandidateServiceImplTest {
                 .thenReturn(VoteCreateResponseDTO.builder().voteId(100L).build());
 
         // When
-        VoteCandidateApproveResultDTO result = voteCandidateService.approve(
+        VoteCandidateApproveResponseDTO result = voteCandidateService.approve(
                 List.of(approveRequest(1L, "고친 질문인가요?", List.of("고침1", "고침2"))), ACTOR);
 
         // Then
@@ -150,7 +150,7 @@ class VoteCandidateServiceImplTest {
                 .thenReturn(Optional.of(candidate));
 
         // When - 선택지가 하나도 오지 않은 상황 (빈 배열)
-        VoteCandidateApproveResultDTO result = voteCandidateService.approve(
+        VoteCandidateApproveResponseDTO result = voteCandidateService.approve(
                 List.of(approveRequest(1L, "질문인가요?", List.of())), ACTOR);
 
         // Then - 저장된 원본("원래1","원래2")으로 게시되면 안 됨
@@ -172,7 +172,7 @@ class VoteCandidateServiceImplTest {
                 .thenReturn(Optional.of(candidate));
 
         // When - 어드민이 선택지 입력란을 전부 비운 상황
-        VoteCandidateApproveResultDTO result = voteCandidateService.approve(
+        VoteCandidateApproveResponseDTO result = voteCandidateService.approve(
                 List.of(approveRequest(1L, "질문인가요?", List.of("", ""))), ACTOR);
 
         // Then
@@ -191,7 +191,7 @@ class VoteCandidateServiceImplTest {
                 .thenReturn(Optional.of(candidate));
 
         // When
-        VoteCandidateApproveResultDTO result = voteCandidateService.approve(
+        VoteCandidateApproveResponseDTO result = voteCandidateService.approve(
                 List.of(approveRequest(1L, "질문인가요?", List.of("가".repeat(21), "짧은선택지"))), ACTOR);
 
         // Then
@@ -210,7 +210,7 @@ class VoteCandidateServiceImplTest {
                 .thenReturn(Optional.of(candidate));
 
         // When
-        VoteCandidateApproveResultDTO result = voteCandidateService.approve(
+        VoteCandidateApproveResponseDTO result = voteCandidateService.approve(
                 List.of(approveRequest(1L, "질문인가요?", List.of("하나뿐"))), ACTOR);
 
         // Then
@@ -230,7 +230,7 @@ class VoteCandidateServiceImplTest {
                 .thenReturn(Optional.of(candidate));
 
         // When
-        VoteCandidateApproveResultDTO result = voteCandidateService.approve(
+        VoteCandidateApproveResponseDTO result = voteCandidateService.approve(
                 List.of(approveRequest(1L, "질문인가요?", List.of("선택1", "선택2"))), ACTOR);
 
         // Then
@@ -252,7 +252,7 @@ class VoteCandidateServiceImplTest {
                 .thenReturn(VoteCreateResponseDTO.builder().voteId(200L).build());
 
         // When - 2번은 선택지가 1개라 검증에 걸림
-        VoteCandidateApproveResultDTO result = voteCandidateService.approve(
+        VoteCandidateApproveResponseDTO result = voteCandidateService.approve(
                 List.of(
                         approveRequest(1L, "정상 질문인가요?", List.of("선택1", "선택2")),
                         approveRequest(2L, "문제 질문인가요?", List.of("하나뿐"))
@@ -273,7 +273,7 @@ class VoteCandidateServiceImplTest {
                 .thenReturn(Optional.empty());
 
         // When
-        VoteCandidateApproveResultDTO result = voteCandidateService.approve(
+        VoteCandidateApproveResponseDTO result = voteCandidateService.approve(
                 List.of(approveRequest(999L, "질문인가요?", List.of("선택1", "선택2"))), ACTOR);
 
         // Then
@@ -333,7 +333,7 @@ class VoteCandidateServiceImplTest {
                 .thenReturn(List.of("주말엔 집에서 쉬는 게 좋아?"));
 
         // When
-        VoteCandidateApproveResultDTO result = voteCandidateService.approve(
+        VoteCandidateApproveResponseDTO result = voteCandidateService.approve(
                 List.of(approveRequest(412L, "주말엔 집에서 쉬는 게 좋아?", List.of("선택1", "선택2"))), ACTOR);
 
         // Then
@@ -356,7 +356,7 @@ class VoteCandidateServiceImplTest {
                 .thenReturn(VoteCreateResponseDTO.builder().voteId(300L).build());
 
         // When
-        VoteCandidateApproveResultDTO result = voteCandidateService.approve(
+        VoteCandidateApproveResponseDTO result = voteCandidateService.approve(
                 List.of(
                         approveRequest(21L, "주말엔 집에서 쉬는 게 좋아?", List.of("선택1", "선택2")),
                         approveRequest(22L, "주말엔 집에서 쉬는 게 좋아?", List.of("선택1", "선택2"))

@@ -9,14 +9,13 @@ import com.todaktodot.TDTD.admin.prompt.repository.entity.PromptType;
 import com.todaktodot.TDTD.domain.vote.dto.ai.AiGeneratedVoteDTO;
 import com.todaktodot.TDTD.domain.vote.dto.request.VoteCandidateApproveRequestDTO;
 import com.todaktodot.TDTD.domain.vote.dto.request.VoteCreateRequestDTO;
-import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateApproveResultDTO;
+import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateApproveResponseDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteCreateResponseDTO;
 import com.todaktodot.TDTD.domain.vote.repository.VoteCandidateRepository;
+import com.todaktodot.TDTD.domain.vote.repository.VoteOptionRepository;
 import com.todaktodot.TDTD.domain.vote.repository.VoteRepository;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCandidateEntity;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCandidateStatus;
-import com.todaktodot.TDTD.domain.vote.repository.entity.VoteCategory;
+import com.todaktodot.TDTD.domain.vote.repository.entity.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -26,13 +25,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Service
@@ -42,20 +44,20 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     private final ChatClient.Builder chatClientBuilder;
     private final VoteCandidateRepository voteCandidateRepository;
     private final VoteRepository voteRepository;
+    private final VoteOptionRepository voteOptionRepository;
     private final AiPromptRepository aiPromptRepository;
     private final VoteService voteService;
     private final ObjectMapper objectMapper;
 
-    //배치·시스템이 만든 레코드. DailyCardServiceImpl 과 같은 이름
-    private static final Long SYSTEM_USER = 0L;
-
-    //어드민이 처리한 레코드. 어드민 로그인은 users 레코드가 없어 0 을 쓴다
-    //AdminVoteServiceImpl 등 기존 어드민 서비스와 같은 이름
-    private static final Long ADMIN_USER_ID = 0L;
-
     //배치가 쓰는 기본 모델. 어드민 수동 생성은 화면에서 고른 값이 우선
     @Value("${vote.ai-model:gpt-5.4}")
     private String defaultAiModel;
+    //배치·시스템이 만든 데이터. 봇계정 ID 주입 예정
+    private static final Long BOT_USER_ID = 0L;
+    //어드민이 처리한 레코드. 어드민 로그인은 users 레코드가 없어 0 을 쓴다
+    //AdminVoteServiceImpl 등 기존 어드민 서비스와 같은 이름
+    private static final Long ADMIN_USER_ID = 0L;
+    //생성 후보 수 설정 값
     private static final int CANDIDATE_COUNT = 5;
     //중복 회피 재료. 늘릴수록 겹칠 확률은 줄지만 매 호출 토큰이 늘어남
     private static final int RECENT_TITLE_SIZE = 30;
@@ -88,10 +90,12 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
         return defaultAiModel;
     }
 
-    //두 진입점이 공유하는 본체. private 이라 프록시를 안 타므로 바깥 트랜잭션에 그대로 참여한다
+    /**
+     * 투표 후보 생성 함수
+     */
     private List<VoteCandidateDTO> doGenerate(String aiModel) {
 
-        //중복 회피 재료
+        //제목 중복 회피 재료 (최근 게시된 투표 제목 리스트 추출)
         List<String> recentTitles = voteRepository.findRecentTitles(RECENT_TITLE_SIZE);
 
         AiPromptEntity adminPrompt = findActivePrompt();
@@ -99,99 +103,130 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
         log.info("=====투표 AI 후보 생성 시작===== 최근 투표 {}건 참고, 프롬프트ID {}, 모델 {}",
                 recentTitles.size(), adminPrompt.getPromptId(), aiModel);
 
-        List<AiGeneratedVoteDTO> generated = callAi(
+        List<AiGeneratedVoteDTO> generatedAiVoteList = callAi(
                 buildInstruction(adminPrompt.getPromptContent()),
                 buildReferenceData(recentTitles),
                 aiModel);
 
-        //AI 가 배열 대신 null 을 주면 파싱 결과가 null 이다
-        if (generated == null) {
-            throw new IllegalStateException("AI 응답을 후보 목록으로 읽지 못했습니다.");
+        //AI를 통해 생성된 투표 목록이 null인 경우
+        if (generatedAiVoteList == null) {
+            throw new IllegalStateException("AI로 투표 후보를 생성하지 못했습니다.");
         }
 
         String batchKey = LocalDate.now().toString();
         List<VoteCandidateDTO> saved = new ArrayList<>();
 
         //통과한 제목을 쌓아가며 비교 - AI 가 같은 제목을 두 번 주면 후보 카드가 두 장 생김
-        //대기 중인 후보도 함께 담는다. 아직 vote 에 없어 findRecentTitles 로는 안 걸린다
+        //대기 중인 후보도 추가해서 검증
         Set<String> usedTitles = toTitleSet(recentTitles);
-        voteCandidateRepository
-                .findAllByStatusAndDelYnOrderByRegDtDescCandidateIdDesc(VoteCandidateStatus.PENDING, "N")
-                .forEach(entity -> usedTitles.add(entity.getTitle().trim()));
 
-        for (AiGeneratedVoteDTO candidate : generated) {
+        voteRepository
+                .findAllByStatusAndDelYnOrderByRegDtDescVoteIdDesc(VoteDisplayStatus.DRAFT, "N")
+                .forEach(entity -> usedTitles.add(entity.getTitle()));
 
-            //프롬프트는 어드민이 고칠 수 있어 개수 지시가 무시될 수 있다
-            //디스코드 embed 는 필드 25개가 상한이고, 넘치면 발송이 조용히 실패한다
+        for (AiGeneratedVoteDTO voteCandidate : generatedAiVoteList) {
+            if (voteCandidate == null) continue;
+
+            //디스코드 embed 는 필드 25개가 상한이고, 넘치면 발송이 실패한다
             if (saved.size() >= CANDIDATE_COUNT) {
-                log.warn("후보 {}건을 받아 {}건까지만 저장합니다.", generated.size(), CANDIDATE_COUNT);
+                log.warn("투표 후보 {}건을 생성한 후, {}건까지만 저장합니다.", generatedAiVoteList.size(), CANDIDATE_COUNT);
                 break;
             }
 
-            String reason = validate(candidate, usedTitles);
+            String reason = validate(voteCandidate, usedTitles);
+            //유효성 검증에 위반되는 경우 넘어감
             if (reason != null) {
-                //candidate 가 null 일 수 있어 제목을 바로 꺼내지 않음
-                log.warn("후보 제외 - {} / 제목: {}", reason, candidate == null ? "(없음)" : candidate.getTitle());
+                log.warn("후보 제외 - {} / 제목: {}", reason, voteCandidate.getTitle());
                 continue;
             }
 
-            String title = candidate.getTitle().trim();
-            List<String> options = candidate.getOptions().stream().map(String::trim).toList();
+            String title = voteCandidate.getTitle().trim();
+            List<String> candidateOptions = voteCandidate.getOptions().stream().map(String::trim).toList();
 
-            VoteCandidateEntity entity = VoteCandidateEntity.builder()
-                    .batchKey(batchKey)
-                    .category(VoteCategory.valueOf(candidate.getCategory().trim().toUpperCase(Locale.ROOT)))
-                    .title(title)
-                    .optionsJson(writeOptions(options))
-                    .promptId(adminPrompt.getPromptId())
-                    .aiModel(aiModel)
-                    .regrId(SYSTEM_USER)
-                    .build();
+            //vote 저장
+            VoteEntity vote = VoteEntity.draft(
+                            BOT_USER_ID,
+                            generateRandomNickname(),
+                            VoteCategory.valueOf(voteCandidate.getCategory().trim().toUpperCase(Locale.ROOT)),
+                            title,
+                            BOT_USER_ID);
+
+            VoteEntity savedVote = voteRepository.save(vote);
+
+            //option 저장
+            List<VoteOptionEntity> options = IntStream.range(0, candidateOptions.size())
+                    .mapToObj(i ->
+                            VoteOptionEntity.builder()
+                                    .voteId(savedVote.getVoteId())
+                                    .sortOrder(i + 1)
+                                    .content(candidateOptions.get(i).trim())
+                                    .regrId(BOT_USER_ID)
+                                    .build()
+                    )
+                    .toList();
+
+            voteOptionRepository.saveAll(options);
 
             usedTitles.add(title);
-            saved.add(VoteCandidateDTO.of(voteCandidateRepository.save(entity), options));
+            saved.add(VoteCandidateDTO.of(savedVote, candidateOptions));
         }
 
+        //저장된 투표가 없는 경우
         if (saved.isEmpty()) {
-            throw new IllegalStateException("검증을 통과한 후보가 없습니다. 프롬프트를 확인해주세요.");
+            throw new IllegalStateException("검증을 통과한 후보가 없습니다. 프롬프트 혹은 AI 상태를 확인해주세요.");
         }
 
         //새 후보가 저장된 뒤에만 정리 - 생성 실패한 날 지난 후보까지 잃지 않도록
-        expirePreviousCandidates(batchKey);
+        expirePreviousCandidates();
 
         log.info("=====투표 AI 후보 생성 완료===== {}건 저장", saved.size());
         return saved;
     }
 
     /**
-     * 지난 묶음에서 처리하지 않고 남은 후보를 자동 반려
+     * 지난 묶음에서 처리하지 않고 남은 후보를 반려
      * 목록에 "오늘의 후보"만 남기기 위한 처리. 같은 날 여러 번 생성한 분은 제외
-     * @param batchKey 이번에 생성한 묶음 키
      */
-    private void expirePreviousCandidates(String batchKey) {
+    private void expirePreviousCandidates() {
 
-        List<VoteCandidateEntity> leftovers = voteCandidateRepository
-                .findAllByStatusAndDelYnOrderByRegDtDescCandidateIdDesc(VoteCandidateStatus.PENDING, "N")
-                .stream()
-                .filter(entity -> !batchKey.equals(entity.getBatchKey()))
-                .toList();
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
 
-        if (leftovers.isEmpty()) {
+        List<VoteEntity> leftVotes = voteRepository
+                .findAllByStatusAndDelYnAndRegDtBefore(VoteDisplayStatus.DRAFT, "N", todayStart);
+
+        if (leftVotes.isEmpty()) {
             return;
         }
 
-        leftovers.forEach(entity -> entity.reject(SYSTEM_USER));
-        log.info("· 지난 후보 {}건을 자동 반려했습니다.", leftovers.size());
+        leftVotes.forEach(vote -> vote.deleteVote(BOT_USER_ID));
+
+        log.info("지난 후보 {}건을 자동 반려했습니다.", leftVotes.size());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<VoteCandidateDTO> getPendingList() {
-        return voteCandidateRepository
-                .findAllByStatusAndDelYnOrderByRegDtDescCandidateIdDesc(VoteCandidateStatus.PENDING, "N")
-                .stream()
-                .map(entity -> VoteCandidateDTO.of(entity, readOptions(entity.getOptionsJson())))
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay().minusSeconds(1);
+
+        //당일 생성건 한정 조회
+        List<VoteEntity> voteCandidateList = voteRepository.findAllByStatusAndDelYnOrderByRegDtDescVoteIdDesc(VoteDisplayStatus.DRAFT, "N").stream()
+                .filter(voteCandidate -> voteCandidate.getRegDt().isAfter(todayStart))
                 .toList();
+
+        List<VoteCandidateDTO> voteCandidateDTOList = new ArrayList<>();
+
+        voteCandidateList
+                .forEach(vote -> {
+                    List<VoteOptionEntity> voteOptions = voteOptionRepository.findByVoteIdAndDelYnOrderBySortOrderAsc(vote.getVoteId(), "N");
+
+                    List<String> options = voteOptions.stream()
+                            .map(VoteOptionEntity::getContent)
+                            .toList();
+
+                    voteCandidateDTOList.add(VoteCandidateDTO.of(vote, options));
+                });
+
+        return voteCandidateDTOList;
     }
 
     /**
@@ -200,94 +235,113 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
      */
     @Override
     @Transactional
-    public VoteCandidateApproveResultDTO approve(List<VoteCandidateApproveRequestDTO> requests, String actor) {
+    public VoteCandidateApproveResponseDTO approve(List<VoteCandidateApproveRequestDTO> requests, String actor) {
 
-        int approvedCount = 0;
         List<String> failures = new ArrayList<>();
-        List<String> approved = new ArrayList<>();
+        List<Long> approved = new ArrayList<>();
 
         //생성 이후 같은 제목이 올라왔을 수 있어 게시 직전 재확인
-        //게시한 제목을 쌓아가며 비교 - 제목이 같은 후보를 한 번에 고르면 투표가 두 개 게시됨
         Set<String> usedTitles = toTitleSet(voteRepository.findRecentTitles(RECENT_TITLE_SIZE));
 
-        for (VoteCandidateApproveRequestDTO request : requests) {
+        for (VoteCandidateApproveRequestDTO voteRequest : requests) {
 
-            VoteCandidateEntity entity = voteCandidateRepository
-                    .findByCandidateIdAndDelYn(request.getCandidateId(), "N")
-                    .orElse(null);
+            //저장된 투표 후보
+            VoteEntity voteCandidate = voteRepository.findById(voteRequest.getVoteId()).orElse(null);
+            List<VoteOptionEntity> voteCandidateOptions = voteOptionRepository.findByVoteIdAndDelYnOrderBySortOrderAsc(voteRequest.getVoteId(), "N");
 
-            if (entity == null) {
-                failures.add(String.format("#%d 후보를 찾을 수 없습니다.", request.getCandidateId()));
+            //조회된 투표 후보가 존재하지 않는 경우
+            if (voteCandidate == null) {
+                failures.add(String.format("저장된 #%d 투표 후보가 존재하지 않습니다.", voteRequest.getVoteId()));
                 continue;
             }
 
             //이미 등록·반려한 건은 재처리 안 함
-            if (entity.getStatus() != VoteCandidateStatus.PENDING) {
-                failures.add(String.format("#%d 이미 처리된 후보입니다. (%s)",
-                        entity.getCandidateId(), entity.getStatus().getDescription()));
+            if (voteCandidate.getStatus() == VoteDisplayStatus.POSTED) {
+                failures.add(String.format("#%d 이미 등록 처리된 투표 후보입니다.", voteCandidate.getVoteId()));
                 continue;
             }
 
-            //화면에서 온 값은 비어 있어도 그대로 검증. 저장분으로 되돌리면 어드민이 지운 문구가 게시됨
-            String title = request.getTitle() != null ? request.getTitle().trim() : entity.getTitle();
-            List<String> options = request.getOptions() != null
-                    ? request.getOptions().stream().map(value -> value == null ? "" : value.trim()).toList()
-                    : readOptions(entity.getOptionsJson());
-
-            String reason = validateForApprove(title, options);
-            if (reason == null && usedTitles.contains(title)) {
-                reason = "이미 같은 제목의 투표가 있습니다";
-            }
-            if (reason != null) {
-                failures.add(String.format("#%d %s", entity.getCandidateId(), reason));
+            if (voteCandidate.getStatus() == VoteDisplayStatus.DRAFT && "Y".equals(voteCandidate.getDelYn())) {
+                failures.add(String.format("#%d 이미 반려 처리된 투표 후보입니다.", voteCandidate.getVoteId()));
                 continue;
             }
 
-            //어드민이 고친 문구를 후보에도 기록 - 등록 내용 추적용
-            entity.updateContent(title, writeOptions(options), ADMIN_USER_ID);
+            if (voteRequest.getOptions() == null || voteRequest.getOptions().isEmpty()) continue;
 
-            VoteCreateResponseDTO created = voteService.createByAdmin(toCreateRequest(entity.getCategory(), title, options));
-            entity.approve(created.getVoteId(), ADMIN_USER_ID);
+            String title = voteRequest.getTitle() != null ? voteRequest.getTitle().trim() : voteCandidate.getTitle();
+            List<String> options = voteRequest.getOptions().stream().map(value -> value == null ? "" : value.trim()).toList();
+
+            //제목 및 보기 유효성 검증
+            String validateReason = validateForApprove(title, options);
+
+            if (validateReason != null) {
+                failures.add(String.format("#%d 투표는 등록할 수 없습니다. (사유: %s)", voteCandidate.getVoteId(), validateReason));
+                continue;
+            }
+
+            if (usedTitles.contains(title)) {
+                validateReason = "이미 같은 제목의 투표가 있습니다";
+                failures.add(String.format("#%d 투표는 등록할 수 없습니다. (사유: %s)", voteCandidate.getVoteId(), validateReason));
+                continue;
+            }
+
+            //게시
+            voteCandidate.publish(title, LocalDateTime.now().plusHours(24), BOT_USER_ID);
+            for (int i = 0;  i < voteCandidateOptions.size(); i++) {
+                voteCandidateOptions.get(i).publish(options.get(i), BOT_USER_ID);
+            }
+
             usedTitles.add(title);
-            approvedCount++;
-            approved.add(entity.getCandidateId() + "→" + created.getVoteId());
+            approved.add(voteCandidate.getVoteId());
         }
 
-        //커밋 직전 한 번만 기록. 중간에 예외가 나면 이 로그도 남지 않고 전체 롤백
         if (!approved.isEmpty()) {
             log.info("[Admin] 투표 후보 등록: {}, actor={}", approved, actor);
         }
 
-        return VoteCandidateApproveResultDTO.builder()
-                .approvedCount(approvedCount)
+        //결과 반환
+        return VoteCandidateApproveResponseDTO.builder()
+                .approvedCount(approved.size())
                 .failures(failures)
                 .build();
     }
 
     @Override
     @Transactional
-    public int reject(List<Long> candidateIds, String actor) {
+    public int reject(List<Long> voteIds, String actor) {
 
         int rejectedCount = 0;
 
-        for (Long candidateId : candidateIds) {
-            VoteCandidateEntity entity = voteCandidateRepository
-                    .findByCandidateIdAndDelYn(candidateId, "N")
-                    .orElse(null);
+        //TODO : vote 테아블 사용하도록 변경
+        for (Long voteId : voteIds) {
+            VoteEntity voteCandidate = voteRepository.findById(voteId).orElse(null);
 
-            if (entity == null || entity.getStatus() != VoteCandidateStatus.PENDING) {
+            //조회된 투표 후보가 존재하지 않는 경우
+            if (voteCandidate == null) {
                 continue;
             }
 
-            entity.reject(ADMIN_USER_ID);
+            //이미 등록·반려한 건은 재처리 안 함
+            if (voteCandidate.getStatus() == VoteDisplayStatus.POSTED) {
+                continue;
+            }
+
+            if (voteCandidate.getStatus() == VoteDisplayStatus.DRAFT && "Y".equals(voteCandidate.getDelYn())) {
+                continue;
+            }
+
+            voteCandidate.deleteVote(ADMIN_USER_ID);
             rejectedCount++;
 
-            log.info("[Admin] 투표 후보 반려: candidateId={}, actor={}", candidateId, actor);
+            log.info("[Admin] 투표 후보 반려: candidateId={}, actor={}", voteId, actor);
         }
 
         return rejectedCount;
     }
 
+    /**
+     * 현재 활성중인 AI 프롬포트 조회
+     */
     private AiPromptEntity findActivePrompt() {
         List<AiPromptEntity> prompts = aiPromptRepository.findLatestActivePerGroupByType(PromptType.VOTE_GENERATION);
 
@@ -299,6 +353,9 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
         return prompts.get(0);
     }
 
+    /**
+     * AI로 투표 후보 생성
+     */
     private List<AiGeneratedVoteDTO> callAi(String instruction, String referenceData, String aiModel) {
 
         ChatClient chatClient = chatClientBuilder.build();
@@ -336,7 +393,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
 
     private String buildSystemPrefix() {
         return String.format("""
-            너는 커플 앱 '토닥토닥'의 투표 기획자다.
+            너는 커플 앱 '투닥투닷'의 투표 기획자다.
             연인끼리 가볍게 의견이 갈릴 만한 질문을 만든다.
 
             [조건]
@@ -426,8 +483,8 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     }
 
     /**
-     * 생성 직후 검증 - 통과하지 못한 후보는 미저장
-     * @return 걸린 사유. 통과면 null
+     * 생성된 투표 유효성 검증
+     * @return 걸린 사유 / 통과면 null
      */
     private String validate(AiGeneratedVoteDTO candidate, Set<String> usedTitles) {
 
@@ -435,14 +492,12 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             return "응답이 비어 있음";
         }
 
+        //카테고리 검증
         if (candidate.getCategory() == null || !isValidCategory(candidate.getCategory())) {
             return "카테고리가 LOVE/ECONOMY/LIFESTYLE 중 하나가 아님";
         }
 
         String title = candidate.getTitle() == null ? "" : candidate.getTitle().trim();
-        if (usedTitles.contains(title)) {
-            return "최근 투표 또는 같은 묶음 후보와 제목이 같음";
-        }
 
         return validateForApprove(title, candidate.getOptions());
     }
@@ -450,12 +505,11 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     /**
      * 제목/선택지 형식 검증. 생성 직후와 게시 직전 양쪽에서 사용
      * 카테고리는 저장된 enum 값이라 게시 시점에는 미검사
-     * @return 걸린 사유. 통과면 null
+     * @return 걸린 사유 / 통과면 null
      */
     private String validateForApprove(String title, List<String> options) {
-
         if (!hasText(title) || title.length() > TITLE_MAX_LENGTH) {
-            return String.format("제목이 비었거나 %d자를 넘음", TITLE_MAX_LENGTH);
+           return String.format("제목이 비었거나 %d자를 넘음", TITLE_MAX_LENGTH);
         }
 
         if (options == null || options.size() < OPTION_MIN_COUNT || options.size() > OPTION_MAX_COUNT) {
@@ -473,56 +527,72 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             return "선택지가 서로 중복됨";
         }
 
-        return null;
+       return null;
     }
 
-    //제목 비교용 집합. 저장분에 공백이 섞여 있어 담을 때 다듬는다
+    /**
+     * 제목 비교용 집합 생성
+     * 저장분에 공백이 섞여 있어 생성 시 함께 제거
+     */
     private Set<String> toTitleSet(List<String> titles) {
         return titles.stream().map(String::trim).collect(Collectors.toCollection(HashSet::new));
     }
 
-    //AI 가 소문자로 줄 때가 있어 대소문자 무시
+    /**
+     * 유효한 카테고리인지 검증
+     */
     private boolean isValidCategory(String category) {
         return Arrays.stream(VoteCategory.values())
                 .anyMatch(value -> value.name().equalsIgnoreCase(category.trim()));
     }
 
-    private VoteCreateRequestDTO toCreateRequest(VoteCategory category, String title, List<String> options) {
-
-        VoteCreateRequestDTO request = new VoteCreateRequestDTO();
-        request.setCategory(category);
-        request.setTitle(title);
-
-        List<VoteCreateRequestDTO.OptionRequest> optionRequests = new ArrayList<>();
-        for (int i = 0; i < options.size(); i++) {
-            VoteCreateRequestDTO.OptionRequest option = new VoteCreateRequestDTO.OptionRequest();
-            option.setContent(options.get(i));
-            option.setOrder(i + 1);
-            optionRequests.add(option);
-        }
-        request.setOptions(optionRequests);
-
-        return request;
-    }
-
-    private String writeOptions(List<String> options) {
-        try {
-            return objectMapper.writeValueAsString(options);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("선택지를 저장할 수 없습니다", e);
-        }
-    }
-
-    private List<String> readOptions(String optionsJson) {
-        try {
-            return objectMapper.readValue(optionsJson, new TypeReference<List<String>>() {});
-        } catch (JsonProcessingException e) {
-            log.error("후보 선택지 파싱 실패: {}", optionsJson);
-            return List.of();
-        }
-    }
-
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
     }
+
+    /**
+     * 랜덤 닉네임 생성
+     */
+    private String generateRandomNickname() {
+        List<String> adjectives = List.of(
+                "용감한 ",
+                "신나는 ",
+                "행복한 ",
+                "졸린 ",
+                "차분한 ",
+                "귀여운 ",
+                "활발한 ",
+                "엉뚱한 ",
+                "똑똑한 ",
+                "느긋한 ",
+                "용맹한 "
+        );
+
+        List<String> animals = List.of(
+                "고양이",
+                "강아지",
+                "수달",
+                "토끼",
+                "햄스터",
+                "여우",
+                "판다",
+                "코알라",
+                "펭귄",
+                "알파카",
+                "다람쥐",
+                "사슴",
+                "나무늘보",
+                "돌고래"
+        );
+
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        String adjective = adjectives.get(random.nextInt(adjectives.size()));
+        String animal = animals.get(random.nextInt(animals.size()));
+
+        // 0000 ~ 9999
+        int number = random.nextInt(10000);
+
+        return adjective + animal + String.format("%04d", number);
+    }
+
 }
