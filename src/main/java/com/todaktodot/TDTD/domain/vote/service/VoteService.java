@@ -52,7 +52,7 @@ public interface VoteService {
      * 작성자는 봇 계정(vote.bot.user-id)이라 사용자 대상 하루 생성 제한은 미적용
      * @param request 카테고리 / 제목 / 선택지
      */
-    VoteCreateResponseDTO createByAdmin(VoteCreateRequestDTO request);
+//    VoteCreateResponseDTO createByAdmin(VoteCreateRequestDTO request);
 
     /**
      * 투표 수정

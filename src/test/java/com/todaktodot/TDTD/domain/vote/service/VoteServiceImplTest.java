@@ -66,44 +66,44 @@ class VoteServiceImplTest {
 
     private static final Long BOT_USER = 777L;
 
-    @Test
-    @DisplayName("시스템 투표 등록 - 설정한 봇 계정이 작성자로 저장된다")
-    void createByAdmin_UsesConfiguredBotUser() {
-        // Given
-        ReflectionTestUtils.setField(voteService, "botUserId", BOT_USER);
-        when(voteRepository.save(any(VoteEntity.class))).thenAnswer(invocation -> {
-            VoteEntity saved = invocation.getArgument(0);
-            ReflectionTestUtils.setField(saved, "voteId", 500L);
-            return saved;
-        });
+//    @Test
+//    @DisplayName("시스템 투표 등록 - 설정한 봇 계정이 작성자로 저장된다")
+//    void createByAdmin_UsesConfiguredBotUser() {
+//        // Given
+//        ReflectionTestUtils.setField(voteService, "botUserId", BOT_USER);
+//        when(voteRepository.save(any(VoteEntity.class))).thenAnswer(invocation -> {
+//            VoteEntity saved = invocation.getArgument(0);
+//            ReflectionTestUtils.setField(saved, "voteId", 500L);
+//            return saved;
+//        });
+//
+//        // When
+//        VoteCreateResponseDTO result = voteService.createByAdmin(createRequest());
+//
+//        // Then
+//        ArgumentCaptor<VoteEntity> captor = ArgumentCaptor.forClass(VoteEntity.class);
+//        verify(voteRepository).save(captor.capture());
+//
+//        assertThat(result.getVoteId()).isEqualTo(500L);
+//        assertThat(captor.getValue().getUserId()).isEqualTo(BOT_USER);
+//        //감사 컬럼은 다른 시스템 생성 레코드와 같은 0 을 유지한다
+//        assertThat(captor.getValue().getRegrId()).isZero();
+//    }
 
-        // When
-        VoteCreateResponseDTO result = voteService.createByAdmin(createRequest());
-
-        // Then
-        ArgumentCaptor<VoteEntity> captor = ArgumentCaptor.forClass(VoteEntity.class);
-        verify(voteRepository).save(captor.capture());
-
-        assertThat(result.getVoteId()).isEqualTo(500L);
-        assertThat(captor.getValue().getUserId()).isEqualTo(BOT_USER);
-        //감사 컬럼은 다른 시스템 생성 레코드와 같은 0 을 유지한다
-        assertThat(captor.getValue().getRegrId()).isZero();
-    }
-
-    @Test
-    @DisplayName("시스템 투표 등록 - 봇 계정 설정이 없으면 게시하지 않는다")
-    void createByAdmin_BotUserNotConfigured_Throws() {
-        // Given - vote.bot.user-id 기본값(0) 그대로인 상태
-        ReflectionTestUtils.setField(voteService, "botUserId", 0L);
-
-        // When & Then - 되돌릴 수 없는 작업이라 저장 전에 멈춘다
-        assertThatThrownBy(() -> voteService.createByAdmin(createRequest()))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("vote.bot.user-id");
-
-        verify(voteRepository, never()).save(any(VoteEntity.class));
-        verify(voteOptionRepository, never()).saveAll(anyList());
-    }
+//    @Test
+//    @DisplayName("시스템 투표 등록 - 봇 계정 설정이 없으면 게시하지 않는다")
+//    void createByAdmin_BotUserNotConfigured_Throws() {
+//        // Given - vote.bot.user-id 기본값(0) 그대로인 상태
+//        ReflectionTestUtils.setField(voteService, "botUserId", 0L);
+//
+//        // When & Then - 되돌릴 수 없는 작업이라 저장 전에 멈춘다
+//        assertThatThrownBy(() -> voteService.createByAdmin(createRequest()))
+//                .isInstanceOf(IllegalStateException.class)
+//                .hasMessageContaining("vote.bot.user-id");
+//
+//        verify(voteRepository, never()).save(any(VoteEntity.class));
+//        verify(voteOptionRepository, never()).saveAll(anyList());
+//    }
 
     @Test
     @DisplayName("초안은 참여할 수 없다 - 마감 시각이 비어 있어도 터지지 않는다")

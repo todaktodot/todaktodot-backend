@@ -8,11 +8,8 @@ import com.todaktodot.TDTD.admin.prompt.repository.entity.AiPromptEntity;
 import com.todaktodot.TDTD.admin.prompt.repository.entity.PromptType;
 import com.todaktodot.TDTD.domain.vote.dto.ai.AiGeneratedVoteDTO;
 import com.todaktodot.TDTD.domain.vote.dto.request.VoteCandidateApproveRequestDTO;
-import com.todaktodot.TDTD.domain.vote.dto.request.VoteCreateRequestDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateApproveResponseDTO;
 import com.todaktodot.TDTD.domain.vote.dto.response.VoteCandidateDTO;
-import com.todaktodot.TDTD.domain.vote.dto.response.VoteCreateResponseDTO;
-import com.todaktodot.TDTD.domain.vote.repository.VoteCandidateRepository;
 import com.todaktodot.TDTD.domain.vote.repository.VoteOptionRepository;
 import com.todaktodot.TDTD.domain.vote.repository.VoteRepository;
 import com.todaktodot.TDTD.domain.vote.repository.entity.*;
@@ -42,20 +39,20 @@ import java.util.stream.IntStream;
 public class VoteCandidateServiceImpl implements VoteCandidateService {
 
     private final ChatClient.Builder chatClientBuilder;
-    private final VoteCandidateRepository voteCandidateRepository;
     private final VoteRepository voteRepository;
     private final VoteOptionRepository voteOptionRepository;
     private final AiPromptRepository aiPromptRepository;
-    private final VoteService voteService;
     private final ObjectMapper objectMapper;
 
     //배치가 쓰는 기본 모델. 어드민 수동 생성은 화면에서 고른 값이 우선
     @Value("${vote.ai-model:gpt-5.4}")
     private String defaultAiModel;
-    //배치·시스템이 만든 데이터. 봇계정 ID 주입 예정
-    private static final Long BOT_USER_ID = 0L;
+
+    @Value("${vote.bot.user-id:}")
+    private Long botUserId;
+    //배치·시스템이 만든 데이터. 봇계정 ID 주입
+    //private static final Long BOT_USER_ID = 152L;
     //어드민이 처리한 레코드. 어드민 로그인은 users 레코드가 없어 0 을 쓴다
-    //AdminVoteServiceImpl 등 기존 어드민 서비스와 같은 이름
     private static final Long ADMIN_USER_ID = 0L;
     //생성 후보 수 설정 값
     private static final int CANDIDATE_COUNT = 5;
@@ -145,11 +142,11 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
 
             //vote 저장
             VoteEntity vote = VoteEntity.draft(
-                            BOT_USER_ID,
+                    botUserId,
                             generateRandomNickname(),
                             VoteCategory.valueOf(voteCandidate.getCategory().trim().toUpperCase(Locale.ROOT)),
                             title,
-                            BOT_USER_ID);
+                    botUserId);
 
             VoteEntity savedVote = voteRepository.save(vote);
 
@@ -160,7 +157,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
                                     .voteId(savedVote.getVoteId())
                                     .sortOrder(i + 1)
                                     .content(candidateOptions.get(i).trim())
-                                    .regrId(BOT_USER_ID)
+                                    .regrId(botUserId)
                                     .build()
                     )
                     .toList();
@@ -198,7 +195,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             return;
         }
 
-        leftVotes.forEach(vote -> vote.deleteVote(BOT_USER_ID));
+        leftVotes.forEach(vote -> vote.deleteVote(botUserId));
 
         log.info("지난 후보 {}건을 자동 반려했습니다.", leftVotes.size());
     }
@@ -286,9 +283,9 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             }
 
             //게시
-            voteCandidate.publish(title, LocalDateTime.now().plusHours(24), BOT_USER_ID);
+            voteCandidate.publish(title, LocalDateTime.now().plusHours(24), botUserId);
             for (int i = 0;  i < voteCandidateOptions.size(); i++) {
-                voteCandidateOptions.get(i).publish(options.get(i), BOT_USER_ID);
+                voteCandidateOptions.get(i).publish(options.get(i), botUserId);
             }
 
             usedTitles.add(title);
@@ -333,7 +330,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
             voteCandidate.deleteVote(ADMIN_USER_ID);
             rejectedCount++;
 
-            log.info("[Admin] 투표 후보 반려: candidateId={}, actor={}", voteId, actor);
+            log.info("[Admin] 투표 후보 반려: voteId={}, actor={}", voteId, actor);
         }
 
         return rejectedCount;

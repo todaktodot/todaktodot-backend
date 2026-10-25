@@ -95,8 +95,8 @@ public class AdminVoteCandidateController {
 
     @PostMapping("/reject")
     @ResponseBody
-    public Map<String, String> reject(@RequestBody List<Long> candidateIds, Authentication authentication) {
-        int count = voteCandidateService.reject(candidateIds, authentication.getName());
+    public Map<String, String> reject(@RequestBody List<Long> voteIds, Authentication authentication) {
+        int count = voteCandidateService.reject(voteIds, authentication.getName());
         return Map.of("message", count + "개의 후보를 반려했습니다.");
     }
 }

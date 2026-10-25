@@ -175,7 +175,7 @@ public class DiscordNotificationService {
         DiscordWebhookPayload payload = new DiscordWebhookPayload(
                 buildVoteUsername(),
                 List.of(new DiscordEmbed(
-                        "🗳️ 오늘의 투표 후보",
+                        "오늘의 투표 후보",
                         description,
                         0x7740AE,
                         fields,
@@ -192,7 +192,7 @@ public class DiscordNotificationService {
         DiscordWebhookPayload payload = new DiscordWebhookPayload(
                 buildVoteUsername(),
                 List.of(new DiscordEmbed(
-                        "⚠️ 투표 후보 생성 실패",
+                        "투표 후보 생성 실패",
                         String.format("**%s** 서버에서 투표 후보를 만들지 못했습니다.", discordWebhookProfile),
                         0xED4245,
                         List.of(new DiscordEmbedField("사유", truncate(defaultString(message, "알 수 없는 오류"), 900), false)),

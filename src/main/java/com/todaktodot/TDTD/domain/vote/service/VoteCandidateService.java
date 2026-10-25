@@ -41,8 +41,8 @@ public interface VoteCandidateService {
 
     /**
      * 후보 반려
-     * @param candidateIds 반려할 후보 ID 목록
+     * @param voteIds 반려할 후보 ID 목록
      * @param actor 처리한 어드민 계정명
      */
-    int reject(List<Long> candidateIds, String actor);
+    int reject(List<Long> voteIds, String actor);
 }

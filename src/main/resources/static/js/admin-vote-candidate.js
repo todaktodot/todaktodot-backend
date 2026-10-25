@@ -64,7 +64,7 @@ function approveSelected(button) {
     }
 
     const payload = cards.map(card => ({
-        candidateId: Number(card.dataset.candidateId),
+        voteId: Number(card.dataset.candidateId),
         title: card.querySelector('.candidate-title').value.trim(),
         // 빈 값을 거르지 않음. 거르면 어드민이 지운 선택지가 서버에서 원래 값으로 복원됨
         options: Array.from(card.querySelectorAll('.candidate-option'))

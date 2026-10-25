@@ -13,7 +13,7 @@ public class VoteCandidateReportFormatter {
     private static final String ADMIN_PATH = "/admin/vote-candidate";
 
     //어드민 주소가 없으면 링크 없이 발송. 설정이 없어도 알림은 유지
-    @Value("${admin.base-url:}")
+    @Value("${vote.admin.base-url:}")
     private String adminBaseUrl;
 
     public String buildDescription(List<VoteCandidateDTO> candidates) {
