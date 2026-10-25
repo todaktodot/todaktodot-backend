@@ -42,13 +42,6 @@ public class VoteServiceImpl implements VoteService{
     private final FcmService fcmService;
     private final ObjectMapper objectMapper;
 
-    private static final Long SYSTEM_USER = 0L;
-
-    //시스템 투표의 작성자. 개발·운영 DB 의 봇 계정 ID 가 달라 설정으로 받는다
-    //0 은 미설정. 감사 컬럼(REGR_ID)의 0 과 역할이 달라 SYSTEM_USER 를 쓰지 않는다
-//    @Value("${vote.bot.user-id:0}")
-//    private Long botUserId;
-
     @Override
     @Transactional(readOnly = true)
     public VoteListResponseDTO getList(Long userId, List<VoteCategory> categories, VoteStatus status, String isMineStr, VoteSortCondition sortBy, String cursor, int size) {
@@ -260,54 +253,6 @@ public class VoteServiceImpl implements VoteService{
                 .voteId(savedVote.getVoteId())
                 .build();
     }
-
-//    @Override
-//    @Transactional
-//    public VoteCreateResponseDTO createByAdmin(VoteCreateRequestDTO request) {
-//
-//        if (request.getOptions().size() < 2 || request.getOptions().size() > 5) {
-//            throw new IllegalArgumentException("옵션은 최소 2개, 최대 5개만 등록할 수 있습니다.");
-//        }
-//
-//        //유효한 봇계정인지 검증
-//        if (botUserId == null || botUserId <= 0L) {
-//            throw new IllegalStateException("투표 봇 계정이 설정되지 않았습니다. vote.bot.user-id 를 확인해주세요.");
-//        }
-//
-//        //vote 저장 - 마감 시각은 사용자 등록과 동일하게 게시 시점 기준 24시간
-//        LocalDateTime now = LocalDateTime.now();
-//
-//        VoteEntity vote = VoteEntity.builder()
-//                .userId(botUserId)
-//                .randomNickname(generateRandomNickname())
-//                .category(request.getCategory())
-//                .title(request.getTitle())
-//                .closedAt(now.plusHours(24))
-//                .regrId(SYSTEM_USER)
-//                .build();
-//
-//        VoteEntity savedVote = voteRepository.save(vote);
-//
-//        //option 저장
-//        List<VoteOptionEntity> options =
-//                request.getOptions()
-//                        .stream()
-//                        .map(option ->
-//                                VoteOptionEntity.builder()
-//                                        .voteId(savedVote.getVoteId())
-//                                        .sortOrder(option.getOrder())
-//                                        .content(option.getContent())
-//                                        .regrId(SYSTEM_USER)
-//                                        .build()
-//                        )
-//                        .toList();
-//
-//        voteOptionRepository.saveAll(options);
-//
-//        return VoteCreateResponseDTO.builder()
-//                .voteId(savedVote.getVoteId())
-//                .build();
-//    }
 
     @Override
     @Transactional
