@@ -52,8 +52,6 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
     private Long botUserId;
     //배치·시스템이 만든 데이터. 봇계정 ID 주입
     //private static final Long BOT_USER_ID = 152L;
-    //어드민이 처리한 레코드. 어드민 로그인은 users 레코드가 없어 0 을 쓴다
-    private static final Long ADMIN_USER_ID = 0L;
     //생성 후보 수 설정 값
     private static final int CANDIDATE_COUNT = 5;
     //중복 회피 재료. 늘릴수록 겹칠 확률은 줄지만 매 호출 토큰이 늘어남
@@ -327,7 +325,7 @@ public class VoteCandidateServiceImpl implements VoteCandidateService {
                 continue;
             }
 
-            voteCandidate.deleteVote(ADMIN_USER_ID);
+            voteCandidate.deleteVote(botUserId);
             rejectedCount++;
 
             log.info("[Admin] 투표 후보 반려: voteId={}, actor={}", voteId, actor);
