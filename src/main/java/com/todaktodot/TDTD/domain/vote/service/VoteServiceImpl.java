@@ -15,6 +15,7 @@ import com.todaktodot.TDTD.domain.vote.repository.projection.VoteCursorProjectio
 import com.todaktodot.TDTD.domain.vote.repository.projection.VoteProjection;
 import com.todaktodot.TDTD.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -266,6 +267,11 @@ public class VoteServiceImpl implements VoteService{
             throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
         }
 
+        // 초안은 게시 전이라 없는 것으로 취급
+        if (vote.isDraft()) {
+            throw new VoteException(ErrorCode.VOTE_NOT_FOUND);
+        }
+
         // 3. 작성자 본인 확인
         if (!vote.getUserId().equals(userId)) {
             throw new IllegalStateException("투표 작성자가 아닙니다.");
@@ -312,6 +318,11 @@ public class VoteServiceImpl implements VoteService{
         // 2. 삭제된 투표인지 확인
         if ("Y".equals(vote.getDelYn())) {
             throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
+        }
+
+        // 초안은 게시 전이라 없는 것으로 취급
+        if (vote.isDraft()) {
+            throw new VoteException(ErrorCode.VOTE_NOT_FOUND);
         }
 
         // 3. 작성자 본인 확인
@@ -418,6 +429,11 @@ public class VoteServiceImpl implements VoteService{
             throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
         }
 
+        // 초안은 게시 전이라 없는 것으로 취급
+        if (vote.isDraft()) {
+            throw new VoteException(ErrorCode.VOTE_NOT_FOUND);
+        }
+
         // 3. 타유저 투표인지 확인
         if (vote.getUserId().equals(userId)) {
             throw new IllegalStateException("본인이 생성한 투표에 신고할 수 없습니다.");
@@ -448,7 +464,7 @@ public class VoteServiceImpl implements VoteService{
                     .voteId(vote.getVoteId())
                     .prevStatus(prevStatus)
                     .newStatus(VoteDisplayStatus.HIDDEN.name())
-                    .actor("system")
+                    .actor("ADMIN")
                     .memo("신고 10건 도달")
                     .regrId(userId)
                     .build());
@@ -474,7 +490,8 @@ public class VoteServiceImpl implements VoteService{
         LocalDateTime todayStart = today.atStartOfDay();
         LocalDateTime tomorrowStart = today.plusDays(1).atStartOfDay();
 
-        return (int) voteRepository.countByUserIdAndRegDtBetweenAndDelYn(userId, todayStart, tomorrowStart, "N");
+        return (int) voteRepository.countByUserIdAndRegDtBetweenAndDelYnAndStatusNot(
+                userId, todayStart, tomorrowStart, "N", VoteDisplayStatus.DRAFT);
     }
 
     /**
@@ -567,6 +584,11 @@ public class VoteServiceImpl implements VoteService{
             throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
         }
 
+        // 초안은 게시 전이라 없는 것으로 취급
+        if (vote.isDraft()) {
+            throw new VoteException(ErrorCode.VOTE_NOT_FOUND);
+        }
+
         if (vote.getStatus() == VoteDisplayStatus.HIDDEN) {
             throw new VoteException(ErrorCode.VOTE_HIDDEN_BY_REPORTS);
         }
@@ -588,6 +610,11 @@ public class VoteServiceImpl implements VoteService{
 
         if ("Y".equals(vote.getDelYn())) {
             throw new VoteException(ErrorCode.VOTE_ALREADY_DELETED);
+        }
+
+        // 초안은 게시 전이라 없는 것으로 취급
+        if (vote.isDraft()) {
+            throw new VoteException(ErrorCode.VOTE_NOT_FOUND);
         }
 
         if (vote.getStatus() == VoteDisplayStatus.HIDDEN) {

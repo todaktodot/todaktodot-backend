@@ -36,6 +36,9 @@ out/
 ### VS Code ###
 .vscode/
 
+### macOS ###
+.DS_Store
+
 ### share.html ###
 src/main/resources/static/share.html
 

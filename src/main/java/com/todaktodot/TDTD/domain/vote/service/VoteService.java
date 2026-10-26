@@ -48,6 +48,13 @@ public interface VoteService {
     VoteCreateResponseDTO create(Long userId, VoteCreateRequestDTO request);
 
     /**
+     * 어드민 투표 생성 - AI 후보를 어드민이 승인했을 때 사용
+     * 작성자는 봇 계정(vote.bot.user-id)이라 사용자 대상 하루 생성 제한은 미적용
+     * @param request 카테고리 / 제목 / 선택지
+     */
+//    VoteCreateResponseDTO createByAdmin(VoteCreateRequestDTO request);
+
+    /**
      * 투표 수정
      */
     void update(Long userId, VoteUpdateRequestDTO request);

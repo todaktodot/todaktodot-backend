@@ -69,6 +69,7 @@ public class AdminVoteRepository {
                     END AS vote_status_code
                 FROM vote v
                 WHERE v.DEL_YN = 'N'
+                  AND v.STATUS <> 'DRAFT'
             )
             """;
 
@@ -93,6 +94,7 @@ public class AdminVoteRepository {
                     END AS vote_status_code
                 FROM vote v
                 WHERE v.DEL_YN = 'N'
+                  AND v.STATUS <> 'DRAFT'
             )
             """;
 

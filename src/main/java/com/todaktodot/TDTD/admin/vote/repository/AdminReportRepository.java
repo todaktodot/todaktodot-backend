@@ -57,7 +57,12 @@ public interface AdminReportRepository extends JpaRepository<VoteEntity, Long> {
 
         JOIN vote V
           ON V.vote_id = VR.vote_id
+        
+        JOIN users U
+          ON U.user_id = V.user_id
+          
         WHERE VR.del_yn = 'N'
+          AND U.user_role <> 'ADMIN'
           AND (
                 :keyword IS NULL
                 OR :keyword = ''
@@ -151,7 +156,10 @@ public interface AdminReportRepository extends JpaRepository<VoteEntity, Long> {
         FROM vote_report VR
         JOIN vote V
           ON V.vote_id = VR.vote_id
+        JOIN users U
+          ON U.user_id = V.user_id
         WHERE VR.del_yn = 'N'
+          AND U.user_role <> 'ADMIN'
     """, nativeQuery = true)
     Integer countReportedUsers();
 
@@ -160,8 +168,11 @@ public interface AdminReportRepository extends JpaRepository<VoteEntity, Long> {
         FROM vote_report VR
         JOIN vote V
           ON V.vote_id = VR.vote_id
+        JOIN users U
+          ON U.user_id = V.user_id
         WHERE VR.del_yn = 'N'
           AND V.del_yn = 'N'
+          AND U.user_role <> 'ADMIN'
           AND NOT EXISTS (
               SELECT 1
               FROM user_suspension US
@@ -177,8 +188,11 @@ public interface AdminReportRepository extends JpaRepository<VoteEntity, Long> {
         FROM vote_report VR
         JOIN vote V
           ON V.vote_id = VR.vote_id
+        JOIN users U
+          ON U.user_id = V.user_id
         WHERE VR.del_yn = 'N'
           AND V.del_yn = 'N'
+          AND U.user_role <> 'ADMIN'
           AND EXISTS (
               SELECT 1
               FROM user_suspension US
